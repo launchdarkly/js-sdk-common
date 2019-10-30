@@ -3,6 +3,7 @@ const resolve = require('rollup-plugin-node-resolve');
 const commonjs = require('rollup-plugin-commonjs');
 const babel = require('rollup-plugin-babel');
 const replace = require('@rollup/plugin-replace');
+const { terser } = require('rollup-plugin-terser');
 const { uglify } = require('rollup-plugin-uglify');
 const builtins = require('rollup-plugin-node-builtins');
 const filesize = require('rollup-plugin-filesize');
@@ -29,11 +30,16 @@ const basePlugins = [
   filesize(),
 ];
 
-const webPlugins = env === 'production' ?
+const plugins = env === 'production' ?
   basePlugins.concat(
     uglify()
   ) :
   basePlugins;
+
+const esPlugins = env === 'production' ?
+  basePlugins.concat(
+    terser()
+  ) : basePlugins;
 
 const configs = [
   {
@@ -44,7 +50,7 @@ const configs = [
       format: 'umd',
       sourcemap: true,
     },
-    plugins: webPlugins,
+    plugins: plugins,
   },
   {
     input: entryPoint,
@@ -53,16 +59,16 @@ const configs = [
       format: 'cjs',
       sourcemap: true,
     },
-    plugins: basePlugins,
+    plugins: plugins,
   },
   {
     input: entryPoint,
     output: {
-      file: pkg.main,
+      file: pkg.module,
       format: 'es',
       sourcemap: true,
     },
-    plugins: basePlugins,
+    plugins: esPlugins,
   },
 ];
 
