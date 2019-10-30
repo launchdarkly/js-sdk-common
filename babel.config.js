@@ -1,12 +1,18 @@
-const presets = [
-  [
-    "@babel/env",
-    {
-      targets: ["last 2 versions", "ie >= 10"],
-      "corejs": "2",
-      useBuiltIns: "usage",
-    },
+module.exports = {
+  presets: [
+    [
+      '@babel/env',
+      {
+        targets: ["last 2 versions", "ie >= 10"],
+      },
+    ],
   ],
-];
-
-module.exports = { presets };
+  env: {
+    test: {
+      plugins: [
+        '@babel/plugin-transform-regenerator',
+        '@babel/plugin-transform-runtime',
+      ],
+    },
+  },
+};
