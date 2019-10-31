@@ -38,7 +38,10 @@
   "devDependencies": {
     "@babel/cli": "^7.6.4",
     "@babel/core": "^7.6.4",
+    "@babel/plugin-transform-regenerator": "7.4.5",
+    "@babel/plugin-transform-runtime": "7.6.2",
     "@babel/preset-env": "^7.6.3",
+    "@babel/runtime": "7.6.3",
     "@rollup/plugin-replace": "^2.2.0",
     "babel-jest": "^24.9.0",
     "chai": "4.1.2",
