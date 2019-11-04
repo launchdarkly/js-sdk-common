@@ -68,7 +68,7 @@ export function defaults() {
       logger: logger(),
 
       makeClient: (env, user, options = {}) => {
-        const config = Object.assign({ logger: p.testing.logger }, options);
+        const config = { logger: p.testing.logger, ...options };
         return LDClient.initialize(env, user, config, p).client;
       },
 

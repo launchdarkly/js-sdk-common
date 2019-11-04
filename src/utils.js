@@ -169,7 +169,7 @@ export function sanitizeUser(user) {
     const attr = userAttrsToStringify[i];
     const value = user[attr];
     if (value !== undefined && typeof value !== 'string') {
-      newUser = newUser || Object.assign({}, user);
+      newUser = newUser || { ...user };
       newUser[attr] = String(value);
     }
   }

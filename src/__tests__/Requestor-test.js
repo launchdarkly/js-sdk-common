@@ -35,7 +35,7 @@ describe('Requestor', () => {
   });
 
   it('makes requests with the GET verb if useReport is disabled', async () => {
-    const config = Object.assign({}, defaultConfig, { useReport: false });
+    const config = { ...defaultConfig, useReport: false };
     const requestor = Requestor(platform, config, env);
 
     await requestor.fetchFlagSettings(user, 'hash1');
@@ -45,7 +45,7 @@ describe('Requestor', () => {
   });
 
   it('makes requests with the REPORT verb with a payload if useReport is enabled', async () => {
-    const config = Object.assign({}, defaultConfig, { useReport: true });
+    const config = { ...defaultConfig, useReport: true };
     const requestor = Requestor(platform, config, env);
 
     await requestor.fetchFlagSettings(user, 'hash1');
@@ -74,7 +74,7 @@ describe('Requestor', () => {
   });
 
   it('includes environment, user, and withReasons in GET URL', async () => {
-    const config = Object.assign({}, defaultConfig, { evaluationReasons: true });
+    const config = { ...defaultConfig, evaluationReasons: true };
     const requestor = Requestor(platform, config, env);
 
     await requestor.fetchFlagSettings(user, null);
@@ -84,7 +84,7 @@ describe('Requestor', () => {
   });
 
   it('includes environment, user, hash, and withReasons in GET URL', async () => {
-    const config = Object.assign({}, defaultConfig, { evaluationReasons: true });
+    const config = { ...defaultConfig, evaluationReasons: true };
     const requestor = Requestor(platform, config, env);
 
     await requestor.fetchFlagSettings(user, 'hash1');
@@ -94,7 +94,7 @@ describe('Requestor', () => {
   });
 
   it('includes environment in REPORT URL', async () => {
-    const config = Object.assign({}, defaultConfig, { useReport: true });
+    const config = { ...defaultConfig, useReport: true };
     const requestor = Requestor(platform, config, env);
 
     await requestor.fetchFlagSettings(user, null);
@@ -104,7 +104,7 @@ describe('Requestor', () => {
   });
 
   it('includes environment and hash in REPORT URL', async () => {
-    const config = Object.assign({}, defaultConfig, { useReport: true });
+    const config = { ...defaultConfig, useReport: true };
     const requestor = Requestor(platform, config, env);
 
     await requestor.fetchFlagSettings(user, 'hash1');
@@ -114,7 +114,7 @@ describe('Requestor', () => {
   });
 
   it('includes environment and withReasons in REPORT URL', async () => {
-    const config = Object.assign({}, defaultConfig, { useReport: true, evaluationReasons: true });
+    const config = { ...defaultConfig, useReport: true, evaluationReasons: true };
     const requestor = Requestor(platform, config, env);
 
     await requestor.fetchFlagSettings(user, null);
@@ -124,7 +124,7 @@ describe('Requestor', () => {
   });
 
   it('includes environment, hash, and withReasons in REPORT URL', async () => {
-    const config = Object.assign({}, defaultConfig, { useReport: true, evaluationReasons: true });
+    const config = { ...defaultConfig, useReport: true, evaluationReasons: true };
     const requestor = Requestor(platform, config, env);
 
     await requestor.fetchFlagSettings(user, 'hash1');
@@ -134,7 +134,7 @@ describe('Requestor', () => {
   });
 
   it('sends custom user-agent header in GET mode when sendLDHeaders is true', async () => {
-    const config = Object.assign({}, defaultConfig, { sendLDHeaders: true });
+    const config = { ...defaultConfig, sendLDHeaders: true };
     const requestor = Requestor(platform, config, env);
     await requestor.fetchFlagSettings(user, 'hash1');
 
@@ -145,7 +145,7 @@ describe('Requestor', () => {
   });
 
   it('sends custom user-agent header in REPORT mode when sendLDHeaders is true', async () => {
-    const config = Object.assign({}, defaultConfig, { useReport: true, sendLDHeaders: true });
+    const config = { ...defaultConfig, useReport: true, sendLDHeaders: true };
     const requestor = Requestor(platform, config, env);
     await requestor.fetchFlagSettings(user, 'hash1');
 
@@ -156,7 +156,7 @@ describe('Requestor', () => {
   });
 
   it('does NOT send custom user-agent header when sendLDHeaders is false', async () => {
-    const config = Object.assign({}, defaultConfig, { useReport: true, sendLDHeaders: false });
+    const config = { ...defaultConfig, useReport: true, sendLDHeaders: false };
     const requestor = Requestor(platform, config, env);
 
     await requestor.fetchFlagSettings(user, 'hash1');
