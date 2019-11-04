@@ -80,7 +80,7 @@ describe('EventProcessor', () => {
   });
 
   it('filters user in identify event', async () => {
-    const config = Object.assign({}, defaultConfig, { allAttributesPrivate: true });
+    const config = { ...defaultConfig, allAttributesPrivate: true };
     const ep = EventProcessor(platform, config, envId, null, mockEventSender);
     const event = { kind: 'identify', creationDate: 1000, key: user.key, user: user };
     ep.enqueue(event);
@@ -117,7 +117,7 @@ describe('EventProcessor', () => {
   });
 
   it('can include inline user in feature event', async () => {
-    const config = Object.assign({}, defaultConfig, { inlineUsersInEvents: true });
+    const config = { ...defaultConfig, inlineUsersInEvents: true };
     const ep = EventProcessor(platform, config, envId, null, mockEventSender);
     const event = {
       kind: 'feature',
@@ -137,7 +137,7 @@ describe('EventProcessor', () => {
   });
 
   it('can include reason in feature event', async () => {
-    const config = Object.assign({}, defaultConfig, { inlineUsersInEvents: true });
+    const config = { ...defaultConfig, inlineUsersInEvents: true };
     const reason = { kind: 'FALLTHROUGH' };
     const ep = EventProcessor(platform, config, envId, null, mockEventSender);
     const event = {
@@ -159,7 +159,7 @@ describe('EventProcessor', () => {
   });
 
   it('filters user in feature event', async () => {
-    const config = Object.assign({}, defaultConfig, { allAttributesPrivate: true, inlineUsersInEvents: true });
+    const config = { ...defaultConfig, allAttributesPrivate: true, inlineUsersInEvents: true };
     const ep = EventProcessor(platform, config, envId, null, mockEventSender);
     const event = {
       kind: 'feature',
@@ -357,7 +357,7 @@ describe('EventProcessor', () => {
   });
 
   it('can include inline user in custom event', async () => {
-    const config = Object.assign({}, defaultConfig, { inlineUsersInEvents: true });
+    const config = { ...defaultConfig, inlineUsersInEvents: true };
     const ep = EventProcessor(platform, config, envId, null, mockEventSender);
     const e = {
       kind: 'custom',
@@ -376,7 +376,7 @@ describe('EventProcessor', () => {
   });
 
   it('filters user in custom event', async () => {
-    const config = Object.assign({}, defaultConfig, { allAttributesPrivate: true, inlineUsersInEvents: true });
+    const config = { ...defaultConfig, allAttributesPrivate: true, inlineUsersInEvents: true };
     const ep = EventProcessor(platform, config, envId, null, mockEventSender);
     const e = {
       kind: 'custom',

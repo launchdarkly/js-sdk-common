@@ -20,7 +20,7 @@ describe('Store', () => {
     await store.saveFlags(flags);
 
     const value = platform.testing.getLocalStorageImmediately(lsKey);
-    const expected = Object.assign({ $schema: 1 }, flags);
+    const expected = { $schema: 1, ...flags };
     expect(JSON.parse(value)).toEqual(expected);
   });
 
@@ -29,7 +29,7 @@ describe('Store', () => {
     const store = Store(platform.localStorage, env, '', ident, platform.testing.logger);
 
     const expected = { flagKey: { value: 'x' } };
-    const stored = Object.assign({ $schema: 1 }, expected);
+    const stored = { $schema: 1, ...expected };
     platform.testing.setLocalStorageImmediately(lsKey, JSON.stringify(stored));
 
     const values = await store.loadFlags();
@@ -77,7 +77,7 @@ describe('Store', () => {
     await store.saveFlags(flags);
 
     const value = platform.testing.getLocalStorageImmediately(keyWithHash);
-    expect(JSON.parse(value)).toEqual(Object.assign({ $schema: 1 }, flags));
+    expect(JSON.parse(value)).toEqual({ $schema: 1, ...flags });
   });
 
   it('should handle localStorage.get returning an error', async () => {

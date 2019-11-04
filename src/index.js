@@ -397,7 +397,7 @@ export function initialize(env, user, specifiedOptions, platform, extraDefaults)
       }
     }
 
-    flags = Object.assign({}, newFlags);
+    flags = { ...newFlags };
     return handleFlagChanges(changes).catch(() => {}); // swallow any exceptions from this Promise
   }
 
@@ -601,7 +601,7 @@ export function initialize(env, user, specifiedOptions, platform, extraDefaults)
   function initFromStateProvider(state) {
     environment = state.environment;
     ident.setUser(state.user);
-    flags = Object.assign({}, state.flags);
+    flags = { ...state.flags };
     utils.onNextTick(signalSuccessfulInit);
   }
 

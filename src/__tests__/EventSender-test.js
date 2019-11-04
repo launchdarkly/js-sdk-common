@@ -7,7 +7,7 @@ import * as utils from '../utils';
 
 describe('EventSender', () => {
   const platform = stubPlatform.defaults();
-  const platformWithoutCors = Object.assign({}, platform, { httpAllowsPost: () => false });
+  const platformWithoutCors = { ...platform, httpAllowsPost: () => false };
   let server;
   const eventsUrl = '/fake-url';
   const envId = 'env';

@@ -74,7 +74,7 @@ export const stringifiedNumericUser = {
 export function makeBootstrap(flagsData) {
   const ret = { $flagsState: {} };
   for (const key in flagsData) {
-    const state = Object.assign({}, flagsData[key]);
+    const state = { ...flagsData[key] };
     ret[key] = state.value;
     delete state.value;
     ret.$flagsState[key] = state;

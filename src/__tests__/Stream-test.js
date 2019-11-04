@@ -51,7 +51,7 @@ describe('Stream', () => {
   }
 
   it('should not throw on EventSource when it does not exist', () => {
-    const platform1 = Object.assign({}, platform);
+    const platform1 = { ...platform };
     delete platform1['eventSourceFactory'];
 
     const stream = new Stream(platform1, defaultConfig, envName);
@@ -88,7 +88,7 @@ describe('Stream', () => {
   });
 
   it('falls back to ping stream URL if useReport is true and REPORT is not supported', () => {
-    const config = Object.assign({}, defaultConfig, { useReport: true });
+    const config = { ...defaultConfig, useReport: true };
     const stream = new Stream(platform, config, envName, hash);
     stream.connect(user, {});
 
@@ -96,8 +96,8 @@ describe('Stream', () => {
   });
 
   it('sends request body if useReport is true and REPORT is supported', () => {
-    const platform1 = Object.assign({}, platform, { eventSourceAllowsReport: true });
-    const config = Object.assign({}, defaultConfig, { useReport: true });
+    const platform1 = { ...platform, eventSourceAllowsReport: true };
+    const config = { ...defaultConfig, useReport: true };
     const stream = new Stream(platform1, config, envName);
     stream.connect(user, {});
 
@@ -127,7 +127,7 @@ describe('Stream', () => {
   });
 
   it('reconnects after encountering an error', async () => {
-    const config = Object.assign({}, defaultConfig, { streamReconnectDelay: 1, useReport: false });
+    const config = { ...defaultConfig, streamReconnectDelay: 1, useReport: false };
     const stream = new Stream(platform, config, envName);
     stream.connect(user);
 
@@ -156,7 +156,7 @@ describe('Stream', () => {
   });
 
   it('logs a warning for only the first failed connection attempt', async () => {
-    const config = Object.assign({}, defaultConfig, { streamReconnectDelay: 1 });
+    const config = { ...defaultConfig, streamReconnectDelay: 1 };
     const stream = new Stream(platform, config, envName);
     stream.connect(user);
 
@@ -177,7 +177,7 @@ describe('Stream', () => {
   });
 
   it('logs a warning again after a successful connection', async () => {
-    const config = Object.assign({}, defaultConfig, { streamReconnectDelay: 1 });
+    const config = { ...defaultConfig, streamReconnectDelay: 1 };
     const stream = new Stream(platform, config, envName);
     const fakePut = jest.fn();
     stream.connect(user, {
