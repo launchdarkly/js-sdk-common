@@ -1,0 +1,14 @@
+repo:
+  public: js-sdk-common
+  private: js-sdk-common-private
+
+publications:
+  - url: https://www.npmjs.com/package/launchdarkly-js-sdk-common
+    description: npm
+
+template:
+  name: npm
+
+documentation:
+  githubPages: true
+  title: LaunchDarkly Javascript SDK Core Components
