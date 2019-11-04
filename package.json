@@ -43,6 +43,7 @@
     "@babel/preset-env": "^7.6.3",
     "@babel/runtime": "7.6.3",
     "@rollup/plugin-replace": "^2.2.0",
+    "babel-eslint": "10.0.3",
     "babel-jest": "^24.9.0",
     "chai": "4.1.2",
     "cross-env": "5.1.4",
