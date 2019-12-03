@@ -12,11 +12,13 @@ export default function EventProcessor(platform, options, environmentId, emitter
   const userFilter = UserFilter(options);
   const inlineUsers = options.inlineUsersInEvents;
   const samplingInterval = options.samplingInterval;
+  const eventCapacity = options.eventCapacity;
   const flushInterval = options.flushInterval;
   const logger = options.logger;
   let queue = [];
   let lastKnownPastTime = 0;
   let disabled = false;
+  let exceededCapacity = false;
   let flushTimer;
 
   function shouldSampleEvent() {
@@ -51,6 +53,18 @@ export default function EventProcessor(platform, options, environmentId, emitter
     return ret;
   }
 
+  function addToOutbox(event) {
+    if (queue.length < eventCapacity) {
+      queue.push(event);
+      exceededCapacity = false;
+    } else {
+      if (!exceededCapacity) {
+        exceededCapacity = true;
+        logger.warn(messages.eventCapacityExceeded());
+      }
+    }
+  }
+
   processor.enqueue = function(event) {
     if (disabled) {
       return;
@@ -73,14 +87,14 @@ export default function EventProcessor(platform, options, environmentId, emitter
     }
 
     if (addFullEvent) {
-      queue.push(makeOutputEvent(event));
+      addToOutbox(makeOutputEvent(event));
     }
     if (addDebugEvent) {
       const debugEvent = utils.extend({}, event, { kind: 'debug' });
       delete debugEvent['trackEvents'];
       delete debugEvent['debugEventsUntilDate'];
       delete debugEvent['variation'];
-      queue.push(debugEvent);
+      addToOutbox(debugEvent);
     }
   };
 
