@@ -14,6 +14,7 @@ export function validate(options, emitter, extraDefaults, logger) {
     sendEventsOnlyForVariation: false,
     useReport: false,
     evaluationReasons: false,
+    eventCapacity: 100,
     flushInterval: 2000,
     samplingInterval: 0,
     streamReconnectDelay: 1000,
@@ -71,8 +72,12 @@ export function validate(options, emitter, extraDefaults, logger) {
 
   config = applyDefaults(config, defaults);
 
+  if (isNaN(config.eventCapacity) || config.eventCapacity < 1) {
+    config.eventCapacity = baseDefaults.eventCapacity;
+    reportArgumentError('Invalid eventCapacity configured. Must be an integer > 0.');
+  }
   if (isNaN(config.flushInterval) || config.flushInterval < 2000) {
-    config.flushInterval = 2000;
+    config.flushInterval = baseDefaults.flushInterval;
     reportArgumentError('Invalid flush interval configured. Must be an integer >= 2000 (milliseconds).');
   }
   if (isNaN(config.samplingInterval) || config.samplingInterval < 0) {

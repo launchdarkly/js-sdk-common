@@ -1,6 +1,8 @@
 import sinon from 'sinon';
 
 import EventProcessor from '../EventProcessor';
+import * as messages from '../messages';
+
 import * as stubPlatform from './stubPlatform';
 
 describe('EventProcessor', () => {
@@ -13,6 +15,7 @@ describe('EventProcessor', () => {
   const logger = stubPlatform.logger();
   const defaultConfig = {
     eventsUrl: eventsUrl,
+    eventCapacity: 100,
     flushInterval: 2000,
     samplingInterval: 0,
     logger: logger,
@@ -392,6 +395,25 @@ describe('EventProcessor', () => {
     const output = mockEventSender.calls[0].events;
     expect(output.length).toEqual(1);
     checkCustomEvent(output[0], e, filteredUser);
+  });
+
+  it('enforces event capacity', async () => {
+    const config = { ...defaultConfig, eventCapacity: 1, logger: stubPlatform.logger() };
+    const ep = EventProcessor(platform, config, envId, null, mockEventSender);
+    const e0 = { kind: 'custom', creationDate: 1000, user: user, key: 'key0' };
+    const e1 = { kind: 'custom', creationDate: 1001, user: user, key: 'key1' };
+    const e2 = { kind: 'custom', creationDate: 1002, user: user, key: 'key2' };
+    ep.enqueue(e0);
+    ep.enqueue(e1);
+    ep.enqueue(e2);
+    await ep.flush();
+
+    expect(mockEventSender.calls.length).toEqual(1);
+    const output = mockEventSender.calls[0].events;
+    expect(output.length).toEqual(1);
+    checkCustomEvent(output[0], e0);
+
+    expect(config.logger.output.warn).toEqual([messages.eventCapacityExceeded()]); // warning is not repeated for e2
   });
 
   it('sends nothing if there are no events to flush', async () => {

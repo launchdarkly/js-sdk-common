@@ -30,6 +30,7 @@ describe('configuration', () => {
   checkDefault('sendEventsOnlyForVariation', false, true);
   checkDefault('useReport', false, true);
   checkDefault('evaluationReasons', false, true);
+  checkDefault('eventCapacity', 100, 200);
   checkDefault('flushInterval', 2000, 3000);
   checkDefault('samplingInterval', 0, 1);
   checkDefault('streamReconnectDelay', 1000, 2000);
@@ -68,6 +69,14 @@ describe('configuration', () => {
     const config1 = configuration.validate(config, emitter);
     expect(config1[name]).toBe(goodValue);
   }
+
+  it('enforces non-negative event capacity', done => {
+    checkInvalidValue('eventCapacity', -1, 100, done);
+  });
+
+  it('enforces nonzero event capacity', done => {
+    checkInvalidValue('eventCapacity', 0, 100, done);
+  });
 
   it('enforces minimum flush interval', done => {
     checkInvalidValue('flushInterval', 1999, 2000, done);

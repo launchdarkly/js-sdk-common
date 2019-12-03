@@ -21,6 +21,10 @@ export const clientNotReady = function() {
   return 'LaunchDarkly client is not ready';
 };
 
+export const eventCapacityExceeded = function() {
+  return 'Exceeded event queue capacity. Increase capacity to avoid dropping events.';
+};
+
 export const eventWithoutUser = function() {
   return 'Be sure to call `identify` in the LaunchDarkly client: https://docs.launchdarkly.com/docs/js-sdk-reference#section-analytics-events';
 };
