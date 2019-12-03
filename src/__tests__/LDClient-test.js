@@ -54,17 +54,6 @@ describe('LDClient', () => {
       await gotInited;
     });
 
-    it('should emit an error when an invalid samplingInterval is specified', async () => {
-      const client = platform.testing.makeClient(envName, user, {
-        samplingInterval: 'totally not a number',
-      });
-      const gotError = promiseListener();
-      client.on('error', gotError.callback);
-
-      const err = await gotError;
-      expect(err.message).toEqual('Invalid sampling interval configured. Sampling interval must be an integer >= 0.');
-    });
-
     it('should emit an error when initialize is called without an environment key', async () => {
       const client = platform.testing.makeClient('', user);
       const gotError = promiseListener();
