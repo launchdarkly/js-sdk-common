@@ -85,9 +85,9 @@ export const bootstrapInvalid = function() {
 
 export const deprecated = function(oldName, newName) {
   if (newName) {
-    return '[LaunchDarkly] "' + oldName + '" is deprecated, please use "' + newName + '"';
+    return '"' + oldName + '" is deprecated, please use "' + newName + '"';
   }
-  return '[LaunchDarkly] "' + oldName + '" is deprecated';
+  return '"' + oldName + '" is deprecated';
 };
 
 export const httpErrorMessage = function(status, context, retryMessage) {
@@ -127,6 +127,14 @@ export const streamError = function(err, streamReconnectDelay) {
     ' milliseconds.'
   );
 };
+
+export const unknownOption = name => 'Ignoring unknown config option "' + name + '"';
+
+export const wrongOptionType = (name, expectedType, actualType) =>
+  'Config option "' + name + '" should be of type ' + expectedType + ', got ' + actualType + ', using default value';
+
+export const wrongOptionTypeBoolean = (name, actualType) =>
+  'Config option "' + name + '" should be a boolean, got ' + actualType + ', converting to boolean';
 
 export const debugPolling = function(url) {
   return 'polling for feature flags at ' + url;
