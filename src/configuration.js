@@ -25,6 +25,10 @@ export function validate(options, emitter, extraDefaults, logger) {
   const defaults = utils.extend({ logger: logger }, baseDefaults, extraDefaults);
 
   const typesForPropertiesWithNoDefault = {
+    // Add a value here if we add a configuration property whose type cannot be determined by looking
+    // in baseDefaults (for instance, the default is null but if the value isn't null it should be a
+    // string). The allowable values are 'boolean', 'string', 'number', 'object', 'function', or
+    // 'factory' (the last one means it can be either a function or an object).
     bootstrap: 'any', // could be object or 'localstorage'
     stateProvider: 'object',
   };
