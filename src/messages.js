@@ -131,7 +131,7 @@ export const streamError = function(err, streamReconnectDelay) {
 export const unknownOption = name => 'Ignoring unknown config option "' + name + '"';
 
 export const wrongOptionType = (name, expectedType, actualType) =>
-  'Config option "' + name + '" should be a ' + expectedType + ', got ' + actualType + ', using default value';
+  'Config option "' + name + '" should be of type ' + expectedType + ', got ' + actualType + ', using default value';
 
 export const wrongOptionTypeBoolean = (name, actualType) =>
   'Config option "' + name + '" should be a boolean, got ' + actualType + ', converting to boolean';
