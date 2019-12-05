@@ -1,17 +1,24 @@
-import EventSource, { sources } from './EventSource-mock';
-
 import * as utils from '../utils';
-import * as stubPlatform from './stubPlatform';
-import { asyncSleep, jsonResponse, makeBootstrap, makeDefaultServer, promiseListener } from './testUtils';
 
-describe('LDClient', () => {
+import { eventSink, sleepAsync, withCloseable } from 'launchdarkly-js-test-helpers';
+
+import EventSource, { sources } from './EventSource-mock';
+import { respondJson } from './mockHttp';
+import * as stubPlatform from './stubPlatform';
+import { makeBootstrap } from './testUtils';
+
+// These tests verify the client's optional streaming behavior. The actual implementation of
+// the SSE client is provided by the platform-specific SDKs (e.g. the browser SDK uses
+// EventSource, other SDKs use the js-eventsource polyfill) so these tests use only a mock
+// implementation, verifying that the SDK interacts properly with the stream abstraction.
+
+describe('LDClient streaming', () => {
   const envName = 'UNKNOWN_ENVIRONMENT_ID';
   const lsKey = 'ld:UNKNOWN_ENVIRONMENT_ID:' + utils.btoa('{"key":"user"}');
   const user = { key: 'user' };
   const encodedUser = 'eyJrZXkiOiJ1c2VyIn0';
   const hash = '012345789abcde';
   let platform;
-  let server;
 
   beforeEach(() => {
     Object.defineProperty(window, 'EventSource', {
@@ -22,13 +29,16 @@ describe('LDClient', () => {
       delete sources[key];
     }
 
-    server = makeDefaultServer();
     platform = stubPlatform.defaults();
   });
 
-  afterEach(() => {
-    server.restore();
-  });
+  async function withClientAndServer(extraConfig, asyncCallback) {
+    const server = platform.testing.http.newServer();
+    server.byDefault(respondJson({}));
+    const config = { ...extraConfig, baseUrl: server.url };
+    const client = platform.testing.makeClient(envName, user, config);
+    return await withCloseable(client, async () => await asyncCallback(client, server));
+  }
 
   describe('streaming/event listening', () => {
     const streamUrl = 'https://clientstream.launchdarkly.com';
@@ -47,516 +57,541 @@ describe('LDClient', () => {
     }
 
     it('does not connect to the stream by default', async () => {
-      const client = platform.testing.makeClient(envName, user);
-      await client.waitForInitialization();
+      await withClientAndServer({}, async client => {
+        await client.waitForInitialization();
 
-      expectNoStreamIsOpen();
+        expectNoStreamIsOpen();
+      });
     });
 
     it('connects to the stream if options.streaming is true', async () => {
-      const client = platform.testing.makeClient(envName, user, { streaming: true });
-      await client.waitForInitialization();
+      await withClientAndServer({ streaming: true }, async client => {
+        await client.waitForInitialization();
 
-      expectStreamUrlIsOpen(fullStreamUrlWithUser);
+        expectStreamUrlIsOpen(fullStreamUrlWithUser);
+      });
     });
 
     describe('setStreaming()', () => {
       it('can connect to the stream', async () => {
-        const client = platform.testing.makeClient(envName, user);
-        await client.waitForInitialization();
+        await withClientAndServer({}, async client => {
+          await client.waitForInitialization();
 
-        client.setStreaming(true);
-        expectStreamUrlIsOpen(fullStreamUrlWithUser);
+          client.setStreaming(true);
+          expectStreamUrlIsOpen(fullStreamUrlWithUser);
+        });
       });
 
       it('can disconnect from the stream', async () => {
-        const client = platform.testing.makeClient(envName, user);
-        await client.waitForInitialization();
+        await withClientAndServer({}, async client => {
+          await client.waitForInitialization();
 
-        client.setStreaming(true);
-        expectStreamUrlIsOpen(fullStreamUrlWithUser);
-        client.setStreaming(false);
-        expectNoStreamIsOpen();
+          client.setStreaming(true);
+          expectStreamUrlIsOpen(fullStreamUrlWithUser);
+          client.setStreaming(false);
+          expectNoStreamIsOpen();
+        });
       });
     });
 
     describe('on("change")', () => {
       it('connects to the stream if not otherwise overridden', async () => {
-        const client = platform.testing.makeClient(envName, user);
-        await client.waitForInitialization();
-        client.on('change', () => {});
+        await withClientAndServer({}, async client => {
+          await client.waitForInitialization();
+          client.on('change', () => {});
 
-        expectStreamUrlIsOpen(fullStreamUrlWithUser);
+          expectStreamUrlIsOpen(fullStreamUrlWithUser);
+        });
       });
 
       it('also connects if listening for a specific flag', async () => {
-        const client = platform.testing.makeClient(envName, user);
-        await client.waitForInitialization();
-        client.on('change:flagkey', () => {});
+        await withClientAndServer({}, async client => {
+          await client.waitForInitialization();
+          client.on('change:flagkey', () => {});
 
-        expectStreamUrlIsOpen(fullStreamUrlWithUser);
+          expectStreamUrlIsOpen(fullStreamUrlWithUser);
+        });
       });
 
       it('does not connect if some other kind of event was specified', async () => {
-        const client = platform.testing.makeClient(envName, user);
-        await client.waitForInitialization();
-        client.on('error', () => {});
+        await withClientAndServer({}, async client => {
+          await client.waitForInitialization();
+          client.on('error', () => {});
 
-        expectNoStreamIsOpen();
+          expectNoStreamIsOpen();
+        });
       });
 
       it('does not connect if options.streaming is explicitly set to false', async () => {
-        const client = platform.testing.makeClient(envName, user, { streaming: false });
-        await client.waitForInitialization();
-        client.on('change', () => {});
+        await withClientAndServer({ streaming: false }, async client => {
+          await client.waitForInitialization();
+          client.on('change', () => {});
 
-        expectNoStreamIsOpen();
+          expectNoStreamIsOpen();
+        });
       });
 
       it('does not connect if setStreaming(false) was called', async () => {
-        const client = platform.testing.makeClient(envName, user);
-        await client.waitForInitialization();
-        client.setStreaming(false);
-        client.on('change', () => {});
+        await withClientAndServer({}, async client => {
+          await client.waitForInitialization();
+          client.setStreaming(false);
+          client.on('change', () => {});
 
-        expectNoStreamIsOpen();
+          expectNoStreamIsOpen();
+        });
       });
     });
 
     describe('off("change")', () => {
       it('disconnects from the stream if all event listeners are removed', async () => {
-        const client = platform.testing.makeClient(envName, user);
-        const listener1 = () => {};
-        const listener2 = () => {};
-        await client.waitForInitialization();
+        await withClientAndServer({}, async client => {
+          const listener1 = () => {};
+          const listener2 = () => {};
+          await client.waitForInitialization();
 
-        client.on('change', listener1);
-        client.on('change:flagkey', listener2);
-        client.on('error', () => {});
-        expectStreamUrlIsOpen(fullStreamUrlWithUser);
+          client.on('change', listener1);
+          client.on('change:flagKey', listener2);
+          client.on('error', () => {});
+          expectStreamUrlIsOpen(fullStreamUrlWithUser);
 
-        client.off('change', listener1);
-        expectStreamUrlIsOpen(fullStreamUrlWithUser);
+          client.off('change', listener1);
+          expectStreamUrlIsOpen(fullStreamUrlWithUser);
 
-        client.off('change:flagkey', listener2);
-        expectNoStreamIsOpen();
+          client.off('change:flagKey', listener2);
+          expectNoStreamIsOpen();
+        });
       });
 
       it('does not disconnect if setStreaming(true) was called, but still removes event listener', async () => {
         const changes1 = [];
         const changes2 = [];
 
-        const client = platform.testing.makeClient(envName, user);
-        const listener1 = allValues => changes1.push(allValues);
-        const listener2 = newValue => changes2.push(newValue);
-        await client.waitForInitialization();
+        await withClientAndServer({}, async client => {
+          const listener1 = allValues => changes1.push(allValues);
+          const listener2 = newValue => changes2.push(newValue);
+          await client.waitForInitialization();
 
-        client.setStreaming(true);
+          client.setStreaming(true);
 
-        client.on('change', listener1);
-        client.on('change:flag', listener2);
-        expectStreamUrlIsOpen(fullStreamUrlWithUser);
+          client.on('change', listener1);
+          client.on('change:flagKey', listener2);
+          expectStreamUrlIsOpen(fullStreamUrlWithUser);
 
-        streamEvents().put({
-          data: '{"flag":{"value":"a","version":1}}',
+          streamEvents().put({
+            data: '{"flagKey":{"value":"a","version":1}}',
+          });
+
+          expect(changes1).toEqual([{ flagKey: { current: 'a', previous: undefined } }]);
+          expect(changes2).toEqual(['a']);
+
+          client.off('change', listener1);
+          expectStreamUrlIsOpen(fullStreamUrlWithUser);
+
+          streamEvents().put({
+            data: '{"flagKey":{"value":"b","version":1}}',
+          });
+
+          expect(changes1).toEqual([{ flagKey: { current: 'a', previous: undefined } }]);
+          expect(changes2).toEqual(['a', 'b']);
+
+          client.off('change:flagKey', listener2);
+          expectStreamUrlIsOpen(fullStreamUrlWithUser);
+
+          streamEvents().put({
+            data: '{"flagKey":{"value":"c","version":1}}',
+          });
+
+          expect(changes1).toEqual([{ flagKey: { current: 'a', previous: undefined } }]);
+          expect(changes2).toEqual(['a', 'b']);
         });
-
-        expect(changes1).toEqual([{ flag: { current: 'a', previous: undefined } }]);
-        expect(changes2).toEqual(['a']);
-
-        client.off('change', listener1);
-        expectStreamUrlIsOpen(fullStreamUrlWithUser);
-
-        streamEvents().put({
-          data: '{"flag":{"value":"b","version":1}}',
-        });
-
-        expect(changes1).toEqual([{ flag: { current: 'a', previous: undefined } }]);
-        expect(changes2).toEqual(['a', 'b']);
-
-        client.off('change:flag', listener2);
-        expectStreamUrlIsOpen(fullStreamUrlWithUser);
-
-        streamEvents().put({
-          data: '{"flag":{"value":"c","version":1}}',
-        });
-
-        expect(changes1).toEqual([{ flag: { current: 'a', previous: undefined } }]);
-        expect(changes2).toEqual(['a', 'b']);
       });
     });
 
     it('passes the secure mode hash in the stream URL if provided', async () => {
-      const client = platform.testing.makeClient(envName, user, { hash: hash });
-      await client.waitForInitialization();
-      client.on('change:flagkey', () => {});
+      await withClientAndServer({ hash }, async client => {
+        await client.waitForInitialization();
+        client.on('change:flagKey', () => {});
 
-      expectStreamUrlIsOpen(fullStreamUrlWithUser + '?h=' + hash);
+        expectStreamUrlIsOpen(fullStreamUrlWithUser + '?h=' + hash);
+      });
     });
 
     it('passes withReasons parameter if provided', async () => {
-      const client = platform.testing.makeClient(envName, user, { evaluationReasons: true });
-      await client.waitForInitialization();
-      client.setStreaming(true);
+      await withClientAndServer({ evaluationReasons: true }, async client => {
+        await client.waitForInitialization();
+        client.setStreaming(true);
 
-      expectStreamUrlIsOpen(fullStreamUrlWithUser + '?withReasons=true');
+        expectStreamUrlIsOpen(fullStreamUrlWithUser + '?withReasons=true');
+      });
     });
 
     it('passes secure mode hash and withReasons if provided', async () => {
-      const client = platform.testing.makeClient(envName, user, { hash: hash, evaluationReasons: true });
-      await client.waitForInitialization();
-      client.setStreaming(true);
+      await withClientAndServer({ hash, evaluationReasons: true }, async client => {
+        await client.waitForInitialization();
+        client.setStreaming(true);
 
-      expectStreamUrlIsOpen(fullStreamUrlWithUser + '?h=' + hash + '&withReasons=true');
+        expectStreamUrlIsOpen(fullStreamUrlWithUser + '?h=' + hash + '&withReasons=true');
+      });
     });
 
     it('handles stream ping message by getting flags', async () => {
-      server.respondWith(jsonResponse({ 'enable-foo': { value: true, version: 1 } }));
+      await withClientAndServer({}, async (client, server) => {
+        server.byDefault(respondJson({ flagKey: { value: true, version: 1 } }));
+        await client.waitForInitialization();
+        client.setStreaming(true);
 
-      const client = platform.testing.makeClient(envName, user);
-      await client.waitForInitialization();
-      client.setStreaming(true);
+        streamEvents().ping();
+        await sleepAsync(20); // give response handler a chance to execute
 
-      streamEvents().ping();
-      await asyncSleep(20); // give response handler a chance to execute
-
-      expect(client.variation('enable-foo')).toEqual(true);
+        expect(client.variation('flagKey')).toEqual(true);
+      });
     });
 
     it('handles stream put message by updating flags', async () => {
-      const client = platform.testing.makeClient(envName, user);
-      await client.waitForInitialization();
-      client.setStreaming(true);
+      await withClientAndServer({}, async client => {
+        await client.waitForInitialization();
+        client.setStreaming(true);
 
-      streamEvents().put({
-        data: '{"enable-foo":{"value":true,"version":1}}',
+        streamEvents().put({
+          data: '{"flagKey":{"value":true,"version":1}}',
+        });
+
+        expect(client.variation('flagKey')).toEqual(true);
       });
-
-      expect(client.variation('enable-foo')).toEqual(true);
     });
 
     it('updates local storage for put message if using local storage', async () => {
-      const platform = stubPlatform.defaults();
-      platform.testing.setLocalStorageImmediately(lsKey, '{"enable-foo":false}');
+      platform.testing.setLocalStorageImmediately(lsKey, '{"flagKey":false}');
 
-      const client = platform.testing.makeClient(envName, user, { bootstrap: 'localstorage' }, platform);
-      await client.waitForInitialization();
-      client.setStreaming(true);
+      await withClientAndServer({ bootstrap: 'localstorage' }, async client => {
+        await client.waitForInitialization();
+        client.setStreaming(true);
 
-      streamEvents().put({
-        data: '{"enable-foo":{"value":true,"version":1}}',
+        streamEvents().put({
+          data: '{"flagKey":{"value":true,"version":1}}',
+        });
+
+        expect(client.variation('flagKey')).toEqual(true);
+        const storageData = JSON.parse(platform.testing.getLocalStorageImmediately(lsKey));
+        expect(storageData).toMatchObject({ flagKey: { value: true, version: 1 } });
       });
-
-      expect(client.variation('enable-foo')).toEqual(true);
-      const storageData = JSON.parse(platform.testing.getLocalStorageImmediately(lsKey));
-      expect(storageData).toMatchObject({ 'enable-foo': { value: true, version: 1 } });
     });
 
     it('fires global change event when flags are updated from put event', async () => {
-      const client = platform.testing.makeClient(envName, user, { bootstrap: { 'enable-foo': false } });
-      await client.waitForInitialization();
+      await withClientAndServer({ bootstrap: { flagKey: false } }, async client => {
+        await client.waitForInitialization();
 
-      const receivedChange = promiseListener();
-      client.on('change', receivedChange.callback);
+        const receivedChange = eventSink(client, 'change');
 
-      streamEvents().put({
-        data: '{"enable-foo":{"value":true,"version":1}}',
-      });
+        streamEvents().put({
+          data: '{"flagKey":{"value":true,"version":1}}',
+        });
 
-      const changes = await receivedChange;
-      expect(changes).toEqual({
-        'enable-foo': { current: true, previous: false },
+        const changes = await receivedChange.take();
+        expect(changes).toEqual({
+          flagKey: { current: true, previous: false },
+        });
       });
     });
 
     it('does not fire change event if new and old values are equivalent JSON objects', async () => {
-      const client = platform.testing.makeClient(envName, user, {
+      const config = {
         bootstrap: {
           'will-change': 3,
           'wont-change': { a: 1, b: 2 },
         },
-      });
-      await client.waitForInitialization();
-
-      const receivedChange = promiseListener();
-      client.on('change', receivedChange.callback);
-
-      const putData = {
-        'will-change': { value: 4, version: 2 },
-        'wont-change': { value: { b: 2, a: 1 }, version: 2 },
       };
-      streamEvents().put({ data: JSON.stringify(putData) });
+      await withClientAndServer(config, async client => {
+        await client.waitForInitialization();
 
-      const changes = await receivedChange;
-      expect(changes).toEqual({
-        'will-change': { current: 4, previous: 3 },
+        const receivedChange = eventSink(client, 'change');
+
+        const putData = {
+          'will-change': { value: 4, version: 2 },
+          'wont-change': { value: { b: 2, a: 1 }, version: 2 },
+        };
+        streamEvents().put({ data: JSON.stringify(putData) });
+
+        const changes = await receivedChange.take();
+        expect(changes).toEqual({
+          'will-change': { current: 4, previous: 3 },
+        });
       });
     });
 
     it('fires individual change event when flags are updated from put event', async () => {
-      const client = platform.testing.makeClient(envName, user, { bootstrap: { 'enable-foo': false } });
-      await client.waitForInitialization();
+      await withClientAndServer({ bootstrap: { flagKey: false } }, async client => {
+        await client.waitForInitialization();
 
-      const receivedChange = promiseListener();
-      client.on('change:enable-foo', receivedChange.callback);
+        const receivedChange = eventSink(client, 'change:flagKey');
 
-      streamEvents().put({
-        data: '{"enable-foo":{"value":true,"version":1}}',
+        streamEvents().put({
+          data: '{"flagKey":{"value":true,"version":1}}',
+        });
+
+        const args = await receivedChange.take();
+        expect(args).toEqual([true, false]);
       });
-
-      const args = await receivedChange;
-      expect(args).toEqual([true, false]);
     });
 
     it('handles patch message by updating flag', async () => {
-      const client = platform.testing.makeClient(envName, user, { bootstrap: { 'enable-foo': false } });
-      await client.waitForInitialization();
-      client.setStreaming(true);
+      await withClientAndServer({ bootstrap: { flagKey: false } }, async client => {
+        await client.waitForInitialization();
+        client.setStreaming(true);
 
-      streamEvents().patch({ data: '{"key":"enable-foo","value":true,"version":1}' });
+        streamEvents().patch({ data: '{"key":"flagKey","value":true,"version":1}' });
 
-      expect(client.variation('enable-foo')).toEqual(true);
+        expect(client.variation('flagKey')).toEqual(true);
+      });
     });
 
     it('does not update flag if patch version < flag version', async () => {
-      const initData = makeBootstrap({ 'enable-foo': { value: 'a', version: 2 } });
-      const client = platform.testing.makeClient(envName, user, { bootstrap: initData });
-      await client.waitForInitialization();
+      const initData = makeBootstrap({ flagKey: { value: 'a', version: 2 } });
+      await withClientAndServer({ bootstrap: initData }, async client => {
+        await client.waitForInitialization();
 
-      expect(client.variation('enable-foo')).toEqual('a');
+        expect(client.variation('flagKey')).toEqual('a');
 
-      client.setStreaming(true);
+        client.setStreaming(true);
 
-      streamEvents().patch({ data: '{"key":"enable-foo","value":"b","version":1}' });
+        streamEvents().patch({ data: '{"key":"flagKey","value":"b","version":1}' });
 
-      expect(client.variation('enable-foo')).toEqual('a');
+        expect(client.variation('flagKey')).toEqual('a');
+      });
     });
 
     it('does not update flag if patch version == flag version', async () => {
-      const initData = makeBootstrap({ 'enable-foo': { value: 'a', version: 2 } });
-      const client = platform.testing.makeClient(envName, user, { bootstrap: initData });
-      await client.waitForInitialization();
+      const initData = makeBootstrap({ flagKey: { value: 'a', version: 2 } });
+      await withClientAndServer({ bootstrap: initData }, async client => {
+        await client.waitForInitialization();
 
-      expect(client.variation('enable-foo')).toEqual('a');
+        expect(client.variation('flagKey')).toEqual('a');
 
-      client.setStreaming(true);
+        client.setStreaming(true);
 
-      streamEvents().patch({ data: '{"key":"enable-foo","value":"b","version":2}' });
+        streamEvents().patch({ data: '{"key":"flagKey","value":"b","version":2}' });
 
-      expect(client.variation('enable-foo')).toEqual('a');
+        expect(client.variation('flagKey')).toEqual('a');
+      });
     });
 
     it('updates flag if patch has a version and flag has no version', async () => {
-      const initData = makeBootstrap({ 'enable-foo': { value: 'a' } });
-      const client = platform.testing.makeClient(envName, user, { bootstrap: initData });
-      await client.waitForInitialization();
+      const initData = makeBootstrap({ flagKey: { value: 'a' } });
+      await withClientAndServer({ bootstrap: initData }, async client => {
+        await client.waitForInitialization();
 
-      expect(client.variation('enable-foo')).toEqual('a');
+        expect(client.variation('flagKey')).toEqual('a');
 
-      client.setStreaming(true);
+        client.setStreaming(true);
 
-      streamEvents().patch({ data: '{"key":"enable-foo","value":"b","version":1}' });
+        streamEvents().patch({ data: '{"key":"flagKey","value":"b","version":1}' });
 
-      expect(client.variation('enable-foo')).toEqual('b');
+        expect(client.variation('flagKey')).toEqual('b');
+      });
     });
 
     it('updates flag if flag has a version and patch has no version', async () => {
-      const initData = makeBootstrap({ 'enable-foo': { value: 'a', version: 2 } });
-      const client = platform.testing.makeClient(envName, user, { bootstrap: initData });
-      await client.waitForInitialization();
+      const initData = makeBootstrap({ flagKey: { value: 'a', version: 2 } });
+      await withClientAndServer({ bootstrap: initData }, async client => {
+        await client.waitForInitialization();
 
-      expect(client.variation('enable-foo')).toEqual('a');
+        expect(client.variation('flagKey')).toEqual('a');
 
-      client.setStreaming(true);
+        client.setStreaming(true);
 
-      streamEvents().patch({ data: '{"key":"enable-foo","value":"b"}' });
+        streamEvents().patch({ data: '{"key":"flagKey","value":"b"}' });
 
-      expect(client.variation('enable-foo')).toEqual('b');
+        expect(client.variation('flagKey')).toEqual('b');
+      });
     });
 
     it('updates local storage for patch message if using local storage', async () => {
-      const platform = stubPlatform.defaults();
-      platform.testing.setLocalStorageImmediately(lsKey, '{"enable-foo":false}');
+      platform.testing.setLocalStorageImmediately(lsKey, '{"flagKey":false}');
 
-      const client = platform.testing.makeClient(envName, user, { bootstrap: 'localstorage' }, platform);
-      await client.waitForInitialization();
-      client.setStreaming(true);
+      await withClientAndServer({ bootstrap: 'localstorage' }, async client => {
+        await client.waitForInitialization();
+        client.setStreaming(true);
 
-      streamEvents().put({
-        data: '{"enable-foo":{"value":true,"version":1}}',
+        streamEvents().put({
+          data: '{"flagKey":{"value":true,"version":1}}',
+        });
+
+        expect(client.variation('flagKey')).toEqual(true);
+        const storageData = JSON.parse(platform.testing.getLocalStorageImmediately(lsKey));
+        expect(storageData).toMatchObject({ flagKey: { value: true, version: 1 } });
       });
-
-      expect(client.variation('enable-foo')).toEqual(true);
-      const storageData = JSON.parse(platform.testing.getLocalStorageImmediately(lsKey));
-      expect(storageData).toMatchObject({ 'enable-foo': { value: true, version: 1 } });
     });
 
     it('fires global change event when flag is updated from patch event', async () => {
-      const client = platform.testing.makeClient(envName, user, { bootstrap: { 'enable-foo': false } });
-      await client.waitForInitialization();
+      await withClientAndServer({ bootstrap: { flagKey: false } }, async client => {
+        await client.waitForInitialization();
 
-      const receivedChange = promiseListener();
-      client.on('change', receivedChange.callback);
+        const receivedChange = eventSink(client, 'change');
 
-      streamEvents().patch({
-        data: '{"key":"enable-foo","value":true,"version":1}',
-      });
+        streamEvents().patch({
+          data: '{"key":"flagKey","value":true,"version":1}',
+        });
 
-      const changes = await receivedChange;
-      expect(changes).toEqual({
-        'enable-foo': { current: true, previous: false },
+        const changes = await receivedChange.take();
+        expect(changes).toEqual({
+          flagKey: { current: true, previous: false },
+        });
       });
     });
 
     it('fires individual change event when flag is updated from patch event', async () => {
-      const client = platform.testing.makeClient(envName, user, { bootstrap: { 'enable-foo': false } });
-      await client.waitForInitialization();
+      await withClientAndServer({ bootstrap: { flagKey: false } }, async client => {
+        await client.waitForInitialization();
 
-      const receivedChange = promiseListener();
-      client.on('change:enable-foo', receivedChange.callback);
+        const receivedChange = eventSink(client, 'change:flagKey');
 
-      streamEvents().patch({
-        data: '{"key":"enable-foo","value":true,"version":1}',
+        streamEvents().patch({
+          data: '{"key":"flagKey","value":true,"version":1}',
+        });
+
+        const args = await receivedChange.take();
+        expect(args).toEqual([true, false]);
       });
-
-      const args = await receivedChange;
-      expect(args).toEqual([true, false]);
     });
 
     it('fires global change event when flag is newly created from patch event', async () => {
-      const client = platform.testing.makeClient(envName, user);
-      await client.waitForInitialization();
+      await withClientAndServer({}, async client => {
+        await client.waitForInitialization();
 
-      const receivedChange = promiseListener();
-      client.on('change', receivedChange.callback);
+        const receivedChange = eventSink(client, 'change');
 
-      streamEvents().patch({
-        data: '{"key":"enable-foo","value":true,"version":1}',
-      });
+        streamEvents().patch({
+          data: '{"key":"flagKey","value":true,"version":1}',
+        });
 
-      const changes = await receivedChange;
-      expect(changes).toEqual({
-        'enable-foo': { current: true },
+        const changes = await receivedChange.take();
+        expect(changes).toEqual({
+          flagKey: { current: true },
+        });
       });
     });
 
     it('fires individual change event when flag is newly created from patch event', async () => {
-      const client = platform.testing.makeClient(envName, user);
-      await client.waitForInitialization();
+      await withClientAndServer({}, async client => {
+        await client.waitForInitialization();
 
-      const receivedChange = promiseListener();
-      client.on('change:enable-foo', receivedChange.callback);
+        const receivedChange = eventSink(client, 'change:flagKey');
 
-      streamEvents().patch({
-        data: '{"key":"enable-foo","value":true,"version":1}',
+        streamEvents().patch({
+          data: '{"key":"flagKey","value":true,"version":1}',
+        });
+
+        const args = await receivedChange.take();
+        expect(args).toEqual([true, undefined]);
       });
-
-      const args = await receivedChange;
-      expect(args).toEqual([true, undefined]);
     });
 
     it('handles delete message by deleting flag', async () => {
-      const client = platform.testing.makeClient(envName, user, { bootstrap: { 'enable-foo': false } });
-      await client.waitForInitialization();
-      client.setStreaming(true);
+      await withClientAndServer({ bootstrap: { flagKey: false } }, async client => {
+        await client.waitForInitialization();
+        client.setStreaming(true);
 
-      streamEvents().delete({
-        data: '{"key":"enable-foo","version":1}',
+        streamEvents().delete({
+          data: '{"key":"flagKey","version":1}',
+        });
+
+        expect(client.variation('flagKey')).toBeUndefined();
       });
-
-      expect(client.variation('enable-foo')).toBeUndefined();
     });
 
     it('handles delete message for unknown flag by storing placeholder', async () => {
-      const client = platform.testing.makeClient(envName, user);
-      await client.waitForInitialization();
-      client.setStreaming(true);
+      await withClientAndServer({}, async client => {
+        await client.waitForInitialization();
+        client.setStreaming(true);
 
-      streamEvents().delete({
-        data: '{"key":"mystery","version":3}',
+        streamEvents().delete({
+          data: '{"key":"mystery","version":3}',
+        });
+
+        // The following patch message should be ignored because it has a lower version than the deleted placeholder
+        streamEvents().patch({
+          data: '{"key":"mystery","value":"yes","version":2}',
+        });
+
+        expect(client.variation('mystery')).toBeUndefined();
       });
-
-      // The following patch message should be ignored because it has a lower version than the deleted placeholder
-      streamEvents().patch({
-        data: '{"key":"mystery","value":"yes","version":2}',
-      });
-
-      expect(client.variation('mystery')).toBeUndefined();
     });
 
     it('ignores delete message with lower version', async () => {
-      const initData = makeBootstrap({ flag: { value: 'yes', version: 3 } });
-      const client = platform.testing.makeClient(envName, user, { bootstrap: initData });
-      await client.waitForInitialization();
-      client.setStreaming(true);
+      const initData = makeBootstrap({ flagKey: { value: 'yes', version: 3 } });
+      await withClientAndServer({ bootstrap: initData }, async client => {
+        await client.waitForInitialization();
+        client.setStreaming(true);
 
-      streamEvents().delete({
-        data: '{"key":"flag","version":2}',
+        streamEvents().delete({
+          data: '{"key":"flagKey","version":2}',
+        });
+
+        expect(client.variation('flagKey')).toEqual('yes');
       });
-
-      expect(client.variation('flag')).toEqual('yes');
     });
 
     it('fires global change event when flag is deleted', async () => {
-      const client = platform.testing.makeClient(envName, user, { bootstrap: { 'enable-foo': true } });
-      await client.waitForInitialization();
+      await withClientAndServer({ bootstrap: { flagKey: true } }, async client => {
+        await client.waitForInitialization();
 
-      const receivedChange = promiseListener();
-      client.on('change', receivedChange.callback);
+        const receivedChange = eventSink(client, 'change');
 
-      streamEvents().delete({
-        data: '{"key":"enable-foo","version":1}',
-      });
+        streamEvents().delete({
+          data: '{"key":"flagKey","version":1}',
+        });
 
-      const changes = await receivedChange;
-      expect(changes).toEqual({
-        'enable-foo': { previous: true },
+        const changes = await receivedChange.take();
+        expect(changes).toEqual({
+          flagKey: { previous: true },
+        });
       });
     });
 
     it('fires individual change event when flag is deleted', async () => {
-      const client = platform.testing.makeClient(envName, user, { bootstrap: { 'enable-foo': true } });
-      await client.waitForInitialization();
+      await withClientAndServer({ bootstrap: { flagKey: true } }, async client => {
+        await client.waitForInitialization();
 
-      const receivedChange = promiseListener();
-      client.on('change:enable-foo', receivedChange.callback);
+        const receivedChange = eventSink(client, 'change:flagKey');
 
-      streamEvents().delete({
-        data: '{"key":"enable-foo","version":1}',
+        streamEvents().delete({
+          data: '{"key":"flagKey","version":1}',
+        });
+
+        const args = await receivedChange.take();
+        expect(args).toEqual([undefined, true]);
       });
-
-      const args = await receivedChange;
-      expect(args).toEqual([undefined, true]);
     });
 
     it('updates local storage for delete message if using local storage', async () => {
-      const platform = stubPlatform.defaults();
-      platform.testing.setLocalStorageImmediately(lsKey, '{"enable-foo":false}');
+      platform.testing.setLocalStorageImmediately(lsKey, '{"flagKey":false}');
 
-      const client = platform.testing.makeClient(envName, user, { bootstrap: 'localstorage' }, platform);
-      await client.waitForInitialization();
-      client.setStreaming(true);
+      await withClientAndServer({ bootstrap: 'localstorage' }, async client => {
+        await client.waitForInitialization();
+        client.setStreaming(true);
 
-      streamEvents().delete({
-        data: '{"key":"enable-foo","version":1}',
+        streamEvents().delete({
+          data: '{"key":"flagKey","version":1}',
+        });
+
+        expect(client.variation('flagKey')).toEqual(undefined);
+        const storageData = JSON.parse(platform.testing.getLocalStorageImmediately(lsKey));
+        expect(storageData).toMatchObject({ flagKey: { version: 1, deleted: true } });
       });
-
-      expect(client.variation('enable-foo')).toEqual(undefined);
-      const storageData = JSON.parse(platform.testing.getLocalStorageImmediately(lsKey));
-      expect(storageData).toMatchObject({ 'enable-foo': { version: 1, deleted: true } });
     });
 
     it('reconnects to stream if the user changes', async () => {
       const user2 = { key: 'user2' };
       const encodedUser2 = 'eyJrZXkiOiJ1c2VyMiJ9';
-      const client = platform.testing.makeClient(envName, user);
-      await client.waitForInitialization();
-      client.setStreaming(true);
+      await withClientAndServer({}, async client => {
+        await client.waitForInitialization();
+        client.setStreaming(true);
 
-      expect(sources[streamUrl + '/eval/' + envName + '/' + encodedUser]).toBeDefined();
+        expect(sources[streamUrl + '/eval/' + envName + '/' + encodedUser]).toBeDefined();
 
-      await client.identify(user2);
-      expect(sources[streamUrl + '/eval/' + envName + '/' + encodedUser2]).toBeDefined();
+        await client.identify(user2);
+        expect(sources[streamUrl + '/eval/' + envName + '/' + encodedUser2]).toBeDefined();
+      });
     });
   });
 });

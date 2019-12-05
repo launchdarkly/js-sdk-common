@@ -1,31 +1,3 @@
-import sinon from 'sinon';
-
-export function asyncSleep(delay) {
-  return new Promise(resolve => {
-    setTimeout(resolve, delay);
-  });
-}
-
-export function asyncify(f) {
-  return new Promise(resolve => f(resolve));
-}
-
-export function errorResponse(status) {
-  return [status, {}, ''];
-}
-
-export function jsonResponse(data) {
-  return [200, { 'Content-Type': 'application/json' }, JSON.stringify(data)];
-}
-
-export function makeDefaultServer() {
-  const server = sinon.createFakeServer();
-  server.autoRespond = true;
-  server.autoRespondAfter = 0;
-  server.respondWith(jsonResponse({})); // default 200 response for tests that don't specify otherwise
-  return server;
-}
-
 export const numericUser = {
   key: 1,
   secondary: 2,
