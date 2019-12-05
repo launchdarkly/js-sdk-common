@@ -507,7 +507,10 @@ export function initialize(env, user, specifiedOptions, platform, extraDefaults)
     });
   });
 
-  if (typeof options.bootstrap === 'string' && options.bootstrap.toUpperCase() === 'LOCALSTORAGE') {
+  if (typeof options.bootstrap === 'string' &&
+    // Support local or session storage names being passed as a bootstrap option.
+    ['SESSIONSTORAGE', 'LOCALSTORAGE'].includes(options.bootstrap.toUpperCase())
+  ) {
     if (store) {
       useLocalStorage = true;
     } else {
