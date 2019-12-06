@@ -2,7 +2,7 @@ import * as utils from '../utils';
 
 import { eventSink, sleepAsync, withCloseable } from 'launchdarkly-js-test-helpers';
 
-import EventSource, { sources } from './EventSource-mock';
+import EventSource from './EventSource-mock';
 import { respondJson } from './mockHttp';
 import * as stubPlatform from './stubPlatform';
 import { makeBootstrap } from './testUtils';
@@ -21,14 +21,6 @@ describe('LDClient streaming', () => {
   let platform;
 
   beforeEach(() => {
-    Object.defineProperty(window, 'EventSource', {
-      value: EventSource,
-      writable: true,
-    });
-    for (const key in sources) {
-      delete sources[key];
-    }
-
     platform = stubPlatform.defaults();
   });
 
@@ -44,16 +36,14 @@ describe('LDClient streaming', () => {
     const streamUrl = 'https://clientstream.launchdarkly.com';
     const fullStreamUrlWithUser = streamUrl + '/eval/' + envName + '/' + encodedUser;
 
-    function streamEvents() {
-      return sources[fullStreamUrlWithUser].__emitter._events;
-    }
-
-    function expectStreamUrlIsOpen(url) {
-      expect(Object.keys(sources)).toEqual([url]);
+    async function expectStreamConnecting(url) {
+      const stream = await platform.testing.expectStream(url);
+      expect(stream.eventSource.readyState === EventSource.CONNECTING);
+      return stream;
     }
 
     function expectNoStreamIsOpen() {
-      expect(sources).toMatchObject({});
+      expect(platform.testing.eventSourcesCreated.length()).toEqual(0);
     }
 
     it('does not connect to the stream by default', async () => {
@@ -68,7 +58,7 @@ describe('LDClient streaming', () => {
       await withClientAndServer({ streaming: true }, async client => {
         await client.waitForInitialization();
 
-        expectStreamUrlIsOpen(fullStreamUrlWithUser);
+        await platform.testing.expectStream(fullStreamUrlWithUser);
       });
     });
 
@@ -78,7 +68,7 @@ describe('LDClient streaming', () => {
           await client.waitForInitialization();
 
           client.setStreaming(true);
-          expectStreamUrlIsOpen(fullStreamUrlWithUser);
+          await expectStreamConnecting(fullStreamUrlWithUser);
         });
       });
 
@@ -87,9 +77,9 @@ describe('LDClient streaming', () => {
           await client.waitForInitialization();
 
           client.setStreaming(true);
-          expectStreamUrlIsOpen(fullStreamUrlWithUser);
+          const stream = await expectStreamConnecting(fullStreamUrlWithUser);
           client.setStreaming(false);
-          expectNoStreamIsOpen();
+          expect(stream.eventSource.readyState === EventSource.CLOSED);
         });
       });
     });
@@ -100,7 +90,7 @@ describe('LDClient streaming', () => {
           await client.waitForInitialization();
           client.on('change', () => {});
 
-          expectStreamUrlIsOpen(fullStreamUrlWithUser);
+          await expectStreamConnecting(fullStreamUrlWithUser);
         });
       });
 
@@ -109,7 +99,7 @@ describe('LDClient streaming', () => {
           await client.waitForInitialization();
           client.on('change:flagkey', () => {});
 
-          expectStreamUrlIsOpen(fullStreamUrlWithUser);
+          await expectStreamConnecting(fullStreamUrlWithUser);
         });
       });
 
@@ -152,13 +142,13 @@ describe('LDClient streaming', () => {
           client.on('change', listener1);
           client.on('change:flagKey', listener2);
           client.on('error', () => {});
-          expectStreamUrlIsOpen(fullStreamUrlWithUser);
+          const stream = await expectStreamConnecting(fullStreamUrlWithUser);
 
           client.off('change', listener1);
-          expectStreamUrlIsOpen(fullStreamUrlWithUser);
+          expect(stream.eventSource.readyState).toEqual(EventSource.CONNECTING);
 
           client.off('change:flagKey', listener2);
-          expectNoStreamIsOpen();
+          expect(stream.eventSource.readyState).toEqual(EventSource.CLOSED);
         });
       });
 
@@ -175,9 +165,9 @@ describe('LDClient streaming', () => {
 
           client.on('change', listener1);
           client.on('change:flagKey', listener2);
-          expectStreamUrlIsOpen(fullStreamUrlWithUser);
+          const stream = await expectStreamConnecting(fullStreamUrlWithUser);
 
-          streamEvents().put({
+          stream.eventSource.mockEmit('put', {
             data: '{"flagKey":{"value":"a","version":1}}',
           });
 
@@ -185,9 +175,9 @@ describe('LDClient streaming', () => {
           expect(changes2).toEqual(['a']);
 
           client.off('change', listener1);
-          expectStreamUrlIsOpen(fullStreamUrlWithUser);
+          expect(stream.eventSource.readyState).toEqual(EventSource.CONNECTING);
 
-          streamEvents().put({
+          stream.eventSource.mockEmit('put', {
             data: '{"flagKey":{"value":"b","version":1}}',
           });
 
@@ -195,9 +185,9 @@ describe('LDClient streaming', () => {
           expect(changes2).toEqual(['a', 'b']);
 
           client.off('change:flagKey', listener2);
-          expectStreamUrlIsOpen(fullStreamUrlWithUser);
+          expect(stream.eventSource.readyState).toEqual(EventSource.CONNECTING);
 
-          streamEvents().put({
+          stream.eventSource.mockEmit('put', {
             data: '{"flagKey":{"value":"c","version":1}}',
           });
 
@@ -212,7 +202,7 @@ describe('LDClient streaming', () => {
         await client.waitForInitialization();
         client.on('change:flagKey', () => {});
 
-        expectStreamUrlIsOpen(fullStreamUrlWithUser + '?h=' + hash);
+        await expectStreamConnecting(fullStreamUrlWithUser + '?h=' + hash);
       });
     });
 
@@ -221,7 +211,7 @@ describe('LDClient streaming', () => {
         await client.waitForInitialization();
         client.setStreaming(true);
 
-        expectStreamUrlIsOpen(fullStreamUrlWithUser + '?withReasons=true');
+        await expectStreamConnecting(fullStreamUrlWithUser + '?withReasons=true');
       });
     });
 
@@ -230,7 +220,7 @@ describe('LDClient streaming', () => {
         await client.waitForInitialization();
         client.setStreaming(true);
 
-        expectStreamUrlIsOpen(fullStreamUrlWithUser + '?h=' + hash + '&withReasons=true');
+        await expectStreamConnecting(fullStreamUrlWithUser + '?h=' + hash + '&withReasons=true');
       });
     });
 
@@ -240,7 +230,8 @@ describe('LDClient streaming', () => {
         await client.waitForInitialization();
         client.setStreaming(true);
 
-        streamEvents().ping();
+        const stream = await expectStreamConnecting(fullStreamUrlWithUser);
+        stream.eventSource.mockEmit('ping');
         await sleepAsync(20); // give response handler a chance to execute
 
         expect(client.variation('flagKey')).toEqual(true);
@@ -252,7 +243,8 @@ describe('LDClient streaming', () => {
         await client.waitForInitialization();
         client.setStreaming(true);
 
-        streamEvents().put({
+        const stream = await expectStreamConnecting(fullStreamUrlWithUser);
+        stream.eventSource.mockEmit('put', {
           data: '{"flagKey":{"value":true,"version":1}}',
         });
 
@@ -267,7 +259,8 @@ describe('LDClient streaming', () => {
         await client.waitForInitialization();
         client.setStreaming(true);
 
-        streamEvents().put({
+        const stream = await expectStreamConnecting(fullStreamUrlWithUser);
+        stream.eventSource.mockEmit('put', {
           data: '{"flagKey":{"value":true,"version":1}}',
         });
 
@@ -283,7 +276,8 @@ describe('LDClient streaming', () => {
 
         const receivedChange = eventSink(client, 'change');
 
-        streamEvents().put({
+        const stream = await expectStreamConnecting(fullStreamUrlWithUser);
+        stream.eventSource.mockEmit('put', {
           data: '{"flagKey":{"value":true,"version":1}}',
         });
 
@@ -306,11 +300,12 @@ describe('LDClient streaming', () => {
 
         const receivedChange = eventSink(client, 'change');
 
+        const stream = await expectStreamConnecting(fullStreamUrlWithUser);
         const putData = {
           'will-change': { value: 4, version: 2 },
           'wont-change': { value: { b: 2, a: 1 }, version: 2 },
         };
-        streamEvents().put({ data: JSON.stringify(putData) });
+        stream.eventSource.mockEmit('put', { data: JSON.stringify(putData) });
 
         const changes = await receivedChange.take();
         expect(changes).toEqual({
@@ -325,7 +320,8 @@ describe('LDClient streaming', () => {
 
         const receivedChange = eventSink(client, 'change:flagKey');
 
-        streamEvents().put({
+        const stream = await expectStreamConnecting(fullStreamUrlWithUser);
+        stream.eventSource.mockEmit('put', {
           data: '{"flagKey":{"value":true,"version":1}}',
         });
 
@@ -339,7 +335,8 @@ describe('LDClient streaming', () => {
         await client.waitForInitialization();
         client.setStreaming(true);
 
-        streamEvents().patch({ data: '{"key":"flagKey","value":true,"version":1}' });
+        const stream = await expectStreamConnecting(fullStreamUrlWithUser);
+        stream.eventSource.mockEmit('patch', { data: '{"key":"flagKey","value":true,"version":1}' });
 
         expect(client.variation('flagKey')).toEqual(true);
       });
@@ -354,7 +351,8 @@ describe('LDClient streaming', () => {
 
         client.setStreaming(true);
 
-        streamEvents().patch({ data: '{"key":"flagKey","value":"b","version":1}' });
+        const stream = await expectStreamConnecting(fullStreamUrlWithUser);
+        stream.eventSource.mockEmit('patch', { data: '{"key":"flagKey","value":"b","version":1}' });
 
         expect(client.variation('flagKey')).toEqual('a');
       });
@@ -369,7 +367,8 @@ describe('LDClient streaming', () => {
 
         client.setStreaming(true);
 
-        streamEvents().patch({ data: '{"key":"flagKey","value":"b","version":2}' });
+        const stream = await expectStreamConnecting(fullStreamUrlWithUser);
+        stream.eventSource.mockEmit('patch', { data: '{"key":"flagKey","value":"b","version":2}' });
 
         expect(client.variation('flagKey')).toEqual('a');
       });
@@ -384,7 +383,8 @@ describe('LDClient streaming', () => {
 
         client.setStreaming(true);
 
-        streamEvents().patch({ data: '{"key":"flagKey","value":"b","version":1}' });
+        const stream = await expectStreamConnecting(fullStreamUrlWithUser);
+        stream.eventSource.mockEmit('patch', { data: '{"key":"flagKey","value":"b","version":1}' });
 
         expect(client.variation('flagKey')).toEqual('b');
       });
@@ -399,7 +399,8 @@ describe('LDClient streaming', () => {
 
         client.setStreaming(true);
 
-        streamEvents().patch({ data: '{"key":"flagKey","value":"b"}' });
+        const stream = await expectStreamConnecting(fullStreamUrlWithUser);
+        stream.eventSource.mockEmit('patch', { data: '{"key":"flagKey","value":"b"}' });
 
         expect(client.variation('flagKey')).toEqual('b');
       });
@@ -412,7 +413,8 @@ describe('LDClient streaming', () => {
         await client.waitForInitialization();
         client.setStreaming(true);
 
-        streamEvents().put({
+        const stream = await expectStreamConnecting(fullStreamUrlWithUser);
+        stream.eventSource.mockEmit('put', {
           data: '{"flagKey":{"value":true,"version":1}}',
         });
 
@@ -428,7 +430,8 @@ describe('LDClient streaming', () => {
 
         const receivedChange = eventSink(client, 'change');
 
-        streamEvents().patch({
+        const stream = await expectStreamConnecting(fullStreamUrlWithUser);
+        stream.eventSource.mockEmit('patch', {
           data: '{"key":"flagKey","value":true,"version":1}',
         });
 
@@ -445,7 +448,8 @@ describe('LDClient streaming', () => {
 
         const receivedChange = eventSink(client, 'change:flagKey');
 
-        streamEvents().patch({
+        const stream = await expectStreamConnecting(fullStreamUrlWithUser);
+        stream.eventSource.mockEmit('patch', {
           data: '{"key":"flagKey","value":true,"version":1}',
         });
 
@@ -460,7 +464,8 @@ describe('LDClient streaming', () => {
 
         const receivedChange = eventSink(client, 'change');
 
-        streamEvents().patch({
+        const stream = await expectStreamConnecting(fullStreamUrlWithUser);
+        stream.eventSource.mockEmit('patch', {
           data: '{"key":"flagKey","value":true,"version":1}',
         });
 
@@ -477,7 +482,8 @@ describe('LDClient streaming', () => {
 
         const receivedChange = eventSink(client, 'change:flagKey');
 
-        streamEvents().patch({
+        const stream = await expectStreamConnecting(fullStreamUrlWithUser);
+        stream.eventSource.mockEmit('patch', {
           data: '{"key":"flagKey","value":true,"version":1}',
         });
 
@@ -491,7 +497,8 @@ describe('LDClient streaming', () => {
         await client.waitForInitialization();
         client.setStreaming(true);
 
-        streamEvents().delete({
+        const stream = await expectStreamConnecting(fullStreamUrlWithUser);
+        stream.eventSource.mockEmit('delete', {
           data: '{"key":"flagKey","version":1}',
         });
 
@@ -504,12 +511,13 @@ describe('LDClient streaming', () => {
         await client.waitForInitialization();
         client.setStreaming(true);
 
-        streamEvents().delete({
+        const stream = await expectStreamConnecting(fullStreamUrlWithUser);
+        stream.eventSource.mockEmit('delete', {
           data: '{"key":"mystery","version":3}',
         });
 
         // The following patch message should be ignored because it has a lower version than the deleted placeholder
-        streamEvents().patch({
+        stream.eventSource.mockEmit('patch', {
           data: '{"key":"mystery","value":"yes","version":2}',
         });
 
@@ -523,7 +531,8 @@ describe('LDClient streaming', () => {
         await client.waitForInitialization();
         client.setStreaming(true);
 
-        streamEvents().delete({
+        const stream = await expectStreamConnecting(fullStreamUrlWithUser);
+        stream.eventSource.mockEmit('delete', {
           data: '{"key":"flagKey","version":2}',
         });
 
@@ -537,7 +546,8 @@ describe('LDClient streaming', () => {
 
         const receivedChange = eventSink(client, 'change');
 
-        streamEvents().delete({
+        const stream = await expectStreamConnecting(fullStreamUrlWithUser);
+        stream.eventSource.mockEmit('delete', {
           data: '{"key":"flagKey","version":1}',
         });
 
@@ -554,7 +564,8 @@ describe('LDClient streaming', () => {
 
         const receivedChange = eventSink(client, 'change:flagKey');
 
-        streamEvents().delete({
+        const stream = await expectStreamConnecting(fullStreamUrlWithUser);
+        stream.eventSource.mockEmit('delete', {
           data: '{"key":"flagKey","version":1}',
         });
 
@@ -570,7 +581,8 @@ describe('LDClient streaming', () => {
         await client.waitForInitialization();
         client.setStreaming(true);
 
-        streamEvents().delete({
+        const stream = await expectStreamConnecting(fullStreamUrlWithUser);
+        stream.eventSource.mockEmit('delete', {
           data: '{"key":"flagKey","version":1}',
         });
 
@@ -587,10 +599,10 @@ describe('LDClient streaming', () => {
         await client.waitForInitialization();
         client.setStreaming(true);
 
-        expect(sources[streamUrl + '/eval/' + envName + '/' + encodedUser]).toBeDefined();
+        await expectStreamConnecting(streamUrl + '/eval/' + envName + '/' + encodedUser);
 
         await client.identify(user2);
-        expect(sources[streamUrl + '/eval/' + envName + '/' + encodedUser2]).toBeDefined();
+        await expectStreamConnecting(streamUrl + '/eval/' + envName + '/' + encodedUser2);
       });
     });
   });
