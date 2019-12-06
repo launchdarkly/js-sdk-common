@@ -54,7 +54,7 @@ describe('Stream', () => {
   });
 
   it('adds secure mode hash to URL if provided', async () => {
-    const stream = new Stream(platform, defaultConfig, envName, null, hash);
+    const stream = new Stream(platform, defaultConfig, envName, hash);
     stream.connect(user, {});
 
     const created = await platform.testing.expectStream(
