@@ -101,7 +101,7 @@ export function defaults() {
           expect(created.url).toEqual(url);
         }
         return created;
-      }
+      },
     },
   };
   return p;
