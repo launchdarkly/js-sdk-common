@@ -1,6 +1,8 @@
 import * as LDClient from '../index';
 import EventEmitter from '../EventEmitter';
 
+import { AsyncQueue, sleepAsync } from 'launchdarkly-js-test-helpers';
+
 import EventSource from './EventSource-mock';
 import { MockHttpState } from './mockHttp';
 
@@ -29,6 +31,7 @@ import { MockHttpState } from './mockHttp';
 export function defaults() {
   const localStore = {};
   const mockHttpState = MockHttpState();
+  const eventSourcesCreated = new AsyncQueue();
   let currentUrl = null;
   let doNotTrack = false;
 
@@ -41,6 +44,7 @@ export function defaults() {
     eventSourceFactory: (url, options) => {
       const es = new EventSource(url);
       es.options = options;
+      eventSourcesCreated.add({ eventSource: es, url, options });
       return es;
     },
     eventSourceIsActive: es => es.readyState === EventSource.OPEN || es.readyState === EventSource.CONNECTING,
@@ -68,6 +72,8 @@ export function defaults() {
 
       http: mockHttpState,
 
+      eventSourcesCreated,
+
       makeClient: (env, user, options = {}) => {
         const config = { logger: p.testing.logger, ...options };
         return LDClient.initialize(env, user, config, p).client;
@@ -85,6 +91,16 @@ export function defaults() {
 
       setLocalStorageImmediately: (key, value) => {
         localStore[key] = value;
+      },
+
+      expectStream: async url => {
+        await sleepAsync(0); // in case the stream is created by a deferred task
+        expect(eventSourcesCreated.length()).toBeGreaterThanOrEqual(1);
+        const created = await eventSourcesCreated.take();
+        if (url) {
+          expect(created.url).toEqual(url);
+        }
+        return created;
       },
     },
   };
