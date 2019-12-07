@@ -1,13 +1,13 @@
-import sinon from 'sinon';
-
 import EventProcessor from '../EventProcessor';
 import * as messages from '../messages';
 
 import * as stubPlatform from './stubPlatform';
 
+// These tests verify that the event processor produces the expected event payload data for
+// various inputs. The actual delivery of data is done by EventSender, which has its own
+// tests; here, we use a mock EventSender.
+
 describe('EventProcessor', () => {
-  let sandbox;
-  const mockEventSender = {};
   const user = { key: 'userKey', name: 'Red' };
   const filteredUser = { key: 'userKey', privateAttrs: ['name'] };
   const eventsUrl = '/fake-url';
@@ -22,23 +22,35 @@ describe('EventProcessor', () => {
   };
   const platform = stubPlatform.defaults();
 
-  mockEventSender.sendEvents = function(events, sync) {
-    mockEventSender.calls.push({
-      events: events,
-      sync: !!sync,
-    });
-    return Promise.resolve({ serverTime: mockEventSender.serverTime, status: mockEventSender.status || 200 });
-  };
+  function createMockEventSender() {
+    const calls = [];
+    let serverTime = null;
+    let status = 200;
+    const sender = {
+      calls,
+      sendEvents: (events, sync) => {
+        calls.push({ events: events, sync: !!sync });
+        return Promise.resolve({ serverTime, status });
+      },
+      setServerTime: time => {
+        serverTime = time;
+      },
+      setStatus: respStatus => {
+        status = respStatus;
+      },
+    };
+    return sender;
+  }
 
-  beforeEach(() => {
-    sandbox = sinon.createSandbox();
-    mockEventSender.calls = [];
-    mockEventSender.serverTime = null;
-  });
-
-  afterEach(() => {
-    sandbox.restore();
-  });
+  async function withProcessorAndSender(config, asyncCallback) {
+    const sender = createMockEventSender();
+    const ep = EventProcessor(platform, config, envId, null, sender);
+    try {
+      return await asyncCallback(ep, sender);
+    } finally {
+      ep.stop();
+    }
+  }
 
   function checkFeatureEvent(e, source, debug, inlineUser) {
     expect(e.kind).toEqual(debug ? 'debug' : 'feature');
@@ -73,381 +85,397 @@ describe('EventProcessor', () => {
   }
 
   it('should enqueue identify event', async () => {
-    const ep = EventProcessor(platform, defaultConfig, envId, null, mockEventSender);
-    const event = { kind: 'identify', creationDate: 1000, key: user.key, user: user };
-    ep.enqueue(event);
-    await ep.flush();
+    await withProcessorAndSender(defaultConfig, async (ep, mockEventSender) => {
+      const event = { kind: 'identify', creationDate: 1000, key: user.key, user: user };
+      ep.enqueue(event);
+      await ep.flush();
 
-    expect(mockEventSender.calls.length).toEqual(1);
-    expect(mockEventSender.calls[0].events).toEqual([event]);
+      expect(mockEventSender.calls.length).toEqual(1);
+      expect(mockEventSender.calls[0].events).toEqual([event]);
+    });
   });
 
   it('filters user in identify event', async () => {
     const config = { ...defaultConfig, allAttributesPrivate: true };
-    const ep = EventProcessor(platform, config, envId, null, mockEventSender);
-    const event = { kind: 'identify', creationDate: 1000, key: user.key, user: user };
-    ep.enqueue(event);
-    await ep.flush();
+    await withProcessorAndSender(config, async (ep, mockEventSender) => {
+      const event = { kind: 'identify', creationDate: 1000, key: user.key, user: user };
+      ep.enqueue(event);
+      await ep.flush();
 
-    expect(mockEventSender.calls.length).toEqual(1);
-    expect(mockEventSender.calls[0].events).toEqual([
-      {
-        kind: 'identify',
-        creationDate: event.creationDate,
-        key: user.key,
-        user: filteredUser,
-      },
-    ]);
+      expect(mockEventSender.calls.length).toEqual(1);
+      expect(mockEventSender.calls[0].events).toEqual([
+        {
+          kind: 'identify',
+          creationDate: event.creationDate,
+          key: user.key,
+          user: filteredUser,
+        },
+      ]);
+    });
   });
 
   it('queues individual feature event', async () => {
-    const ep = EventProcessor(platform, defaultConfig, envId, null, mockEventSender);
-    const event = {
-      kind: 'feature',
-      creationDate: 1000,
-      key: 'flagkey',
-      user: user,
-      trackEvents: true,
-    };
-    ep.enqueue(event);
-    await ep.flush();
+    await withProcessorAndSender(defaultConfig, async (ep, mockEventSender) => {
+      const event = {
+        kind: 'feature',
+        creationDate: 1000,
+        key: 'flagkey',
+        user: user,
+        trackEvents: true,
+      };
+      ep.enqueue(event);
+      await ep.flush();
 
-    expect(mockEventSender.calls.length).toEqual(1);
-    const output = mockEventSender.calls[0].events;
-    expect(output.length).toEqual(2);
-    checkFeatureEvent(output[0], event, false);
-    checkSummaryEvent(output[1]);
+      expect(mockEventSender.calls.length).toEqual(1);
+      const output = mockEventSender.calls[0].events;
+      expect(output.length).toEqual(2);
+      checkFeatureEvent(output[0], event, false);
+      checkSummaryEvent(output[1]);
+    });
   });
 
   it('can include inline user in feature event', async () => {
     const config = { ...defaultConfig, inlineUsersInEvents: true };
-    const ep = EventProcessor(platform, config, envId, null, mockEventSender);
-    const event = {
-      kind: 'feature',
-      creationDate: 1000,
-      key: 'flagkey',
-      user: user,
-      trackEvents: true,
-    };
-    ep.enqueue(event);
-    await ep.flush();
+    await withProcessorAndSender(config, async (ep, mockEventSender) => {
+      const event = {
+        kind: 'feature',
+        creationDate: 1000,
+        key: 'flagkey',
+        user: user,
+        trackEvents: true,
+      };
+      ep.enqueue(event);
+      await ep.flush();
 
-    expect(mockEventSender.calls.length).toEqual(1);
-    const output = mockEventSender.calls[0].events;
-    expect(output.length).toEqual(2);
-    checkFeatureEvent(output[0], event, false, user);
-    checkSummaryEvent(output[1]);
+      expect(mockEventSender.calls.length).toEqual(1);
+      const output = mockEventSender.calls[0].events;
+      expect(output.length).toEqual(2);
+      checkFeatureEvent(output[0], event, false, user);
+      checkSummaryEvent(output[1]);
+    });
   });
 
   it('can include reason in feature event', async () => {
     const config = { ...defaultConfig, inlineUsersInEvents: true };
     const reason = { kind: 'FALLTHROUGH' };
-    const ep = EventProcessor(platform, config, envId, null, mockEventSender);
-    const event = {
-      kind: 'feature',
-      creationDate: 1000,
-      key: 'flagkey',
-      user: user,
-      trackEvents: true,
-      reason: reason,
-    };
-    ep.enqueue(event);
-    await ep.flush();
+    await withProcessorAndSender(config, async (ep, mockEventSender) => {
+      const event = {
+        kind: 'feature',
+        creationDate: 1000,
+        key: 'flagkey',
+        user: user,
+        trackEvents: true,
+        reason: reason,
+      };
+      ep.enqueue(event);
+      await ep.flush();
 
-    expect(mockEventSender.calls.length).toEqual(1);
-    const output = mockEventSender.calls[0].events;
-    expect(output.length).toEqual(2);
-    checkFeatureEvent(output[0], event, false, user);
-    checkSummaryEvent(output[1]);
+      expect(mockEventSender.calls.length).toEqual(1);
+      const output = mockEventSender.calls[0].events;
+      expect(output.length).toEqual(2);
+      checkFeatureEvent(output[0], event, false, user);
+      checkSummaryEvent(output[1]);
+    });
   });
 
   it('filters user in feature event', async () => {
     const config = { ...defaultConfig, allAttributesPrivate: true, inlineUsersInEvents: true };
-    const ep = EventProcessor(platform, config, envId, null, mockEventSender);
-    const event = {
-      kind: 'feature',
-      creationDate: 1000,
-      key: 'flagkey',
-      user: user,
-      trackEvents: true,
-    };
-    ep.enqueue(event);
-    await ep.flush();
+    await withProcessorAndSender(config, async (ep, mockEventSender) => {
+      const event = {
+        kind: 'feature',
+        creationDate: 1000,
+        key: 'flagkey',
+        user: user,
+        trackEvents: true,
+      };
+      ep.enqueue(event);
+      await ep.flush();
 
-    expect(mockEventSender.calls.length).toEqual(1);
-    const output = mockEventSender.calls[0].events;
-    expect(output.length).toEqual(2);
-    checkFeatureEvent(output[0], event, false, filteredUser);
-    checkSummaryEvent(output[1]);
+      expect(mockEventSender.calls.length).toEqual(1);
+      const output = mockEventSender.calls[0].events;
+      expect(output.length).toEqual(2);
+      checkFeatureEvent(output[0], event, false, filteredUser);
+      checkSummaryEvent(output[1]);
+    });
   });
 
   it('sets event kind to debug if event is temporarily in debug mode', async () => {
-    const ep = EventProcessor(platform, defaultConfig, envId, null, mockEventSender);
-    const futureTime = new Date().getTime() + 1000000;
-    const e = {
-      kind: 'feature',
-      creationDate: 1000,
-      user: user,
-      key: 'flagkey',
-      version: 11,
-      variation: 1,
-      value: 'value',
-      trackEvents: false,
-      debugEventsUntilDate: futureTime,
-    };
-    ep.enqueue(e);
-    await ep.flush();
+    await withProcessorAndSender(defaultConfig, async (ep, mockEventSender) => {
+      const futureTime = new Date().getTime() + 1000000;
+      const e = {
+        kind: 'feature',
+        creationDate: 1000,
+        user: user,
+        key: 'flagkey',
+        version: 11,
+        variation: 1,
+        value: 'value',
+        trackEvents: false,
+        debugEventsUntilDate: futureTime,
+      };
+      ep.enqueue(e);
+      await ep.flush();
 
-    expect(mockEventSender.calls.length).toEqual(1);
-    const output = mockEventSender.calls[0].events;
-    expect(output.length).toEqual(2);
-    checkFeatureEvent(output[0], e, true, user);
-    checkSummaryEvent(output[1]);
+      expect(mockEventSender.calls.length).toEqual(1);
+      const output = mockEventSender.calls[0].events;
+      expect(output.length).toEqual(2);
+      checkFeatureEvent(output[0], e, true, user);
+      checkSummaryEvent(output[1]);
+    });
   });
 
   it('can both track and debug an event', async () => {
-    const ep = EventProcessor(platform, defaultConfig, envId, null, mockEventSender);
-    const futureTime = new Date().getTime() + 1000000;
-    const e = {
-      kind: 'feature',
-      creationDate: 1000,
-      user: user,
-      key: 'flagkey',
-      version: 11,
-      variation: 1,
-      value: 'value',
-      trackEvents: true,
-      debugEventsUntilDate: futureTime,
-    };
-    ep.enqueue(e);
-    await ep.flush();
+    await withProcessorAndSender(defaultConfig, async (ep, mockEventSender) => {
+      const futureTime = new Date().getTime() + 1000000;
+      const e = {
+        kind: 'feature',
+        creationDate: 1000,
+        user: user,
+        key: 'flagkey',
+        version: 11,
+        variation: 1,
+        value: 'value',
+        trackEvents: true,
+        debugEventsUntilDate: futureTime,
+      };
+      ep.enqueue(e);
+      await ep.flush();
 
-    expect(mockEventSender.calls.length).toEqual(1);
-    const output = mockEventSender.calls[0].events;
-    expect(output.length).toEqual(3);
-    checkFeatureEvent(output[0], e, false);
-    checkFeatureEvent(output[1], e, true, user);
-    checkSummaryEvent(output[2]);
+      expect(mockEventSender.calls.length).toEqual(1);
+      const output = mockEventSender.calls[0].events;
+      expect(output.length).toEqual(3);
+      checkFeatureEvent(output[0], e, false);
+      checkFeatureEvent(output[1], e, true, user);
+      checkSummaryEvent(output[2]);
+    });
   });
 
   it('expires debug mode based on client time if client time is later than server time', async () => {
-    const ep = EventProcessor(platform, defaultConfig, envId, null, mockEventSender);
+    await withProcessorAndSender(defaultConfig, async (ep, mockEventSender) => {
+      // Pick a server time that is somewhat behind the client time
+      const serverTime = new Date().getTime() - 20000;
+      mockEventSender.setServerTime(serverTime);
 
-    // Pick a server time that is somewhat behind the client time
-    const serverTime = new Date().getTime() - 20000;
-    mockEventSender.serverTime = serverTime;
+      // Send and flush an event we don't care about, just to set the last server time
+      ep.enqueue({ kind: 'identify', user: { key: 'otherUser' } });
+      await ep.flush();
 
-    // Send and flush an event we don't care about, just to set the last server time
-    ep.enqueue({ kind: 'identify', user: { key: 'otherUser' } });
-    await ep.flush();
+      // Now send an event with debug mode on, with a "debug until" time that is further in
+      // the future than the server time, but in the past compared to the client.
+      const debugUntil = serverTime + 1000;
+      const e = {
+        kind: 'feature',
+        creationDate: 1000,
+        user: user,
+        key: 'flagkey',
+        version: 11,
+        variation: 1,
+        value: 'value',
+        trackEvents: false,
+        debugEventsUntilDate: debugUntil,
+      };
+      ep.enqueue(e);
 
-    // Now send an event with debug mode on, with a "debug until" time that is further in
-    // the future than the server time, but in the past compared to the client.
-    const debugUntil = serverTime + 1000;
-    const e = {
-      kind: 'feature',
-      creationDate: 1000,
-      user: user,
-      key: 'flagkey',
-      version: 11,
-      variation: 1,
-      value: 'value',
-      trackEvents: false,
-      debugEventsUntilDate: debugUntil,
-    };
-    ep.enqueue(e);
-
-    // Should get a summary event only, not a full feature event
-    await ep.flush();
-    expect(mockEventSender.calls.length).toEqual(2);
-    const output = mockEventSender.calls[1].events;
-    expect(output.length).toEqual(1);
-    checkSummaryEvent(output[0]);
+      // Should get a summary event only, not a full feature event
+      await ep.flush();
+      expect(mockEventSender.calls.length).toEqual(2);
+      const output = mockEventSender.calls[1].events;
+      expect(output.length).toEqual(1);
+      checkSummaryEvent(output[0]);
+    });
   });
 
   it('expires debug mode based on server time if server time is later than client time', async () => {
-    const ep = EventProcessor(platform, defaultConfig, envId, null, mockEventSender);
+    await withProcessorAndSender(defaultConfig, async (ep, mockEventSender) => {
+      // Pick a server time that is somewhat ahead of the client time
+      const serverTime = new Date().getTime() + 20000;
+      mockEventSender.setServerTime(serverTime);
 
-    // Pick a server time that is somewhat ahead of the client time
-    const serverTime = new Date().getTime() + 20000;
-    mockEventSender.serverTime = serverTime;
+      // Send and flush an event we don't care about, just to set the last server time
+      ep.enqueue({ kind: 'identify', user: { key: 'otherUser' } });
+      await ep.flush();
 
-    // Send and flush an event we don't care about, just to set the last server time
-    ep.enqueue({ kind: 'identify', user: { key: 'otherUser' } });
-    await ep.flush();
+      // Now send an event with debug mode on, with a "debug until" time that is further in
+      // the future than the client time, but in the past compared to the server.
+      const debugUntil = serverTime - 1000;
+      const e = {
+        kind: 'feature',
+        creationDate: 1000,
+        user: user,
+        key: 'flagkey',
+        version: 11,
+        variation: 1,
+        value: 'value',
+        trackEvents: false,
+        debugEventsUntilDate: debugUntil,
+      };
+      ep.enqueue(e);
 
-    // Now send an event with debug mode on, with a "debug until" time that is further in
-    // the future than the client time, but in the past compared to the server.
-    const debugUntil = serverTime - 1000;
-    const e = {
-      kind: 'feature',
-      creationDate: 1000,
-      user: user,
-      key: 'flagkey',
-      version: 11,
-      variation: 1,
-      value: 'value',
-      trackEvents: false,
-      debugEventsUntilDate: debugUntil,
-    };
-    ep.enqueue(e);
-
-    // Should get a summary event only, not a full feature event
-    await ep.flush();
-    expect(mockEventSender.calls.length).toEqual(2);
-    const output = mockEventSender.calls[1].events;
-    expect(output.length).toEqual(1);
-    checkSummaryEvent(output[0]);
+      // Should get a summary event only, not a full feature event
+      await ep.flush();
+      expect(mockEventSender.calls.length).toEqual(2);
+      const output = mockEventSender.calls[1].events;
+      expect(output.length).toEqual(1);
+      checkSummaryEvent(output[0]);
+    });
   });
 
   it('summarizes nontracked events', async () => {
-    const ep = EventProcessor(platform, defaultConfig, envId, null, mockEventSender);
-    function makeEvent(key, date, version, variation, value, defaultVal) {
-      return {
-        kind: 'feature',
-        creationDate: date,
-        user: user,
-        key: key,
-        version: version,
-        variation: variation,
-        value: value,
-        default: defaultVal,
-        trackEvents: false,
-      };
-    }
-    const e1 = makeEvent('flagkey1', 1000, 11, 1, 'value1', 'default1');
-    const e2 = makeEvent('flagkey2', 2000, 22, 1, 'value2', 'default2');
-    ep.enqueue(e1);
-    ep.enqueue(e2);
-    await ep.flush();
+    await withProcessorAndSender(defaultConfig, async (ep, mockEventSender) => {
+      function makeEvent(key, date, version, variation, value, defaultVal) {
+        return {
+          kind: 'feature',
+          creationDate: date,
+          user: user,
+          key: key,
+          version: version,
+          variation: variation,
+          value: value,
+          default: defaultVal,
+          trackEvents: false,
+        };
+      }
+      const e1 = makeEvent('flagkey1', 1000, 11, 1, 'value1', 'default1');
+      const e2 = makeEvent('flagkey2', 2000, 22, 1, 'value2', 'default2');
+      ep.enqueue(e1);
+      ep.enqueue(e2);
+      await ep.flush();
 
-    expect(mockEventSender.calls.length).toEqual(1);
-    const output = mockEventSender.calls[0].events;
-    expect(output.length).toEqual(1);
-    const se = output[0];
-    checkSummaryEvent(se);
-    expect(se.startDate).toEqual(1000);
-    expect(se.endDate).toEqual(2000);
-    expect(se.features).toEqual({
-      flagkey1: {
-        default: 'default1',
-        counters: [{ version: 11, variation: 1, value: 'value1', count: 1 }],
-      },
-      flagkey2: {
-        default: 'default2',
-        counters: [{ version: 22, variation: 1, value: 'value2', count: 1 }],
-      },
+      expect(mockEventSender.calls.length).toEqual(1);
+      const output = mockEventSender.calls[0].events;
+      expect(output.length).toEqual(1);
+      const se = output[0];
+      checkSummaryEvent(se);
+      expect(se.startDate).toEqual(1000);
+      expect(se.endDate).toEqual(2000);
+      expect(se.features).toEqual({
+        flagkey1: {
+          default: 'default1',
+          counters: [{ version: 11, variation: 1, value: 'value1', count: 1 }],
+        },
+        flagkey2: {
+          default: 'default2',
+          counters: [{ version: 22, variation: 1, value: 'value2', count: 1 }],
+        },
+      });
     });
   });
 
   it('queues custom event', async () => {
-    const ep = EventProcessor(platform, defaultConfig, envId, null, mockEventSender);
-    const e = {
-      kind: 'custom',
-      creationDate: 1000,
-      user: user,
-      key: 'eventkey',
-      data: { thing: 'stuff' },
-      metricValue: 1.5,
-    };
-    ep.enqueue(e);
-    await ep.flush();
+    await withProcessorAndSender(defaultConfig, async (ep, mockEventSender) => {
+      const e = {
+        kind: 'custom',
+        creationDate: 1000,
+        user: user,
+        key: 'eventkey',
+        data: { thing: 'stuff' },
+        metricValue: 1.5,
+      };
+      ep.enqueue(e);
+      await ep.flush();
 
-    expect(mockEventSender.calls.length).toEqual(1);
-    const output = mockEventSender.calls[0].events;
-    expect(output.length).toEqual(1);
-    checkCustomEvent(output[0], e);
+      expect(mockEventSender.calls.length).toEqual(1);
+      const output = mockEventSender.calls[0].events;
+      expect(output.length).toEqual(1);
+      checkCustomEvent(output[0], e);
+    });
   });
 
   it('can include inline user in custom event', async () => {
     const config = { ...defaultConfig, inlineUsersInEvents: true };
-    const ep = EventProcessor(platform, config, envId, null, mockEventSender);
-    const e = {
-      kind: 'custom',
-      creationDate: 1000,
-      user: user,
-      key: 'eventkey',
-      data: { thing: 'stuff' },
-    };
-    ep.enqueue(e);
-    await ep.flush();
+    await withProcessorAndSender(config, async (ep, mockEventSender) => {
+      const e = {
+        kind: 'custom',
+        creationDate: 1000,
+        user: user,
+        key: 'eventkey',
+        data: { thing: 'stuff' },
+      };
+      ep.enqueue(e);
+      await ep.flush();
 
-    expect(mockEventSender.calls.length).toEqual(1);
-    const output = mockEventSender.calls[0].events;
-    expect(output.length).toEqual(1);
-    checkCustomEvent(output[0], e, user);
+      expect(mockEventSender.calls.length).toEqual(1);
+      const output = mockEventSender.calls[0].events;
+      expect(output.length).toEqual(1);
+      checkCustomEvent(output[0], e, user);
+    });
   });
 
   it('filters user in custom event', async () => {
     const config = { ...defaultConfig, allAttributesPrivate: true, inlineUsersInEvents: true };
-    const ep = EventProcessor(platform, config, envId, null, mockEventSender);
-    const e = {
-      kind: 'custom',
-      creationDate: 1000,
-      user: user,
-      key: 'eventkey',
-      data: { thing: 'stuff' },
-    };
-    ep.enqueue(e);
-    await ep.flush();
+    await withProcessorAndSender(config, async (ep, mockEventSender) => {
+      const e = {
+        kind: 'custom',
+        creationDate: 1000,
+        user: user,
+        key: 'eventkey',
+        data: { thing: 'stuff' },
+      };
+      ep.enqueue(e);
+      await ep.flush();
 
-    expect(mockEventSender.calls.length).toEqual(1);
-    const output = mockEventSender.calls[0].events;
-    expect(output.length).toEqual(1);
-    checkCustomEvent(output[0], e, filteredUser);
+      expect(mockEventSender.calls.length).toEqual(1);
+      const output = mockEventSender.calls[0].events;
+      expect(output.length).toEqual(1);
+      checkCustomEvent(output[0], e, filteredUser);
+    });
   });
 
   it('enforces event capacity', async () => {
     const config = { ...defaultConfig, eventCapacity: 1, logger: stubPlatform.logger() };
-    const ep = EventProcessor(platform, config, envId, null, mockEventSender);
     const e0 = { kind: 'custom', creationDate: 1000, user: user, key: 'key0' };
     const e1 = { kind: 'custom', creationDate: 1001, user: user, key: 'key1' };
     const e2 = { kind: 'custom', creationDate: 1002, user: user, key: 'key2' };
-    ep.enqueue(e0);
-    ep.enqueue(e1);
-    ep.enqueue(e2);
-    await ep.flush();
+    await withProcessorAndSender(config, async (ep, mockEventSender) => {
+      ep.enqueue(e0);
+      ep.enqueue(e1);
+      ep.enqueue(e2);
+      await ep.flush();
 
-    expect(mockEventSender.calls.length).toEqual(1);
-    const output = mockEventSender.calls[0].events;
-    expect(output.length).toEqual(1);
-    checkCustomEvent(output[0], e0);
+      expect(mockEventSender.calls.length).toEqual(1);
+      const output = mockEventSender.calls[0].events;
+      expect(output.length).toEqual(1);
+      checkCustomEvent(output[0], e0);
 
-    expect(config.logger.output.warn).toEqual([messages.eventCapacityExceeded()]); // warning is not repeated for e2
+      expect(config.logger.output.warn).toEqual([messages.eventCapacityExceeded()]); // warning is not repeated for e2
+    });
   });
 
   it('sends nothing if there are no events to flush', async () => {
-    const ep = EventProcessor(platform, defaultConfig, envId, null, mockEventSender);
-    await ep.flush();
-    expect(mockEventSender.calls.length).toEqual(0);
+    await withProcessorAndSender(defaultConfig, async (ep, mockEventSender) => {
+      await ep.flush();
+      expect(mockEventSender.calls.length).toEqual(0);
+    });
   });
 
   async function verifyUnrecoverableHttpError(status) {
-    const ep = EventProcessor(platform, defaultConfig, envId, null, mockEventSender);
-    const e = { kind: 'identify', creationDate: 1000, user: user };
-    ep.enqueue(e);
-    mockEventSender.status = status;
-    await ep.flush();
+    await withProcessorAndSender(defaultConfig, async (ep, mockEventSender) => {
+      const e = { kind: 'identify', creationDate: 1000, user: user };
+      ep.enqueue(e);
+      mockEventSender.setStatus(status);
+      await ep.flush();
 
-    expect(mockEventSender.calls.length).toEqual(1);
-    ep.enqueue(e);
-    await ep.flush();
+      expect(mockEventSender.calls.length).toEqual(1);
+      ep.enqueue(e);
+      await ep.flush();
 
-    expect(mockEventSender.calls.length).toEqual(1); // still the one from our first flush
+      expect(mockEventSender.calls.length).toEqual(1); // still the one from our first flush
+    });
   }
 
   async function verifyRecoverableHttpError(status) {
-    const ep = EventProcessor(platform, defaultConfig, envId, null, mockEventSender);
-    const e = { kind: 'identify', creationDate: 1000, user: user };
-    ep.enqueue(e);
-    mockEventSender.status = status;
-    await ep.flush();
+    await withProcessorAndSender(defaultConfig, async (ep, mockEventSender) => {
+      const e = { kind: 'identify', creationDate: 1000, user: user };
+      ep.enqueue(e);
+      mockEventSender.setStatus(status);
+      await ep.flush();
 
-    expect(mockEventSender.calls.length).toEqual(1);
-    ep.enqueue(e);
-    await ep.flush();
+      expect(mockEventSender.calls.length).toEqual(1);
+      ep.enqueue(e);
+      await ep.flush();
 
-    expect(mockEventSender.calls.length).toEqual(2);
+      expect(mockEventSender.calls.length).toEqual(2);
+    });
   }
 
   it('stops sending events after a 401 error', () => verifyUnrecoverableHttpError(401));

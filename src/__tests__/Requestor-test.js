@@ -1,255 +1,289 @@
-import * as stubPlatform from './stubPlatform';
-import { errorResponse, jsonResponse, makeDefaultServer } from './testUtils';
 import Requestor from '../Requestor';
 import * as errors from '../errors';
 import * as messages from '../messages';
 import * as utils from '../utils';
 
+import { fakeNetworkErrorValue, networkError, respond, respondJson } from './mockHttp';
+import * as stubPlatform from './stubPlatform';
+
+// These tests verify that Requestor executes the expected HTTP requests to retrieve flags. Since
+// the js-sdk-common package uses an abstraction of HTTP requests, these tests do not use HTTP but
+// rather use a test implementation of our HTTP abstraction; the individual platform-specific SDKs
+// are responsible for verifying that their own implementations of the same HTTP abstraction work
+// correctly with real networking.
+
 describe('Requestor', () => {
-  const baseUrl = 'http://requestee';
   const user = { key: 'foo' };
   const encodedUser = 'eyJrZXkiOiJmb28ifQ';
   const env = 'FAKE_ENV';
   const platform = stubPlatform.defaults();
-  const logger = stubPlatform.logger();
-  const defaultConfig = {
-    baseUrl: baseUrl,
-    logger: logger,
-  };
-  let server;
 
-  beforeEach(() => {
-    server = makeDefaultServer();
-  });
-
-  afterEach(() => {
-    server.restore();
-  });
+  async function withServer(asyncCallback) {
+    const server = platform.testing.http.newServer();
+    server.byDefault(respondJson({}));
+    const baseConfig = { baseUrl: server.url, logger: stubPlatform.logger() };
+    return await asyncCallback(baseConfig, server);
+  }
 
   it('resolves on success', async () => {
-    const requestor = Requestor(platform, defaultConfig, 'FAKE_ENV');
-    await requestor.fetchFlagSettings({ key: 'user1' }, 'hash1');
-    await requestor.fetchFlagSettings({ key: 'user2' }, 'hash2');
+    await withServer(async (baseConfig, server) => {
+      const requestor = Requestor(platform, baseConfig, env);
 
-    expect(server.requests).toHaveLength(2);
+      await requestor.fetchFlagSettings({ key: 'user1' }, 'hash1');
+      await requestor.fetchFlagSettings({ key: 'user2' }, 'hash2');
+
+      expect(server.requests.length()).toEqual(2);
+    });
   });
 
   it('makes requests with the GET verb if useReport is disabled', async () => {
-    const config = { ...defaultConfig, useReport: false };
-    const requestor = Requestor(platform, config, env);
+    await withServer(async (baseConfig, server) => {
+      const requestor = Requestor(platform, { ...baseConfig, useReport: false }, env);
 
-    await requestor.fetchFlagSettings(user, 'hash1');
+      await requestor.fetchFlagSettings(user, 'hash1');
 
-    expect(server.requests).toHaveLength(1);
-    expect(server.requests[0].method).toEqual('GET');
+      expect(server.requests.length()).toEqual(1);
+      const req = await server.requests.take();
+      expect(req.method).toEqual('get');
+    });
   });
 
   it('makes requests with the REPORT verb with a payload if useReport is enabled', async () => {
-    const config = { ...defaultConfig, useReport: true };
-    const requestor = Requestor(platform, config, env);
+    await withServer(async (baseConfig, server) => {
+      const requestor = Requestor(platform, { ...baseConfig, useReport: true }, env);
 
-    await requestor.fetchFlagSettings(user, 'hash1');
+      await requestor.fetchFlagSettings(user, 'hash1');
 
-    expect(server.requests).toHaveLength(1);
-    expect(server.requests[0].method).toEqual('REPORT');
-    expect(server.requests[0].requestBody).toEqual(JSON.stringify(user));
+      expect(server.requests.length()).toEqual(1);
+      const req = await server.requests.take();
+      expect(req.method).toEqual('report');
+      expect(JSON.parse(req.body)).toEqual(user);
+    });
   });
 
   it('includes environment and user in GET URL', async () => {
-    const requestor = Requestor(platform, defaultConfig, env);
+    await withServer(async (baseConfig, server) => {
+      const requestor = Requestor(platform, baseConfig, env);
 
-    await requestor.fetchFlagSettings(user, null);
+      await requestor.fetchFlagSettings(user, null);
 
-    expect(server.requests).toHaveLength(1);
-    expect(server.requests[0].url).toEqual(`${baseUrl}/sdk/evalx/${env}/users/${encodedUser}`);
+      expect(server.requests.length()).toEqual(1);
+      const req = await server.requests.take();
+      expect(req.path).toEqual(`/sdk/evalx/${env}/users/${encodedUser}`);
+    });
   });
 
   it('includes environment, user, and hash in GET URL', async () => {
-    const requestor = Requestor(platform, defaultConfig, env);
+    await withServer(async (baseConfig, server) => {
+      const requestor = Requestor(platform, baseConfig, env);
 
-    await requestor.fetchFlagSettings(user, 'hash1');
+      await requestor.fetchFlagSettings(user, 'hash1');
 
-    expect(server.requests).toHaveLength(1);
-    expect(server.requests[0].url).toEqual(`${baseUrl}/sdk/evalx/${env}/users/${encodedUser}?h=hash1`);
+      expect(server.requests.length()).toEqual(1);
+      const req = await server.requests.take();
+      expect(req.path).toEqual(`/sdk/evalx/${env}/users/${encodedUser}?h=hash1`);
+    });
   });
 
   it('includes environment, user, and withReasons in GET URL', async () => {
-    const config = { ...defaultConfig, evaluationReasons: true };
-    const requestor = Requestor(platform, config, env);
+    await withServer(async (baseConfig, server) => {
+      const requestor = Requestor(platform, { ...baseConfig, evaluationReasons: true }, env);
 
-    await requestor.fetchFlagSettings(user, null);
+      await requestor.fetchFlagSettings(user, null);
 
-    expect(server.requests).toHaveLength(1);
-    expect(server.requests[0].url).toEqual(`${baseUrl}/sdk/evalx/${env}/users/${encodedUser}?withReasons=true`);
+      expect(server.requests.length()).toEqual(1);
+      const req = await server.requests.take();
+      expect(req.path).toEqual(`/sdk/evalx/${env}/users/${encodedUser}?withReasons=true`);
+    });
   });
 
   it('includes environment, user, hash, and withReasons in GET URL', async () => {
-    const config = { ...defaultConfig, evaluationReasons: true };
-    const requestor = Requestor(platform, config, env);
+    await withServer(async (baseConfig, server) => {
+      const requestor = Requestor(platform, { ...baseConfig, evaluationReasons: true }, env);
 
-    await requestor.fetchFlagSettings(user, 'hash1');
+      await requestor.fetchFlagSettings(user, 'hash1');
 
-    expect(server.requests).toHaveLength(1);
-    expect(server.requests[0].url).toEqual(`${baseUrl}/sdk/evalx/${env}/users/${encodedUser}?h=hash1&withReasons=true`);
+      expect(server.requests.length()).toEqual(1);
+      const req = await server.requests.take();
+      expect(req.path).toEqual(`/sdk/evalx/${env}/users/${encodedUser}?h=hash1&withReasons=true`);
+    });
   });
 
   it('includes environment in REPORT URL', async () => {
-    const config = { ...defaultConfig, useReport: true };
-    const requestor = Requestor(platform, config, env);
+    await withServer(async (baseConfig, server) => {
+      const requestor = Requestor(platform, { ...baseConfig, useReport: true }, env);
 
-    await requestor.fetchFlagSettings(user, null);
+      await requestor.fetchFlagSettings(user, null);
 
-    expect(server.requests).toHaveLength(1);
-    expect(server.requests[0].url).toEqual(`${baseUrl}/sdk/evalx/${env}/user`);
+      expect(server.requests.length()).toEqual(1);
+      const req = await server.requests.take();
+      expect(req.path).toEqual(`/sdk/evalx/${env}/user`);
+    });
   });
 
   it('includes environment and hash in REPORT URL', async () => {
-    const config = { ...defaultConfig, useReport: true };
-    const requestor = Requestor(platform, config, env);
+    await withServer(async (baseConfig, server) => {
+      const requestor = Requestor(platform, { ...baseConfig, useReport: true }, env);
 
-    await requestor.fetchFlagSettings(user, 'hash1');
+      await requestor.fetchFlagSettings(user, 'hash1');
 
-    expect(server.requests).toHaveLength(1);
-    expect(server.requests[0].url).toEqual(`${baseUrl}/sdk/evalx/${env}/user?h=hash1`);
+      expect(server.requests.length()).toEqual(1);
+      const req = await server.requests.take();
+      expect(req.path).toEqual(`/sdk/evalx/${env}/user?h=hash1`);
+    });
   });
 
   it('includes environment and withReasons in REPORT URL', async () => {
-    const config = { ...defaultConfig, useReport: true, evaluationReasons: true };
-    const requestor = Requestor(platform, config, env);
+    await withServer(async (baseConfig, server) => {
+      const requestor = Requestor(platform, { ...baseConfig, useReport: true, evaluationReasons: true }, env);
 
-    await requestor.fetchFlagSettings(user, null);
+      await requestor.fetchFlagSettings(user, null);
 
-    expect(server.requests).toHaveLength(1);
-    expect(server.requests[0].url).toEqual(`${baseUrl}/sdk/evalx/${env}/user?withReasons=true`);
+      expect(server.requests.length()).toEqual(1);
+      const req = await server.requests.take();
+      expect(req.path).toEqual(`/sdk/evalx/${env}/user?withReasons=true`);
+    });
   });
 
   it('includes environment, hash, and withReasons in REPORT URL', async () => {
-    const config = { ...defaultConfig, useReport: true, evaluationReasons: true };
-    const requestor = Requestor(platform, config, env);
+    await withServer(async (baseConfig, server) => {
+      const requestor = Requestor(platform, { ...baseConfig, useReport: true, evaluationReasons: true }, env);
 
-    await requestor.fetchFlagSettings(user, 'hash1');
+      await requestor.fetchFlagSettings(user, 'hash1');
 
-    expect(server.requests).toHaveLength(1);
-    expect(server.requests[0].url).toEqual(`${baseUrl}/sdk/evalx/${env}/user?h=hash1&withReasons=true`);
+      expect(server.requests.length()).toEqual(1);
+      const req = await server.requests.take();
+      expect(req.path).toEqual(`/sdk/evalx/${env}/user?h=hash1&withReasons=true`);
+    });
   });
 
   it('sends custom user-agent header in GET mode when sendLDHeaders is true', async () => {
-    const config = { ...defaultConfig, sendLDHeaders: true };
-    const requestor = Requestor(platform, config, env);
-    await requestor.fetchFlagSettings(user, 'hash1');
+    await withServer(async (baseConfig, server) => {
+      const requestor = Requestor(platform, { ...baseConfig, sendLDHeaders: true }, env);
 
-    expect(server.requests.length).toEqual(1);
-    expect(server.requests[0].requestHeaders['X-LaunchDarkly-User-Agent']).toEqual(
-      utils.getLDUserAgentString(platform)
-    );
+      await requestor.fetchFlagSettings(user);
+
+      expect(server.requests.length()).toEqual(1);
+      const req = await server.requests.take();
+      expect(req.headers['x-launchdarkly-user-agent']).toEqual(utils.getLDUserAgentString(platform));
+    });
   });
 
   it('sends custom user-agent header in REPORT mode when sendLDHeaders is true', async () => {
-    const config = { ...defaultConfig, useReport: true, sendLDHeaders: true };
-    const requestor = Requestor(platform, config, env);
-    await requestor.fetchFlagSettings(user, 'hash1');
+    await withServer(async (baseConfig, server) => {
+      const requestor = Requestor(platform, { ...baseConfig, useReport: true, sendLDHeaders: true }, env);
 
-    expect(server.requests.length).toEqual(1);
-    expect(server.requests[0].requestHeaders['X-LaunchDarkly-User-Agent']).toEqual(
-      utils.getLDUserAgentString(platform)
-    );
+      await requestor.fetchFlagSettings(user, 'hash1');
+
+      expect(server.requests.length()).toEqual(1);
+      const req = await server.requests.take();
+      expect(req.headers['x-launchdarkly-user-agent']).toEqual(utils.getLDUserAgentString(platform));
+    });
   });
 
   it('does NOT send custom user-agent header when sendLDHeaders is false', async () => {
-    const config = { ...defaultConfig, useReport: true, sendLDHeaders: false };
-    const requestor = Requestor(platform, config, env);
+    await withServer(async (baseConfig, server) => {
+      const requestor = Requestor(platform, { ...baseConfig, sendLDHeaders: false }, env);
 
-    await requestor.fetchFlagSettings(user, 'hash1');
+      await requestor.fetchFlagSettings(user);
 
-    expect(server.requests.length).toEqual(1);
-    expect(server.requests[0].requestHeaders['X-LaunchDarkly-User-Agent']).toEqual(undefined);
+      expect(server.requests.length()).toEqual(1);
+      const req = await server.requests.take();
+      expect(req.headers['x-launchdarkly-user-agent']).toBeUndefined();
+    });
   });
 
   it('returns parsed JSON response on success', async () => {
-    const requestor = Requestor(platform, defaultConfig, env);
-
     const data = { foo: 'bar' };
-    server.respondWith(jsonResponse(data));
+    await withServer(async (baseConfig, server) => {
+      server.byDefault(respondJson(data));
+      const requestor = Requestor(platform, baseConfig, env);
 
-    const result = await requestor.fetchFlagSettings(user);
-    expect(result).toEqual(data);
+      const result = await requestor.fetchFlagSettings(user);
+      expect(result).toEqual(data);
+    });
   });
 
   it('returns error for non-JSON content type', async () => {
-    const requestor = Requestor(platform, defaultConfig, env);
+    await withServer(async (baseConfig, server) => {
+      server.byDefault(respond(200, { 'content-type': 'text/plain' }, 'sorry'));
+      const requestor = Requestor(platform, baseConfig, env);
 
-    server.respondWith([200, { 'Content-Type': 'text/html' }, '<html></html>']);
-
-    const err = new errors.LDFlagFetchError(messages.invalidContentType('text/html'));
-    await expect(requestor.fetchFlagSettings(user)).rejects.toThrow(err);
+      const err = new errors.LDFlagFetchError(messages.invalidContentType('text/plain'));
+      await expect(requestor.fetchFlagSettings(user)).rejects.toThrow(err);
+    });
   });
 
   it('returns error for unspecified content type', async () => {
-    const requestor = Requestor(platform, defaultConfig, env);
+    await withServer(async (baseConfig, server) => {
+      server.byDefault(respond(200, {}, ''));
+      const requestor = Requestor(platform, baseConfig, env);
 
-    server.respondWith([200, {}, '{}']);
-
-    const err = new errors.LDFlagFetchError(messages.invalidContentType(''));
-    await expect(requestor.fetchFlagSettings(user)).rejects.toThrow(err);
+      const err = new errors.LDFlagFetchError(messages.invalidContentType(''));
+      await expect(requestor.fetchFlagSettings(user)).rejects.toThrow(err);
+    });
   });
 
   it('signals specific error for 404 response', async () => {
-    const requestor = Requestor(platform, defaultConfig, env);
+    await withServer(async (baseConfig, server) => {
+      server.byDefault(respond(404));
+      const requestor = Requestor(platform, baseConfig, env);
 
-    server.respondWith(errorResponse(404));
-
-    const err = new errors.LDInvalidEnvironmentIdError(messages.environmentNotFound());
-    await expect(requestor.fetchFlagSettings(user)).rejects.toThrow(err);
+      const err = new errors.LDInvalidEnvironmentIdError(messages.environmentNotFound());
+      await expect(requestor.fetchFlagSettings(user)).rejects.toThrow(err);
+    });
   });
 
   it('signals general error for non-404 error status', async () => {
-    const requestor = Requestor(platform, defaultConfig, env);
+    await withServer(async (baseConfig, server) => {
+      server.byDefault(respond(500));
+      const requestor = Requestor(platform, baseConfig, env);
 
-    server.respondWith(errorResponse(500));
-
-    const err = new errors.LDFlagFetchError(messages.errorFetchingFlags('500'));
-    await expect(requestor.fetchFlagSettings(user)).rejects.toThrow(err);
+      const err = new errors.LDFlagFetchError(messages.errorFetchingFlags('500'));
+      await expect(requestor.fetchFlagSettings(user)).rejects.toThrow(err);
+    });
   });
 
   it('signals general error for network error', async () => {
-    const requestor = Requestor(platform, defaultConfig, env);
+    await withServer(async (baseConfig, server) => {
+      server.byDefault(networkError());
+      const requestor = Requestor(platform, baseConfig, env);
 
-    server.respondWith(req => req.error());
-
-    const err = new errors.LDFlagFetchError(messages.networkError(new Error()));
-    await expect(requestor.fetchFlagSettings(user)).rejects.toThrow(err);
+      const err = new errors.LDFlagFetchError(messages.networkError(fakeNetworkErrorValue));
+      await expect(requestor.fetchFlagSettings(user)).rejects.toThrow(err);
+    });
   });
 
   it('coalesces multiple requests so all callers get the latest result', async () => {
-    const requestor = Requestor(platform, defaultConfig, env);
+    await withServer(async (baseConfig, server) => {
+      let n = 0;
+      server.byDefault((req, res) => {
+        n++;
+        respondJson({ value: n })(req, res);
+      });
 
-    let n = 0;
-    server.autoRespond = false;
-    server.respondWith(req => {
-      n++;
-      req.respond(...jsonResponse({ value: n }));
+      const requestor = Requestor(platform, baseConfig, env);
+
+      const r1 = requestor.fetchFlagSettings(user);
+      const r2 = requestor.fetchFlagSettings(user);
+
+      const result1 = await r1;
+      const result2 = await r2;
+
+      expect(result1).toEqual({ value: 2 });
+      expect(result2).toEqual({ value: 2 });
+
+      expect(server.requests.length()).toEqual(2);
     });
-
-    const r1 = requestor.fetchFlagSettings(user);
-    const r2 = requestor.fetchFlagSettings(user);
-
-    server.respond();
-    server.respond();
-    // Note that we should only get a single response, { value: 1 } - Sinon does not call our respondWith
-    // function for the first request, because it's already been cancelled by the time the server looks
-    // at the request queue. The important thing is just that both requests get the same value.
-
-    const result1 = await r1;
-    const result2 = await r2;
-
-    expect(result1).toEqual({ value: n });
-    expect(result2).toEqual({ value: n });
   });
 
   describe('When HTTP requests are not available at all', () => {
     it('fails on fetchFlagSettings', async () => {
-      const requestor = Requestor(stubPlatform.withoutHttp(), defaultConfig, env);
-      await expect(requestor.fetchFlagSettings(user, null)).rejects.toThrow(messages.httpUnavailable());
+      await withServer(async (baseConfig, server) => {
+        const requestor = Requestor(stubPlatform.withoutHttp(), baseConfig, env);
+        await expect(requestor.fetchFlagSettings(user, null)).rejects.toThrow(messages.httpUnavailable());
+        expect(server.requests.length()).toEqual(0);
+      });
     });
   });
 });

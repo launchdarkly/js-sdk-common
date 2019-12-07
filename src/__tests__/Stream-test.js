@@ -1,8 +1,9 @@
-import EventSource, { sources, resetSources } from './EventSource-mock';
-import * as stubPlatform from './stubPlatform';
-import { asyncify, asyncSleep } from './testUtils';
 import * as messages from '../messages';
 import Stream from '../Stream';
+
+import { sleepAsync } from 'launchdarkly-js-test-helpers';
+import EventSource, { sources, resetSources } from './EventSource-mock';
+import * as stubPlatform from './stubPlatform';
 
 const noop = () => {};
 
@@ -41,13 +42,15 @@ describe('Stream', () => {
     return sources[keys[0]];
   }
 
-  function onNewEventSource(f) {
-    const factory = platform.eventSourceFactory;
-    platform.eventSourceFactory = (url, options) => {
-      const es = factory(url, options);
-      f(es, url, options);
-      return es;
-    };
+  async function onNewEventSource() {
+    return new Promise(resolve => {
+      const factory = platform.eventSourceFactory;
+      platform.eventSourceFactory = (url, options) => {
+        const es = factory(url, options);
+        resolve(es, url, options);
+        return es;
+      };
+    });
   }
 
   it('should not throw on EventSource when it does not exist', () => {
@@ -138,7 +141,7 @@ describe('Stream', () => {
 
     const nAttempts = 5;
     for (let i = 0; i < nAttempts; i++) {
-      const newEventSourcePromise = asyncify(onNewEventSource);
+      const newEventSourcePromise = onNewEventSource();
 
       es.mockError('test error');
       const es1 = await newEventSourcePromise;
@@ -147,7 +150,7 @@ describe('Stream', () => {
       expect(es1.readyState).toBe(EventSource.CONNECTING);
 
       es1.mockOpen();
-      await asyncSleep(0); // make sure the stream logic has a chance to catch up with the new EventSource state
+      await sleepAsync(0); // make sure the stream logic has a chance to catch up with the new EventSource state
 
       expect(stream.isConnected()).toBe(true);
 
@@ -165,7 +168,7 @@ describe('Stream', () => {
 
     const nAttempts = 5;
     for (let i = 0; i < nAttempts; i++) {
-      const newEventSourcePromise = asyncify(onNewEventSource);
+      const newEventSourcePromise = onNewEventSource();
 
       es.mockError('test error');
       es = await newEventSourcePromise;
@@ -189,7 +192,7 @@ describe('Stream', () => {
 
     const nAttempts = 5;
     for (let i = 0; i < nAttempts; i++) {
-      const newEventSourcePromise = asyncify(onNewEventSource);
+      const newEventSourcePromise = onNewEventSource();
 
       es.mockError('test error #1');
       es = await newEventSourcePromise;
@@ -201,7 +204,7 @@ describe('Stream', () => {
     expect(fakePut).toHaveBeenCalled();
 
     for (let i = 0; i < nAttempts; i++) {
-      const newEventSourcePromise = asyncify(onNewEventSource);
+      const newEventSourcePromise = onNewEventSource();
 
       es.mockError('test error #2');
       es = await newEventSourcePromise;

@@ -1,5 +1,7 @@
 import EventSummarizer from '../EventSummarizer';
 
+// These tests cover only the logic for counting feature requests in summary data.
+
 describe('EventSummarizer', () => {
   const user = { key: 'key1' };
 
