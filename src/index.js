@@ -69,7 +69,7 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
     if (specifiedOptions && specifiedOptions.logger) {
       return specifiedOptions.logger;
     }
-    return (extraDefaults && extraDefaults.logger) || createConsoleLogger('warn');
+    return (extraOptionDefs && extraOptionDefs.logger && extraOptionDefs.logger.default) || createConsoleLogger('warn');
   }
 
   function readFlagsFromBootstrap(data) {
