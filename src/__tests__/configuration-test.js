@@ -23,7 +23,11 @@ describe('configuration', () => {
       expectError: async message => {
         await sleepAsync(0);
         expect(errorQueue.length()).toEqual(1);
-        expect(await errorQueue.take()).toEqual(new LDInvalidArgumentError(message));
+        if (message) {
+          expect(await errorQueue.take()).toEqual(new LDInvalidArgumentError(message));
+        } else {
+          expect((await errorQueue.take()).constructor.prototype.name).toEqual('LaunchDarklyInvalidArgumentError');
+        }
       },
       expectWarningOnly: async message => {
         await sleepAsync(0);
@@ -131,33 +135,35 @@ describe('configuration', () => {
   checkNumericProperty('samplingInterval', 1);
   checkNumericProperty('streamReconnectDelay', 2000);
 
-  function checkInvalidValue(name, badValue, goodValue, done) {
-    const emitter = EventEmitter();
-    emitter.on('error', e => {
-      expect(e.constructor.prototype.name).toBe('LaunchDarklyInvalidArgumentError');
-      done();
+  function checkInvalidValue(name, badValue, message) {
+    it('disallows value of ' + JSON.stringify(badValue) + ' for ' + name, async () => {
+      const listener = errorListener();
+      const configIn = {};
+      configIn[name] = badValue;
+      const config = configuration.validate(configIn, listener.emitter, null, listener.logger);
+      await listener.expectError(message);
+      expect(config[name]).toBe(configuration.baseOptionDefs[name].default);
     });
-    const config = {};
-    config[name] = badValue;
-    const config1 = configuration.validate(config, emitter);
-    expect(config1[name]).toBe(goodValue);
   }
 
-  it('enforces non-negative event capacity', done => {
-    checkInvalidValue('eventCapacity', -1, 100, done);
-  });
+  checkInvalidValue('eventCapacity', -1);
+  checkInvalidValue('eventCapacity', 0);
+  checkInvalidValue('flushInterval', 1999);
+  checkInvalidValue('samplingInterval', -1);
 
-  it('enforces nonzero event capacity', done => {
-    checkInvalidValue('eventCapacity', 0, 100, done);
-  });
+  function checkValidValue(name, goodValue) {
+    it('allows value of ' + JSON.stringify(goodValue) + ' for ' + name, async () => {
+      const listener = errorListener();
+      const configIn = {};
+      configIn[name] = goodValue;
+      const config = configuration.validate(configIn, listener.emitter, null, listener.logger);
+      await listener.expectNoErrors();
+      expect(config[name]).toBe(goodValue);
+    });
+  }
 
-  it('enforces minimum flush interval', done => {
-    checkInvalidValue('flushInterval', 1999, 2000, done);
-  });
-
-  it('disallows negative sampling interval', done => {
-    checkInvalidValue('samplingInterval', -1, 0, done);
-  });
+  checkValidValue('bootstrap', 'localstorage');
+  checkValidValue('bootstrap', { flag: 'value' });
 
   it('complains if you set an unknown property', async () => {
     const listener = errorListener();
