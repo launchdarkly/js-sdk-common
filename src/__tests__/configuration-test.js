@@ -36,7 +36,7 @@ describe('configuration', () => {
   async function expectDefault(name) {
     const listener = errorListener();
     const config = configuration.validate({}, listener.emitter, null, listener.logger);
-    expect(config[name]).toBe(configuration.baseDefaults[name]);
+    expect(config[name]).toBe(configuration.baseOptionDefs[name].default);
     await listener.expectNoErrors();
   }
 
@@ -121,7 +121,7 @@ describe('configuration', () => {
       const configIn2 = {};
       configIn2[name] = 'no';
       const config2 = configuration.validate(configIn2, listener.emitter, null, listener.logger);
-      expect(config2[name]).toBe(configuration.baseDefaults[name]);
+      expect(config2[name]).toBe(configuration.baseOptionDefs[name].default);
       await listener.expectError(messages.wrongOptionType(name, 'number', 'string'));
     });
   }
@@ -169,22 +169,23 @@ describe('configuration', () => {
 
   it('allows platform-specific SDK options whose defaults are specified by the SDK', async () => {
     const listener = errorListener();
-    const platformSpecificDefaults = {
-      extraBooleanOption: true,
-      extraOptionWithNoDefault: null,
-      extraNumericOption: 2,
-      extraStringOption: 'yes',
+    const platformSpecificOptions = {
+      extraBooleanOption: { default: true },
+      extraNumericOption: { default: 2 },
+      extraNumericOptionWithoutDefault: { type: 'number' },
+      extraStringOption: { default: 'yes' },
+      extraStringOptionWithoutDefault: { type: 'string' },
     };
     const configIn = {
       extraBooleanOption: false,
-      extraOptionWithNoDefault: 'whatever',
-      extraNumericOption: 'not a number',
+      extraNumericOptionWithoutDefault: 'not a number',
+      extraStringOptionWithoutDefault: 'ok',
     };
-    const config = configuration.validate(configIn, listener.emitter, platformSpecificDefaults, listener.logger);
+    const config = configuration.validate(configIn, listener.emitter, platformSpecificOptions, listener.logger);
     expect(config.extraBooleanOption).toBe(false);
-    expect(config.extraOptionWithNoDefault).toBe('whatever');
     expect(config.extraNumericOption).toBe(2);
     expect(config.extraStringOption).toBe('yes');
-    await listener.expectError(messages.wrongOptionType('extraNumericOption', 'number', 'string'));
+    expect(config.extraStringOptionWithoutDefault).toBe('ok');
+    await listener.expectError(messages.wrongOptionType('extraNumericOptionWithoutDefault', 'number', 'string'));
   });
 });
