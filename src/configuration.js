@@ -8,7 +8,7 @@ import * as utils from './utils';
 // "type" are "boolean", "string", "number", "array", "object", "function", or several of these OR'd
 // together with "|" ("function|object").
 //
-// The extraOptions parameter to validate() uses the same format.
+// The extraOptionDefs parameter to validate() uses the same format.
 export const baseOptionDefs = {
   baseUrl: { default: 'https://app.launchdarkly.com' },
   streamUrl: { default: 'https://clientstream.launchdarkly.com' },
