@@ -23,7 +23,11 @@ describe('configuration', () => {
       expectError: async message => {
         await sleepAsync(0);
         expect(errorQueue.length()).toEqual(1);
-        expect(await errorQueue.take()).toEqual(new LDInvalidArgumentError(message));
+        if (message) {
+          expect(await errorQueue.take()).toEqual(new LDInvalidArgumentError(message));
+        } else {
+          expect((await errorQueue.take()).constructor.prototype.name).toEqual('LaunchDarklyInvalidArgumentError');
+        }
       },
       expectWarningOnly: async message => {
         await sleepAsync(0);
@@ -36,7 +40,7 @@ describe('configuration', () => {
   async function expectDefault(name) {
     const listener = errorListener();
     const config = configuration.validate({}, listener.emitter, null, listener.logger);
-    expect(config[name]).toBe(configuration.baseDefaults[name]);
+    expect(config[name]).toBe(configuration.baseOptionDefs[name].default);
     await listener.expectNoErrors();
   }
 
@@ -121,7 +125,7 @@ describe('configuration', () => {
       const configIn2 = {};
       configIn2[name] = 'no';
       const config2 = configuration.validate(configIn2, listener.emitter, null, listener.logger);
-      expect(config2[name]).toBe(configuration.baseDefaults[name]);
+      expect(config2[name]).toBe(configuration.baseOptionDefs[name].default);
       await listener.expectError(messages.wrongOptionType(name, 'number', 'string'));
     });
   }
@@ -131,33 +135,34 @@ describe('configuration', () => {
   checkNumericProperty('samplingInterval', 1);
   checkNumericProperty('streamReconnectDelay', 2000);
 
-  function checkInvalidValue(name, badValue, goodValue, done) {
-    const emitter = EventEmitter();
-    emitter.on('error', e => {
-      expect(e.constructor.prototype.name).toBe('LaunchDarklyInvalidArgumentError');
-      done();
+  function checkMinimumValue(name, minimum) {
+    it('disallows value below minimum of ' + minimum + ' for ' + name, async () => {
+      const listener = errorListener();
+      const configIn = {};
+      configIn[name] = minimum - 1;
+      const config = configuration.validate(configIn, listener.emitter, null, listener.logger);
+      await listener.expectError(messages.optionBelowMinimum(name, minimum - 1, minimum));
+      expect(config[name]).toBe(minimum);
     });
-    const config = {};
-    config[name] = badValue;
-    const config1 = configuration.validate(config, emitter);
-    expect(config1[name]).toBe(goodValue);
   }
 
-  it('enforces non-negative event capacity', done => {
-    checkInvalidValue('eventCapacity', -1, 100, done);
-  });
+  checkMinimumValue('eventCapacity', 1);
+  checkMinimumValue('flushInterval', 2000);
+  checkMinimumValue('samplingInterval', 0);
 
-  it('enforces nonzero event capacity', done => {
-    checkInvalidValue('eventCapacity', 0, 100, done);
-  });
+  function checkValidValue(name, goodValue) {
+    it('allows value of ' + JSON.stringify(goodValue) + ' for ' + name, async () => {
+      const listener = errorListener();
+      const configIn = {};
+      configIn[name] = goodValue;
+      const config = configuration.validate(configIn, listener.emitter, null, listener.logger);
+      await listener.expectNoErrors();
+      expect(config[name]).toBe(goodValue);
+    });
+  }
 
-  it('enforces minimum flush interval', done => {
-    checkInvalidValue('flushInterval', 1999, 2000, done);
-  });
-
-  it('disallows negative sampling interval', done => {
-    checkInvalidValue('samplingInterval', -1, 0, done);
-  });
+  checkValidValue('bootstrap', 'localstorage');
+  checkValidValue('bootstrap', { flag: 'value' });
 
   it('complains if you set an unknown property', async () => {
     const listener = errorListener();
@@ -169,22 +174,23 @@ describe('configuration', () => {
 
   it('allows platform-specific SDK options whose defaults are specified by the SDK', async () => {
     const listener = errorListener();
-    const platformSpecificDefaults = {
-      extraBooleanOption: true,
-      extraOptionWithNoDefault: null,
-      extraNumericOption: 2,
-      extraStringOption: 'yes',
+    const platformSpecificOptions = {
+      extraBooleanOption: { default: true },
+      extraNumericOption: { default: 2 },
+      extraNumericOptionWithoutDefault: { type: 'number' },
+      extraStringOption: { default: 'yes' },
+      extraStringOptionWithoutDefault: { type: 'string' },
     };
     const configIn = {
       extraBooleanOption: false,
-      extraOptionWithNoDefault: 'whatever',
-      extraNumericOption: 'not a number',
+      extraNumericOptionWithoutDefault: 'not a number',
+      extraStringOptionWithoutDefault: 'ok',
     };
-    const config = configuration.validate(configIn, listener.emitter, platformSpecificDefaults, listener.logger);
+    const config = configuration.validate(configIn, listener.emitter, platformSpecificOptions, listener.logger);
     expect(config.extraBooleanOption).toBe(false);
-    expect(config.extraOptionWithNoDefault).toBe('whatever');
     expect(config.extraNumericOption).toBe(2);
     expect(config.extraStringOption).toBe('yes');
-    await listener.expectError(messages.wrongOptionType('extraNumericOption', 'number', 'string'));
+    expect(config.extraStringOptionWithoutDefault).toBe('ok');
+    await listener.expectError(messages.wrongOptionType('extraNumericOptionWithoutDefault', 'number', 'string'));
   });
 });

@@ -136,6 +136,9 @@ export const wrongOptionType = (name, expectedType, actualType) =>
 export const wrongOptionTypeBoolean = (name, actualType) =>
   'Config option "' + name + '" should be a boolean, got ' + actualType + ', converting to boolean';
 
+export const optionBelowMinimum = (name, value, minimum) =>
+  'Config option "' + name + '" was set to ' + value + ', changing to minimum value of ' + minimum;
+
 export const debugPolling = function(url) {
   return 'polling for feature flags at ' + url;
 };
