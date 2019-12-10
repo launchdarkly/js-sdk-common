@@ -135,21 +135,20 @@ describe('configuration', () => {
   checkNumericProperty('samplingInterval', 1);
   checkNumericProperty('streamReconnectDelay', 2000);
 
-  function checkInvalidValue(name, badValue, message) {
-    it('disallows value of ' + JSON.stringify(badValue) + ' for ' + name, async () => {
+  function checkMinimumValue(name, minimum) {
+    it('disallows value below minimum of ' + minimum + ' for ' + name, async () => {
       const listener = errorListener();
       const configIn = {};
-      configIn[name] = badValue;
+      configIn[name] = minimum - 1;
       const config = configuration.validate(configIn, listener.emitter, null, listener.logger);
-      await listener.expectError(message);
-      expect(config[name]).toBe(configuration.baseOptionDefs[name].default);
+      await listener.expectError(messages.optionBelowMinimum(name, minimum - 1, minimum));
+      expect(config[name]).toBe(minimum);
     });
   }
 
-  checkInvalidValue('eventCapacity', -1);
-  checkInvalidValue('eventCapacity', 0);
-  checkInvalidValue('flushInterval', 1999);
-  checkInvalidValue('samplingInterval', -1);
+  checkMinimumValue('eventCapacity', 1);
+  checkMinimumValue('flushInterval', 2000);
+  checkMinimumValue('samplingInterval', 0);
 
   function checkValidValue(name, goodValue) {
     it('allows value of ' + JSON.stringify(goodValue) + ' for ' + name, async () => {
