@@ -3,9 +3,8 @@ import * as utils from './utils';
 
 const MAX_URL_LENGTH = 2000;
 
-export default function EventSender(platform, eventsUrl, environmentId, imageCreator) {
-  const postUrl = eventsUrl + '/events/bulk/' + environmentId;
-  const imageUrl = eventsUrl + '/a/' + environmentId + '.gif';
+export default function EventSender(platform, environmentId, imageCreator) {
+  const imageUrlPath = '/a/' + environmentId + '.gif';
   const sender = {};
 
   function loadUrlUsingImage(src) {
@@ -25,7 +24,7 @@ export default function EventSender(platform, eventsUrl, environmentId, imageCre
     return ret;
   }
 
-  function sendChunk(events, usePost) {
+  sender.sendChunk = (events, url, usePost) => {
     const createImage = imageCreator || loadUrlUsingImage;
     const jsonBody = JSON.stringify(events);
 
@@ -38,7 +37,7 @@ export default function EventSender(platform, eventsUrl, environmentId, imageCre
         utils.getLDHeaders(platform)
       );
       return platform
-        .httpRequest('POST', postUrl, headers, jsonBody)
+        .httpRequest('POST', url, headers, jsonBody)
         .promise.then(result => {
           if (!result) {
             // This was a response from a fire-and-forget request, so we won't have a status.
@@ -61,15 +60,15 @@ export default function EventSender(platform, eventsUrl, environmentId, imageCre
     if (usePost) {
       return doPostRequest(true).catch(() => {});
     } else {
-      const src = imageUrl + '?d=' + utils.base64URLEncode(jsonBody);
+      const src = url + imageUrlPath + '?d=' + utils.base64URLEncode(jsonBody);
       createImage(src);
       return Promise.resolve();
       // We do not specify an onload handler for the image because we don't want the client to wait around
       // for the image to load - it won't provide a server response, there's nothing to be done.
     }
-  }
+  };
 
-  sender.sendEvents = function(events) {
+  sender.sendEvents = function(events, url) {
     if (!platform.httpRequest) {
       return Promise.resolve();
     }
@@ -79,11 +78,11 @@ export default function EventSender(platform, eventsUrl, environmentId, imageCre
       // no need to break up events into chunks if we can send a POST
       chunks = [events];
     } else {
-      chunks = utils.chunkUserEventsForUrl(MAX_URL_LENGTH - eventsUrl.length, events);
+      chunks = utils.chunkUserEventsForUrl(MAX_URL_LENGTH - url.length, events);
     }
     const results = [];
     for (let i = 0; i < chunks.length; i++) {
-      results.push(sendChunk(chunks[i], canPost));
+      results.push(sender.sendChunk(chunks[i], url, canPost));
     }
     return Promise.all(results);
   };

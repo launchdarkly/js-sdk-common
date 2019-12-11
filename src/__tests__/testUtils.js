@@ -1,3 +1,5 @@
+import { AsyncQueue } from 'launchdarkly-js-test-helpers';
+
 export const numericUser = {
   key: 1,
   secondary: 2,
@@ -52,4 +54,24 @@ export function makeBootstrap(flagsData) {
     ret.$flagsState[key] = state;
   }
   return ret;
+}
+
+export function MockEventSender() {
+  const calls = new AsyncQueue();
+  let serverTime = null;
+  let status = 200;
+  const sender = {
+    calls,
+    sendEvents: (events, url) => {
+      calls.add({ events, url });
+      return Promise.resolve({ serverTime, status });
+    },
+    setServerTime: time => {
+      serverTime = time;
+    },
+    setStatus: respStatus => {
+      status = respStatus;
+    },
+  };
+  return sender;
 }

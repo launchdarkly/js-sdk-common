@@ -1,11 +1,13 @@
 import EventProcessor from './EventProcessor';
 import EventEmitter from './EventEmitter';
+import EventSender from './EventSender';
 import Store from './Store';
 import Stream from './Stream';
 import Requestor from './Requestor';
 import Identity from './Identity';
 import UserValidator from './UserValidator';
 import * as configuration from './configuration';
+import * as diagnostics from './diagnosticEvents';
 import createConsoleLogger from './consoleLogger';
 import * as utils from './utils';
 import * as errors from './errors';
@@ -33,9 +35,27 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
   const hash = options.hash;
   const sendEvents = options.sendEvents;
   let environment = env;
-  const stream = Stream(platform, options, environment, hash);
-  const events = options.eventProcessor || EventProcessor(platform, options, environment, emitter);
+
+  const eventSender = EventSender(platform, environment);
+
+  const diagnosticsEnabled = options.sendEvents && !options.diagnosticsOptOut;
+  const diagnosticId = diagnosticsEnabled ? diagnostics.DiagnosticId(environment) : null;
+  const diagnosticsAccumulator = diagnosticsEnabled ? diagnostics.DiagnosticsAccumulator(new Date().getTime()) : null;
+  const diagnosticsManager = diagnosticsEnabled
+    ? diagnostics.DiagnosticsManager(platform, diagnosticsAccumulator, eventSender, environment, options, diagnosticId)
+    : null;
+  if (diagnosticsManager) {
+    diagnosticsManager.start();
+  }
+
+  const stream = Stream(platform, options, environment, diagnosticsAccumulator, hash);
+
+  const events =
+    options.eventProcessor ||
+    EventProcessor(platform, options, environment, diagnosticsAccumulator, emitter, eventSender);
+
   const requestor = Requestor(platform, options, environment);
+
   const seenRequests = {};
   let flags = {};
   let useLocalStorage;
@@ -483,6 +503,9 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
     } else if (!shouldBeStreaming && streamActive) {
       disconnectStream();
     }
+    if (diagnosticsManager) {
+      diagnosticsManager.setStreaming(shouldBeStreaming);
+    }
   }
 
   function isChangeEventKey(event) {
@@ -630,6 +653,9 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
 
   function start() {
     if (sendEvents) {
+      if (diagnosticsManager) {
+        diagnosticsManager.start();
+      }
       events.start();
     }
   }
@@ -645,6 +671,9 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
     const p = Promise.resolve()
       .then(() => {
         disconnectStream();
+        if (diagnosticsManager) {
+          diagnosticsManager.stop();
+        }
         if (sendEvents) {
           events.stop();
           return events.flush();

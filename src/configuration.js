@@ -29,6 +29,8 @@ export const baseOptionDefs = {
   allAttributesPrivate: { default: false },
   privateAttributeNames: { default: [] },
   bootstrap: { type: 'string|object' },
+  diagnosticRecordingInterval: { default: 900000, minimum: 2000 },
+  diagnosticOptOut: { default: false },
   stateProvider: { type: 'object' }, // not a public option, used internally
 };
 

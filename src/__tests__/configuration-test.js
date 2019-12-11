@@ -109,6 +109,7 @@ describe('configuration', () => {
   checkBooleanProperty('sendEventsOnlyForVariation');
   checkBooleanProperty('useReport');
   checkBooleanProperty('evaluationReasons');
+  checkBooleanProperty('diagnosticOptOut');
 
   function checkNumericProperty(name, validValue) {
     it('enforces numeric type and default for "' + name + '"', async () => {
@@ -149,6 +150,7 @@ describe('configuration', () => {
   checkMinimumValue('eventCapacity', 1);
   checkMinimumValue('flushInterval', 2000);
   checkMinimumValue('samplingInterval', 0);
+  checkMinimumValue('diagnosticRecordingInterval', 2000);
 
   function checkValidValue(name, goodValue) {
     it('allows value of ' + JSON.stringify(goodValue) + ' for ' + name, async () => {

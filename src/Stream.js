@@ -10,7 +10,7 @@ import { base64URLEncode } from './utils';
 //   it is in an active state (connected or connecting).
 // eventSourceAllowsReport: true if REPORT is supported.
 
-export default function Stream(platform, config, environment, hash) {
+export default function Stream(platform, config, environment, diagnosticsAccumulator, hash) {
   const baseUrl = config.streamUrl;
   const logger = config.logger;
   const stream = {};
@@ -18,9 +18,11 @@ export default function Stream(platform, config, environment, hash) {
   const useReport = config.useReport;
   const withReasons = config.evaluationReasons;
   const streamReconnectDelay = config.streamReconnectDelay;
+  const diagAcc = diagnosticsAccumulator;
   let firstConnectionErrorLogged = false;
   let es = null;
   let reconnectTimeoutReference = null;
+  let connectionAttemptStartTime;
   let user = null;
   let handlers = null;
 
@@ -34,6 +36,7 @@ export default function Stream(platform, config, environment, hash) {
         // We will decorate *all* handlers to do this to keep this abstraction agnostic
         // for different stream implementations.
         firstConnectionErrorLogged = false;
+        logConnectionResult(true);
         newHandlers[key] && newHandlers[key](e);
       };
     }
@@ -55,6 +58,7 @@ export default function Stream(platform, config, environment, hash) {
       logger.warn(messages.streamError(err, streamReconnectDelay));
       firstConnectionErrorLogged = true;
     }
+    logConnectionResult(false);
     closeConnection();
     tryConnect(streamReconnectDelay);
   }
@@ -99,6 +103,8 @@ export default function Stream(platform, config, environment, hash) {
 
       closeConnection();
       logger.info(messages.streamConnecting(url));
+      logConnectionStarted();
+
       es = platform.eventSourceFactory(url, options);
       for (const key in handlers) {
         if (handlers.hasOwnProperty(key)) {
@@ -116,6 +122,17 @@ export default function Stream(platform, config, environment, hash) {
       es.close();
       es = null;
     }
+  }
+
+  function logConnectionStarted() {
+    connectionAttemptStartTime = new Date().getTime();
+  }
+
+  function logConnectionResult(success) {
+    if (connectionAttemptStartTime && diagAcc) {
+      diagAcc.recordStreamInit(connectionAttemptStartTime, !success, new Date().getTime() - connectionAttemptStartTime);
+    }
+    connectionAttemptStartTime = null;
   }
 
   return stream;

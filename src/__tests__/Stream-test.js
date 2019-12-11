@@ -1,3 +1,4 @@
+import { DiagnosticsAccumulator } from '../diagnosticEvents';
 import * as messages from '../messages';
 import Stream from '../Stream';
 
@@ -54,7 +55,7 @@ describe('Stream', () => {
   });
 
   it('adds secure mode hash to URL if provided', async () => {
-    const stream = new Stream(platform, defaultConfig, envName, hash);
+    const stream = new Stream(platform, defaultConfig, envName, null, hash);
     stream.connect(user, {});
 
     const created = await platform.testing.expectStream(
@@ -191,5 +192,58 @@ describe('Stream', () => {
       messages.streamError('test error #1', 1),
       messages.streamError('test error #2', 1),
     ]);
+  });
+
+  describe('interaction with diagnostic events', () => {
+    it('records successful stream initialization', async () => {
+      const startTime = new Date().getTime();
+      const acc = DiagnosticsAccumulator(startTime);
+      const config = { ...defaultConfig, streamReconnectDelay: 1 };
+      const stream = new Stream(platform, config, envName, acc);
+
+      expect(acc.getProps().streamInits.length).toEqual(0);
+
+      stream.connect(user, {
+        put: jest.fn(),
+      });
+
+      const created = await platform.testing.expectStream();
+      const es = created.eventSource;
+      es.mockOpen();
+
+      // streamInits should not be updated until we actually receive something
+      expect(acc.getProps().streamInits.length).toEqual(0);
+
+      es.mockEmit('put', 'something');
+
+      const streamInits = acc.getProps().streamInits;
+      expect(streamInits.length).toEqual(1);
+      expect(streamInits[0].timestamp).toBeGreaterThanOrEqual(startTime);
+      expect(streamInits[0].durationMillis).toBeGreaterThanOrEqual(0);
+      expect(streamInits[0].failed).toBeFalsy();
+    });
+
+    it('records failed stream initialization', async () => {
+      const startTime = new Date().getTime();
+      const acc = DiagnosticsAccumulator(startTime);
+      const config = { ...defaultConfig, streamReconnectDelay: 1 };
+      const stream = new Stream(platform, config, envName, acc);
+
+      expect(acc.getProps().streamInits.length).toEqual(0);
+
+      stream.connect(user, {
+        put: jest.fn(),
+      });
+
+      const created = await platform.testing.expectStream();
+      const es = created.eventSource;
+      es.mockError('test error');
+
+      const streamInits = acc.getProps().streamInits;
+      expect(streamInits.length).toEqual(1);
+      expect(streamInits[0].timestamp).toBeGreaterThanOrEqual(startTime);
+      expect(streamInits[0].durationMillis).toBeGreaterThanOrEqual(0);
+      expect(streamInits[0].failed).toBe(true);
+    });
   });
 });
