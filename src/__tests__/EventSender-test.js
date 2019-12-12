@@ -14,12 +14,10 @@ import * as stubPlatform from './stubPlatform';
 
 describe('EventSender', () => {
   let platform;
-  let platformWithoutCors;
   const envId = 'env';
 
   beforeEach(() => {
     platform = stubPlatform.defaults();
-    platformWithoutCors = { ...platform, httpAllowsPost: () => false };
   });
 
   function fakeImageCreator() {
@@ -53,7 +51,8 @@ describe('EventSender', () => {
     it('should encode events in a single chunk if they fit', async () => {
       const server = platform.testing.http.newServer();
       const imageCreator = fakeImageCreator();
-      const sender = EventSender(platformWithoutCors, server.url, envId, imageCreator);
+      const platformWithoutCors = { ...platform, httpAllowsPost: () => false, httpFallbackPing: imageCreator };
+      const sender = EventSender(platformWithoutCors, server.url, envId);
       const event1 = { kind: 'identify', key: 'userKey1' };
       const event2 = { kind: 'identify', key: 'userKey2' };
       const events = [event1, event2];
@@ -70,7 +69,8 @@ describe('EventSender', () => {
     it('should send events in multiple chunks if necessary', async () => {
       const server = platform.testing.http.newServer();
       const imageCreator = fakeImageCreator();
-      const sender = EventSender(platformWithoutCors, server.url, envId, imageCreator);
+      const platformWithoutCors = { ...platform, httpAllowsPost: () => false, httpFallbackPing: imageCreator };
+      const sender = EventSender(platformWithoutCors, server.url, envId);
       const events = [];
       for (let i = 0; i < 80; i++) {
         events.push({ kind: 'identify', key: 'thisIsALongUserKey' + i });

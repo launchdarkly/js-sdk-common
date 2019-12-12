@@ -14,6 +14,7 @@ import { MockHttpState } from './mockHttp';
 //   requestProperties.promise: Promise     // resolves to { status, header: (name) => value, body } or rejects for a network error
 //   requestProperties.cancel?: () => void  // provided if it's possible to cancel requests in this implementation
 // httpAllowsPost: boolean        // true if we can do cross-origin POST requests
+// httpFallbackPing?: (url) => {} // method for doing an HTTP GET without awaiting the result (i.e. browser image mechanism)
 // getCurrentUrl: () => string    // returns null if we're not in a browser
 // isDoNotTrack: () => boolean
 // localStorage: {

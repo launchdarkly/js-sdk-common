@@ -3,15 +3,11 @@ import * as utils from './utils';
 
 const MAX_URL_LENGTH = 2000;
 
-export default function EventSender(platform, eventsUrl, environmentId, imageCreator) {
+export default function EventSender(platform, eventsUrl, environmentId) {
   const postUrl = eventsUrl + '/events/bulk/' + environmentId;
   const imageUrl = eventsUrl + '/a/' + environmentId + '.gif';
+  const httpFallbackPing = platform.httpFallbackPing; // this will be set for us if we're in the browsr SDK
   const sender = {};
-
-  function loadUrlUsingImage(src) {
-    const img = new window.Image();
-    img.src = src;
-  }
 
   function getResponseInfo(result) {
     const ret = { status: result.status };
@@ -26,7 +22,6 @@ export default function EventSender(platform, eventsUrl, environmentId, imageCre
   }
 
   function sendChunk(events, usePost) {
-    const createImage = imageCreator || loadUrlUsingImage;
     const jsonBody = JSON.stringify(events);
 
     function doPostRequest(canRetry) {
@@ -61,11 +56,8 @@ export default function EventSender(platform, eventsUrl, environmentId, imageCre
     if (usePost) {
       return doPostRequest(true).catch(() => {});
     } else {
-      const src = imageUrl + '?d=' + utils.base64URLEncode(jsonBody);
-      createImage(src);
-      return Promise.resolve();
-      // We do not specify an onload handler for the image because we don't want the client to wait around
-      // for the image to load - it won't provide a server response, there's nothing to be done.
+      httpFallbackPing && httpFallbackPing(imageUrl + '?d=' + utils.base64URLEncode(jsonBody));
+      return Promise.resolve(); // we don't wait for this request to complete, it's just a one-way ping
     }
   }
 
