@@ -14,7 +14,7 @@ export default function EventProcessor(
   sender = null
 ) {
   const processor = {};
-  const eventSender = sender || EventSender(platform, environmentId, null, options);
+  const eventSender = sender || EventSender(platform, environmentId, options);
   const mainEventsUrl = options.eventsUrl + '/events/bulk/' + environmentId;
   const summarizer = EventSummarizer();
   const userFilter = UserFilter(options);
