@@ -85,8 +85,8 @@ function DiagnosticsManager(platform, accumulator, eventSender, environmentId, c
 
   function makeInitProperties() {
     return {
-      sdk: makeSdkData(config, platform.diagnosticSdkData),
-      configuration: makeConfigData(config),
+      sdk: makeSdkData(),
+      configuration: makeConfigData(),
       platform: platform.diagnosticPlatformData,
     };
   }
