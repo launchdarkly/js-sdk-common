@@ -16,6 +16,7 @@ export const baseOptionDefs = {
   streamUrl: { default: 'https://clientstream.launchdarkly.com' },
   eventsUrl: { default: 'https://events.launchdarkly.com' },
   sendEvents: { default: true },
+  streaming: { type: 'boolean' }, // default for this is undefined, which is different from false
   sendLDHeaders: { default: true },
   inlineUsersInEvents: { default: false },
   allowFrequentDuplicateEvents: { default: false },
