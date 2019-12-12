@@ -174,23 +174,27 @@ describe('configuration', () => {
 
   it('allows platform-specific SDK options whose defaults are specified by the SDK', async () => {
     const listener = errorListener();
+    const fn = () => {};
     const platformSpecificOptions = {
       extraBooleanOption: { default: true },
       extraNumericOption: { default: 2 },
       extraNumericOptionWithoutDefault: { type: 'number' },
       extraStringOption: { default: 'yes' },
       extraStringOptionWithoutDefault: { type: 'string' },
+      extraFunctionOption: { type: 'function' },
     };
     const configIn = {
       extraBooleanOption: false,
       extraNumericOptionWithoutDefault: 'not a number',
       extraStringOptionWithoutDefault: 'ok',
+      extraFunctionOption: fn,
     };
     const config = configuration.validate(configIn, listener.emitter, platformSpecificOptions, listener.logger);
     expect(config.extraBooleanOption).toBe(false);
     expect(config.extraNumericOption).toBe(2);
     expect(config.extraStringOption).toBe('yes');
     expect(config.extraStringOptionWithoutDefault).toBe('ok');
+    expect(config.extraFunctionOption).toBe(fn);
     await listener.expectError(messages.wrongOptionType('extraNumericOptionWithoutDefault', 'number', 'string'));
   });
 });
