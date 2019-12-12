@@ -3,8 +3,15 @@ import * as utils from './utils';
 
 const MAX_URL_LENGTH = 2000;
 
-export default function EventSender(platform, environmentId, imageCreator) {
+export default function EventSender(platform, environmentId, imageCreator, options) {
   const imageUrlPath = '/a/' + environmentId + '.gif';
+  const headers = utils.extend(
+    {
+      'Content-Type': 'application/json',
+      'X-LaunchDarkly-Event-Schema': '3',
+    },
+    utils.getLDHeaders(platform, options)
+  );
   const sender = {};
 
   function loadUrlUsingImage(src) {
@@ -29,13 +36,6 @@ export default function EventSender(platform, environmentId, imageCreator) {
     const jsonBody = JSON.stringify(events);
 
     function doPostRequest(canRetry) {
-      const headers = utils.extend(
-        {
-          'Content-Type': 'application/json',
-          'X-LaunchDarkly-Event-Schema': '3',
-        },
-        utils.getLDHeaders(platform)
-      );
       return platform
         .httpRequest('POST', url, headers, jsonBody)
         .promise.then(result => {

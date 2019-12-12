@@ -31,6 +31,8 @@ export const baseOptionDefs = {
   bootstrap: { type: 'string|object' },
   diagnosticRecordingInterval: { default: 900000, minimum: 2000 },
   diagnosticOptOut: { default: false },
+  wrapperName: { type: 'string' },
+  wrapperVersion: { type: 'string' },
   stateProvider: { type: 'object' }, // not a public option, used internally
 };
 
@@ -87,7 +89,7 @@ export function validate(options, emitter, extraOptionDefs, logger) {
         return 'array';
       }
       const t = typeof value;
-      if (t === 'boolean' || t === 'string' || t === 'number') {
+      if (t === 'boolean' || t === 'string' || t === 'number' || t === 'function') {
         return t;
       }
       return 'object';

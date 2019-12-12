@@ -68,6 +68,7 @@ export function defaults() {
         }),
     },
     userAgent: 'stubClient',
+    version: '1.2.3',
 
     // extra methods used for testing
     testing: {

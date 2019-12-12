@@ -1,5 +1,5 @@
 import * as messages from './messages';
-import { base64URLEncode } from './utils';
+import { base64URLEncode, getLDHeaders } from './utils';
 
 // The underlying event source implementation is abstracted via the platform object, which should
 // have these three properties:
@@ -18,7 +18,7 @@ export default function Stream(platform, config, environment, diagnosticsAccumul
   const useReport = config.useReport;
   const withReasons = config.evaluationReasons;
   const streamReconnectDelay = config.streamReconnectDelay;
-  const diagAcc = diagnosticsAccumulator;
+  const headers = getLDHeaders(platform, config);
   let firstConnectionErrorLogged = false;
   let es = null;
   let reconnectTimeoutReference = null;
@@ -77,7 +77,7 @@ export default function Stream(platform, config, environment, diagnosticsAccumul
     reconnectTimeoutReference = null;
     let url;
     let query = '';
-    const options = {};
+    const options = { headers };
     if (platform.eventSourceFactory) {
       if (hash !== null && hash !== undefined) {
         query = 'h=' + hash;
@@ -86,7 +86,7 @@ export default function Stream(platform, config, environment, diagnosticsAccumul
         if (platform.eventSourceAllowsReport) {
           url = evalUrlPrefix;
           options.method = 'REPORT';
-          options.headers = { 'Content-Type': 'application/json' };
+          options.headers['Content-Type'] = 'application/json';
           options.body = JSON.stringify(user);
         } else {
           // if we can't do REPORT, fall back to the old ping-based stream
@@ -129,8 +129,8 @@ export default function Stream(platform, config, environment, diagnosticsAccumul
   }
 
   function logConnectionResult(success) {
-    if (connectionAttemptStartTime && diagAcc) {
-      diagAcc.recordStreamInit(connectionAttemptStartTime, !success, new Date().getTime() - connectionAttemptStartTime);
+    if (connectionAttemptStartTime && diagnosticsAccumulator) {
+      diagnosticsAccumulator.recordStreamInit(connectionAttemptStartTime, !success, new Date().getTime() - connectionAttemptStartTime);
     }
     connectionAttemptStartTime = null;
   }

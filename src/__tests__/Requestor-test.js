@@ -159,37 +159,71 @@ describe('Requestor', () => {
 
   it('sends custom user-agent header in GET mode when sendLDHeaders is true', async () => {
     await withServer(async (baseConfig, server) => {
-      const requestor = Requestor(platform, { ...baseConfig, sendLDHeaders: true }, env);
+      const config = { ...baseConfig, sendLDHeaders: true };
+      const requestor = Requestor(platform, config, env);
 
       await requestor.fetchFlagSettings(user);
 
       expect(server.requests.length()).toEqual(1);
       const req = await server.requests.take();
       expect(req.headers['x-launchdarkly-user-agent']).toEqual(utils.getLDUserAgentString(platform));
+      expect(req.headers['x-launchdarkly-wrapper']).toBeUndefined();
+    });
+  });
+
+  it('sends wrapper info if specified in GET mode when sendLDHeaders is true', async () => {
+    await withServer(async (baseConfig, server) => {
+      const config = { ...baseConfig, sendLDHeaders: true, wrapperName: 'FakeSDK' };
+      const requestor = Requestor(platform, config, env);
+
+      await requestor.fetchFlagSettings(user);
+
+      expect(server.requests.length()).toEqual(1);
+      const req = await server.requests.take();
+      expect(req.headers['x-launchdarkly-user-agent']).toEqual(utils.getLDUserAgentString(platform));
+      expect(req.headers['x-launchdarkly-wrapper']).toEqual('FakeSDK');
     });
   });
 
   it('sends custom user-agent header in REPORT mode when sendLDHeaders is true', async () => {
     await withServer(async (baseConfig, server) => {
-      const requestor = Requestor(platform, { ...baseConfig, useReport: true, sendLDHeaders: true }, env);
+      const config = { ...baseConfig, useReport: true, sendLDHeaders: true };
+      const requestor = Requestor(platform, config, env);
 
       await requestor.fetchFlagSettings(user, 'hash1');
 
       expect(server.requests.length()).toEqual(1);
       const req = await server.requests.take();
       expect(req.headers['x-launchdarkly-user-agent']).toEqual(utils.getLDUserAgentString(platform));
+      expect(req.headers['x-launchdarkly-wrapper']).toBeUndefined();
+    });
+  });
+
+  it('sends wrapper info if specified in REPORT mode when sendLDHeaders is true', async () => {
+    await withServer(async (baseConfig, server) => {
+      const config = { ...baseConfig, useReport: true, sendLDHeaders: true, wrapperName: 'FakeSDK' };
+      const requestor = Requestor(platform, config, env);
+
+      await requestor.fetchFlagSettings(user, 'hash1');
+
+      expect(server.requests.length()).toEqual(1);
+      const req = await server.requests.take();
+      expect(req.headers['x-launchdarkly-user-agent']).toEqual(utils.getLDUserAgentString(platform));
+      expect(req.headers['x-launchdarkly-wrapper']).toEqual('FakeSDK');
     });
   });
 
   it('does NOT send custom user-agent header when sendLDHeaders is false', async () => {
     await withServer(async (baseConfig, server) => {
-      const requestor = Requestor(platform, { ...baseConfig, sendLDHeaders: false }, env);
+      const config = { ...baseConfig, sendLDHeaders: false };
+      const requestor = Requestor(platform, config, env);
 
       await requestor.fetchFlagSettings(user);
 
       expect(server.requests.length()).toEqual(1);
       const req = await server.requests.take();
       expect(req.headers['x-launchdarkly-user-agent']).toBeUndefined();
+      expect(req.headers['x-launchdarkly-wrapper']).toBeUndefined();
     });
   });
 

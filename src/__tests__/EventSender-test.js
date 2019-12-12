@@ -106,14 +106,29 @@ describe('EventSender', () => {
     });
 
     it('should send custom user-agent header', async () => {
+      const options = { sendLDHeaders: true };
       const server = platform.testing.http.newServer();
       server.byDefault(respond(202));
-      const sender = EventSender(platform, envId);
+      const sender = EventSender(platform, envId, null, options);
       const event = { kind: 'identify', key: 'userKey' };
       await sender.sendEvents([event], server.url);
 
       const r = await server.nextRequest();
       expect(r.headers['x-launchdarkly-user-agent']).toEqual(utils.getLDUserAgentString(platform));
+      expect(r.headers['x-launchdarkly-wrapper']).toBeUndefined();
+    });
+
+    it('should send wrapper info if present', async () => {
+      const options = { sendLDHeaders: true, wrapperName: 'FakeSDK' };
+      const server = platform.testing.http.newServer();
+      server.byDefault(respond(202));
+      const sender = EventSender(platform, envId, null, options);
+      const event = { kind: 'identify', key: 'userKey' };
+      await sender.sendEvents([event], server.url);
+
+      const r = await server.nextRequest();
+      expect(r.headers['x-launchdarkly-user-agent']).toEqual(utils.getLDUserAgentString(platform));
+      expect(r.headers['x-launchdarkly-wrapper']).toEqual('FakeSDK');
     });
 
     describe('retry on recoverable HTTP error', () => {
