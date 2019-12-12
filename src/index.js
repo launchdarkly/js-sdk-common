@@ -38,7 +38,7 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
 
   const eventSender = EventSender(platform, environment);
 
-  const diagnosticsEnabled = options.sendEvents && !options.diagnosticsOptOut;
+  const diagnosticsEnabled = options.sendEvents && !options.diagnosticOptOut;
   const diagnosticId = diagnosticsEnabled ? diagnostics.DiagnosticId(environment) : null;
   const diagnosticsAccumulator = diagnosticsEnabled ? diagnostics.DiagnosticsAccumulator(new Date().getTime()) : null;
   const diagnosticsManager = diagnosticsEnabled

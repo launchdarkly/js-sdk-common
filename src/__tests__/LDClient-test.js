@@ -29,7 +29,7 @@ describe('LDClient', () => {
   }
 
   async function withClient(user, extraConfig, asyncCallback) {
-    const client = platform.testing.makeClient(envName, user, { diagnosticsOptOut: true, ...extraConfig });
+    const client = platform.testing.makeClient(envName, user, { diagnosticOptOut: true, ...extraConfig });
     return await withCloseable(client, asyncCallback);
   }
 
