@@ -244,6 +244,21 @@ declare module 'launchdarkly-js-sdk-common' {
      * for more information on the diagnostics data being sent.
      */
     diagnosticRecordingInterval?: number;
+
+    /**
+     * For use by wrapper libraries to set an identifying name for the wrapper being used.
+     *
+     * This will be sent as diagnostic information to the LaunchDarkly servers to allow recording
+     * metrics on the usage of these wrapper libraries.
+     */
+    wrapperName?: string;
+
+    /**
+     * For use by wrapper libraries to set version to be included alongside `wrapperName`.
+     *
+     * If `wrapperName` is unset, this field will be ignored.
+     */
+    wrapperVersion?: string;
   }
 
   /**
