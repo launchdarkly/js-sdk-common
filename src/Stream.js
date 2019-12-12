@@ -130,7 +130,11 @@ export default function Stream(platform, config, environment, diagnosticsAccumul
 
   function logConnectionResult(success) {
     if (connectionAttemptStartTime && diagnosticsAccumulator) {
-      diagnosticsAccumulator.recordStreamInit(connectionAttemptStartTime, !success, new Date().getTime() - connectionAttemptStartTime);
+      diagnosticsAccumulator.recordStreamInit(
+        connectionAttemptStartTime,
+        !success,
+        new Date().getTime() - connectionAttemptStartTime
+      );
     }
     connectionAttemptStartTime = null;
   }
