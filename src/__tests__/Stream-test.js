@@ -1,5 +1,6 @@
 import * as messages from '../messages';
 import Stream from '../Stream';
+import { getLDHeaders } from '../utils';
 
 import { sleepAsync } from 'launchdarkly-js-test-helpers';
 import EventSource from './EventSource-mock';
@@ -13,14 +14,16 @@ describe('Stream', () => {
   const user = { key: 'me' };
   const encodedUser = 'eyJrZXkiOiJtZSJ9';
   const hash = '012345789abcde';
-  const defaultConfig = { streamUrl: baseUrl };
+  const defaultConfig = { streamUrl: baseUrl, sendLDHeaders: true };
   let logger;
   let platform;
+  let baseHeaders;
 
   beforeEach(() => {
     logger = stubPlatform.logger();
     defaultConfig.logger = logger;
     platform = stubPlatform.defaults();
+    baseHeaders = getLDHeaders(platform, defaultConfig);
   });
 
   it('should not throw on EventSource when it does not exist', () => {
@@ -49,18 +52,14 @@ describe('Stream', () => {
     const stream = new Stream(platform, defaultConfig, envName);
     stream.connect(user, {});
 
-    const created = await platform.testing.expectStream(baseUrl + '/eval/' + envName + '/' + encodedUser);
-    expect(created.options).toEqual({});
+    await platform.testing.expectStream(baseUrl + '/eval/' + envName + '/' + encodedUser);
   });
 
   it('adds secure mode hash to URL if provided', async () => {
     const stream = new Stream(platform, defaultConfig, envName, hash);
     stream.connect(user, {});
 
-    const created = await platform.testing.expectStream(
-      baseUrl + '/eval/' + envName + '/' + encodedUser + '?h=' + hash
-    );
-    expect(created.options).toEqual({});
+    await platform.testing.expectStream(baseUrl + '/eval/' + envName + '/' + encodedUser + '?h=' + hash);
   });
 
   it('falls back to ping stream URL if useReport is true and REPORT is not supported', async () => {
@@ -68,8 +67,7 @@ describe('Stream', () => {
     const stream = new Stream(platform, config, envName);
     stream.connect(user, {});
 
-    const created = await platform.testing.expectStream(baseUrl + '/ping/' + envName);
-    expect(created.options).toEqual({});
+    await platform.testing.expectStream(baseUrl + '/ping/' + envName);
   });
 
   it('sends request body if useReport is true and REPORT is supported', async () => {
@@ -81,6 +79,32 @@ describe('Stream', () => {
     const created = await platform.testing.expectStream(baseUrl + '/eval/' + envName);
     expect(created.options.method).toEqual('REPORT');
     expect(JSON.parse(created.options.body)).toEqual(user);
+  });
+
+  it('sends default SDK headers', async () => {
+    const stream = new Stream(platform, defaultConfig, envName);
+    stream.connect(user, {});
+
+    const created = await platform.testing.expectStream(baseUrl + '/eval/' + envName + '/' + encodedUser);
+    expect(created.options.headers).toEqual(baseHeaders);
+  });
+
+  it('sends SDK headers with wrapper info', async () => {
+    const config = { ...defaultConfig, wrapperName: 'FakeSDK' };
+    const stream = new Stream(platform, config, envName);
+    stream.connect(user, {});
+
+    const created = await platform.testing.expectStream(baseUrl + '/eval/' + envName + '/' + encodedUser);
+    expect(created.options.headers).toEqual({ ...baseHeaders, 'X-LaunchDarkly-Wrapper': 'FakeSDK' });
+  });
+
+  it('does not send SDK headers when sendLDHeaders is false', async () => {
+    const config = { ...defaultConfig, sendLDHeaders: false };
+    const stream = new Stream(platform, config, envName);
+    stream.connect(user, {});
+
+    const created = await platform.testing.expectStream(baseUrl + '/eval/' + envName + '/' + encodedUser);
+    expect(created.options.headers).toEqual({});
   });
 
   it('sets event listeners', async () => {

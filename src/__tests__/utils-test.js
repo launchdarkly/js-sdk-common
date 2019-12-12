@@ -1,4 +1,10 @@
-import { base64URLEncode, getLDUserAgentString, wrapPromiseCallback, chunkUserEventsForUrl } from '../utils';
+import {
+  base64URLEncode,
+  getLDHeaders,
+  getLDUserAgentString,
+  wrapPromiseCallback,
+  chunkUserEventsForUrl,
+} from '../utils';
 
 import * as stubPlatform from './stubPlatform';
 
@@ -41,9 +47,42 @@ describe('utils', () => {
     });
   });
 
-  describe('getUserAgentString', () => {
+  describe('getLDHeaders', () => {
+    it('sends no headers unless sendLDHeaders is true', () => {
+      const platform = stubPlatform.defaults();
+      const headers = getLDHeaders(platform, {});
+      expect(headers).toEqual({});
+    });
+
+    it('adds custom user-agent header', () => {
+      const platform = stubPlatform.defaults();
+      const headers = getLDHeaders(platform, { sendLDHeaders: true });
+      expect(headers).toMatchObject({ 'X-LaunchDarkly-User-Agent': getLDUserAgentString(platform) });
+    });
+
+    it('adds wrapper info if specified, without version', () => {
+      const platform = stubPlatform.defaults();
+      const headers = getLDHeaders(platform, { sendLDHeaders: true, wrapperName: 'FakeSDK' });
+      expect(headers).toMatchObject({
+        'X-LaunchDarkly-User-Agent': getLDUserAgentString(platform),
+        'X-LaunchDarkly-Wrapper': 'FakeSDK',
+      });
+    });
+
+    it('adds wrapper info if specified, with version', () => {
+      const platform = stubPlatform.defaults();
+      const headers = getLDHeaders(platform, { sendLDHeaders: true, wrapperName: 'FakeSDK', wrapperVersion: '9.9' });
+      expect(headers).toMatchObject({
+        'X-LaunchDarkly-User-Agent': getLDUserAgentString(platform),
+        'X-LaunchDarkly-Wrapper': 'FakeSDK/9.9',
+      });
+    });
+  });
+
+  describe('getLDUserAgentString', () => {
     it('uses platform user-agent and package version by default', () => {
       const platform = stubPlatform.defaults();
+      platform.version = undefined;
       const ua = getLDUserAgentString(platform);
       expect(ua).toEqual('stubClient/' + VERSION);
     });

@@ -29,6 +29,8 @@ export const baseOptionDefs = {
   allAttributesPrivate: { default: false },
   privateAttributeNames: { default: [] },
   bootstrap: { type: 'string|object' },
+  wrapperName: { type: 'string' },
+  wrapperVersion: { type: 'string' },
   stateProvider: { type: 'object' }, // not a public option, used internally
 };
 

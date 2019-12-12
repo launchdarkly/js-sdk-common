@@ -3,7 +3,7 @@ import * as utils from './utils';
 
 const MAX_URL_LENGTH = 2000;
 
-export default function EventSender(platform, eventsUrl, environmentId) {
+export default function EventSender(platform, eventsUrl, environmentId, options) {
   const postUrl = eventsUrl + '/events/bulk/' + environmentId;
   const imageUrl = eventsUrl + '/a/' + environmentId + '.gif';
   const httpFallbackPing = platform.httpFallbackPing; // this will be set for us if we're in the browsr SDK
@@ -30,7 +30,7 @@ export default function EventSender(platform, eventsUrl, environmentId) {
           'Content-Type': 'application/json',
           'X-LaunchDarkly-Event-Schema': '3',
         },
-        utils.getLDHeaders(platform)
+        utils.getLDHeaders(platform, options)
       );
       return platform
         .httpRequest('POST', postUrl, headers, jsonBody)
