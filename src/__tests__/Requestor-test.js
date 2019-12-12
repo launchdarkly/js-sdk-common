@@ -227,7 +227,6 @@ describe('Requestor', () => {
     });
   });
 
-
   it('returns parsed JSON response on success', async () => {
     const data = { foo: 'bar' };
     await withServer(async (baseConfig, server) => {
