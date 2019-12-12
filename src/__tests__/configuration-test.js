@@ -109,6 +109,7 @@ describe('configuration', () => {
   checkBooleanProperty('sendEventsOnlyForVariation');
   checkBooleanProperty('useReport');
   checkBooleanProperty('evaluationReasons');
+  checkBooleanProperty('streaming');
 
   function checkNumericProperty(name, validValue) {
     it('enforces numeric type and default for "' + name + '"', async () => {
