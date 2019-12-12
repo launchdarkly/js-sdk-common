@@ -85,7 +85,7 @@ export function validate(options, emitter, extraOptionDefs, logger) {
         return 'array';
       }
       const t = typeof value;
-      if (t === 'boolean' || t === 'string' || t === 'number') {
+      if (t === 'boolean' || t === 'string' || t === 'number' || t === 'function') {
         return t;
       }
       return 'object';
