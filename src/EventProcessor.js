@@ -7,7 +7,7 @@ import * as utils from './utils';
 
 export default function EventProcessor(platform, options, environmentId, emitter = null, sender = null) {
   const processor = {};
-  const eventSender = sender || EventSender(platform, options.eventsUrl, environmentId);
+  const eventSender = sender || EventSender(platform, options.eventsUrl, environmentId, null, options);
   const summarizer = EventSummarizer();
   const userFilter = UserFilter(options);
   const inlineUsers = options.inlineUsersInEvents;
