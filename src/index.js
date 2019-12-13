@@ -195,11 +195,8 @@ export function initialize(env, user, specifiedOptions, platform, extraDefaults)
           requestor.fetchFlagSettings(realUser, hash).then(requestedFlags => ({ requestedFlags, realUser }))
         )
         .then(({ requestedFlags, realUser }) => {
-          ident.setUser(realUser);
-          return requestedFlags;
-        })
-        .then(requestedFlags => {
           const flagValueMap = utils.transformVersionedValuesToValues(requestedFlags);
+          ident.setUser(realUser);
           if (requestedFlags) {
             return replaceAllFlags(requestedFlags).then(() => flagValueMap);
           } else {
