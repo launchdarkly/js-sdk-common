@@ -198,9 +198,6 @@ export function initialize(env, user, specifiedOptions, platform, extraDefaults)
           ident.setUser(realUser);
           return requestedFlags;
         })
-
-        // .then(realUser => ident.setUser(realUser))
-        // .then(() => requestor.fetchFlagSettings(ident.getUser(), hash))
         .then(requestedFlags => {
           const flagValueMap = utils.transformVersionedValuesToValues(requestedFlags);
           if (requestedFlags) {
