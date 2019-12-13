@@ -1,8 +1,9 @@
-import EventSource, { sources, resetSources } from './EventSource-mock';
-import * as stubPlatform from './stubPlatform';
-import { asyncify, asyncSleep } from './testUtils';
 import * as messages from '../messages';
 import Stream from '../Stream';
+
+import { sleepAsync } from 'launchdarkly-js-test-helpers';
+import EventSource from './EventSource-mock';
+import * as stubPlatform from './stubPlatform';
 
 const noop = () => {};
 
@@ -12,43 +13,15 @@ describe('Stream', () => {
   const user = { key: 'me' };
   const encodedUser = 'eyJrZXkiOiJtZSJ9';
   const hash = '012345789abcde';
+  const defaultConfig = { streamUrl: baseUrl };
   let logger;
-  let defaultConfig;
   let platform;
 
   beforeEach(() => {
     logger = stubPlatform.logger();
-    defaultConfig = { streamUrl: baseUrl, logger };
-    resetSources();
+    defaultConfig.logger = logger;
     platform = stubPlatform.defaults();
   });
-
-  function expectStream(url) {
-    if (sources[url]) {
-      return sources[url];
-    } else {
-      throw new Error(
-        'Did not open stream with expected URL of ' + url + '; active streams are: ' + Object.keys(sources).join(', ')
-      );
-    }
-  }
-
-  function expectOneStream() {
-    const keys = Object.keys(sources);
-    if (keys.length !== 1) {
-      throw new Error('Expected only one stream; active streams are: ' + keys.join(', '));
-    }
-    return sources[keys[0]];
-  }
-
-  function onNewEventSource(f) {
-    const factory = platform.eventSourceFactory;
-    platform.eventSourceFactory = (url, options) => {
-      const es = factory(url, options);
-      f(es, url, options);
-      return es;
-    };
-  }
 
   it('should not throw on EventSource when it does not exist', () => {
     const platform1 = { ...platform };
@@ -72,41 +45,45 @@ describe('Stream', () => {
     expect(disconnect).not.toThrow(TypeError);
   });
 
-  it('connects to EventSource with eval stream URL by default', () => {
+  it('connects to EventSource with eval stream URL by default', async () => {
     const stream = new Stream(platform, defaultConfig, envName);
     stream.connect(user, {});
 
-    const es = expectStream(baseUrl + '/eval/' + envName + '/' + encodedUser);
-    expect(es.options).toEqual({});
+    const created = await platform.testing.expectStream(baseUrl + '/eval/' + envName + '/' + encodedUser);
+    expect(created.options).toEqual({});
   });
 
-  it('adds secure mode hash to URL if provided', () => {
+  it('adds secure mode hash to URL if provided', async () => {
     const stream = new Stream(platform, defaultConfig, envName, hash);
     stream.connect(user, {});
 
-    expectStream(baseUrl + '/eval/' + envName + '/' + encodedUser + '?h=' + hash);
+    const created = await platform.testing.expectStream(
+      baseUrl + '/eval/' + envName + '/' + encodedUser + '?h=' + hash
+    );
+    expect(created.options).toEqual({});
   });
 
-  it('falls back to ping stream URL if useReport is true and REPORT is not supported', () => {
+  it('falls back to ping stream URL if useReport is true and REPORT is not supported', async () => {
     const config = { ...defaultConfig, useReport: true };
-    const stream = new Stream(platform, config, envName, hash);
+    const stream = new Stream(platform, config, envName);
     stream.connect(user, {});
 
-    expectStream(baseUrl + '/ping/' + envName);
+    const created = await platform.testing.expectStream(baseUrl + '/ping/' + envName);
+    expect(created.options).toEqual({});
   });
 
-  it('sends request body if useReport is true and REPORT is supported', () => {
+  it('sends request body if useReport is true and REPORT is supported', async () => {
     const platform1 = { ...platform, eventSourceAllowsReport: true };
     const config = { ...defaultConfig, useReport: true };
     const stream = new Stream(platform1, config, envName);
     stream.connect(user, {});
 
-    const es = expectStream(baseUrl + '/eval/' + envName);
-    expect(es.options.method).toEqual('REPORT');
-    expect(JSON.parse(es.options.body)).toEqual(user);
+    const created = await platform.testing.expectStream(baseUrl + '/eval/' + envName);
+    expect(created.options.method).toEqual('REPORT');
+    expect(JSON.parse(created.options.body)).toEqual(user);
   });
 
-  it('sets event listeners', () => {
+  it('sets event listeners', async () => {
     const stream = new Stream(platform, defaultConfig, envName);
     const fn1 = jest.fn();
     const fn2 = jest.fn();
@@ -116,7 +93,8 @@ describe('Stream', () => {
       anniversary: fn2,
     });
 
-    const es = expectOneStream();
+    const created = await platform.testing.expectStream();
+    const es = created.eventSource;
 
     es.mockEmit('birthday');
     expect(fn1).toHaveBeenCalled();
@@ -131,23 +109,24 @@ describe('Stream', () => {
     const stream = new Stream(platform, config, envName);
     stream.connect(user);
 
-    let es = expectOneStream();
+    const created = await platform.testing.expectStream();
+    let es = created.eventSource;
+
     expect(es.readyState).toBe(EventSource.CONNECTING);
     es.mockOpen();
     expect(es.readyState).toBe(EventSource.OPEN);
 
     const nAttempts = 5;
     for (let i = 0; i < nAttempts; i++) {
-      const newEventSourcePromise = asyncify(onNewEventSource);
-
       es.mockError('test error');
-      const es1 = await newEventSourcePromise;
+      const created1 = await platform.testing.expectStream();
+      const es1 = created1.eventSource;
 
       expect(es.readyState).toBe(EventSource.CLOSED);
       expect(es1.readyState).toBe(EventSource.CONNECTING);
 
       es1.mockOpen();
-      await asyncSleep(0); // make sure the stream logic has a chance to catch up with the new EventSource state
+      await sleepAsync(0); // make sure the stream logic has a chance to catch up with the new EventSource state
 
       expect(stream.isConnected()).toBe(true);
 
@@ -160,15 +139,15 @@ describe('Stream', () => {
     const stream = new Stream(platform, config, envName);
     stream.connect(user);
 
-    let es = expectOneStream();
+    const created = await platform.testing.expectStream();
+    let es = created.eventSource;
     es.mockOpen();
 
     const nAttempts = 5;
     for (let i = 0; i < nAttempts; i++) {
-      const newEventSourcePromise = asyncify(onNewEventSource);
-
       es.mockError('test error');
-      es = await newEventSourcePromise;
+      const created1 = await platform.testing.expectStream();
+      es = created1.eventSource;
       es.mockOpen();
     }
 
@@ -184,15 +163,15 @@ describe('Stream', () => {
       put: fakePut,
     });
 
-    let es = expectOneStream();
+    const created = await platform.testing.expectStream();
+    let es = created.eventSource;
     es.mockOpen();
 
     const nAttempts = 5;
     for (let i = 0; i < nAttempts; i++) {
-      const newEventSourcePromise = asyncify(onNewEventSource);
-
       es.mockError('test error #1');
-      es = await newEventSourcePromise;
+      const created1 = await platform.testing.expectStream();
+      es = created1.eventSource;
       es.mockOpen();
     }
 
@@ -201,10 +180,9 @@ describe('Stream', () => {
     expect(fakePut).toHaveBeenCalled();
 
     for (let i = 0; i < nAttempts; i++) {
-      const newEventSourcePromise = asyncify(onNewEventSource);
-
       es.mockError('test error #2');
-      es = await newEventSourcePromise;
+      const created1 = await platform.testing.expectStream();
+      es = created1.eventSource;
       es.mockOpen();
     }
 

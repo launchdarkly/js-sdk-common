@@ -2,25 +2,38 @@ import * as errors from './errors';
 import * as messages from './messages';
 import * as utils from './utils';
 
-export function validate(options, emitter, extraDefaults, logger) {
-  const baseDefaults = {
-    baseUrl: 'https://app.launchdarkly.com',
-    streamUrl: 'https://clientstream.launchdarkly.com',
-    eventsUrl: 'https://events.launchdarkly.com',
-    sendEvents: true,
-    sendLDHeaders: true,
-    inlineUsersInEvents: false,
-    allowFrequentDuplicateEvents: false,
-    sendEventsOnlyForVariation: false,
-    useReport: false,
-    evaluationReasons: false,
-    flushInterval: 2000,
-    samplingInterval: 0,
-    streamReconnectDelay: 1000,
-    allAttributesPrivate: false,
-    privateAttributeNames: [],
-  };
-  const defaults = utils.extend({ logger: logger }, baseDefaults, extraDefaults);
+// baseOptionDefs should contain an entry for each supported configuration option in the common package.
+// Each entry can have three properties:
+// - "default": the default value if any
+// - "type": a type constraint used if the type can't be inferred from the default value). The allowable
+//   values are "boolean", "string", "number", "array", "object", "function", or several of these OR'd
+//   together with "|" ("function|object").
+// - "minimum": minimum value if any for numeric properties
+//
+// The extraOptionDefs parameter to validate() uses the same format.
+export const baseOptionDefs = {
+  baseUrl: { default: 'https://app.launchdarkly.com' },
+  streamUrl: { default: 'https://clientstream.launchdarkly.com' },
+  eventsUrl: { default: 'https://events.launchdarkly.com' },
+  sendEvents: { default: true },
+  sendLDHeaders: { default: true },
+  inlineUsersInEvents: { default: false },
+  allowFrequentDuplicateEvents: { default: false },
+  sendEventsOnlyForVariation: { default: false },
+  useReport: { default: false },
+  evaluationReasons: { default: false },
+  eventCapacity: { default: 100, minimum: 1 },
+  flushInterval: { default: 2000, minimum: 2000 },
+  samplingInterval: { default: 0, minimum: 0 },
+  streamReconnectDelay: { default: 1000, minimum: 0 },
+  allAttributesPrivate: { default: false },
+  privateAttributeNames: { default: [] },
+  bootstrap: { type: 'string|object' },
+  stateProvider: { type: 'object' }, // not a public option, used internally
+};
+
+export function validate(options, emitter, extraOptionDefs, logger) {
+  const optionDefs = utils.extend({ logger: { default: logger } }, baseOptionDefs, extraOptionDefs);
 
   const deprecatedOptions = {
     // eslint-disable-next-line camelcase
@@ -46,14 +59,64 @@ export function validate(options, emitter, extraDefaults, logger) {
     });
   }
 
-  function applyDefaults(config, defaults) {
-    // This works differently from utils.extend() in that it *will* override a default value
+  function applyDefaults(config) {
+    // This works differently from utils.extend() in that it *will not* override a default value
     // if the provided value is explicitly set to null. This provides backward compatibility
     // since in the past we only used the provided values if they were truthy.
     const ret = utils.extend({}, config);
-    Object.keys(defaults).forEach(name => {
+    Object.keys(optionDefs).forEach(name => {
       if (ret[name] === undefined || ret[name] === null) {
-        ret[name] = defaults[name];
+        ret[name] = optionDefs[name] && optionDefs[name].default;
+      }
+    });
+    return ret;
+  }
+
+  function validateTypesAndNames(config) {
+    const ret = utils.extend({}, config);
+    const typeDescForValue = value => {
+      if (value === null) {
+        return 'any';
+      }
+      if (value === undefined) {
+        return undefined;
+      }
+      if (Array.isArray(value)) {
+        return 'array';
+      }
+      const t = typeof value;
+      if (t === 'boolean' || t === 'string' || t === 'number' || t === 'function') {
+        return t;
+      }
+      return 'object';
+    };
+    Object.keys(config).forEach(name => {
+      const value = config[name];
+      if (value !== null && value !== undefined) {
+        const optionDef = optionDefs[name];
+        if (optionDef === undefined) {
+          reportArgumentError(messages.unknownOption(name));
+        } else {
+          const expectedType = optionDef.type || typeDescForValue(optionDef.default);
+          if (expectedType !== 'any') {
+            const allowedTypes = expectedType.split('|');
+            const actualType = typeDescForValue(value);
+            if (allowedTypes.indexOf(actualType) < 0) {
+              if (expectedType === 'boolean') {
+                ret[name] = !!value;
+                reportArgumentError(messages.wrongOptionTypeBoolean(name, actualType));
+              } else {
+                reportArgumentError(messages.wrongOptionType(name, expectedType, actualType));
+                ret[name] = optionDef.default;
+              }
+            } else {
+              if (actualType === 'number' && optionDef.minimum !== undefined && value < optionDef.minimum) {
+                reportArgumentError(messages.optionBelowMinimum(name, value, optionDef.minimum));
+                ret[name] = optionDef.minimum;
+              }
+            }
+          }
+        }
       }
     });
     return ret;
@@ -69,16 +132,8 @@ export function validate(options, emitter, extraDefaults, logger) {
 
   checkDeprecatedOptions(config);
 
-  config = applyDefaults(config, defaults);
-
-  if (isNaN(config.flushInterval) || config.flushInterval < 2000) {
-    config.flushInterval = 2000;
-    reportArgumentError('Invalid flush interval configured. Must be an integer >= 2000 (milliseconds).');
-  }
-  if (isNaN(config.samplingInterval) || config.samplingInterval < 0) {
-    config.samplingInterval = 0;
-    reportArgumentError('Invalid sampling interval configured. Sampling interval must be an integer >= 0.');
-  }
+  config = applyDefaults(config);
+  config = validateTypesAndNames(config);
 
   return config;
 }

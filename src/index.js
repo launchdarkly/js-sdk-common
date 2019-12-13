@@ -26,10 +26,10 @@ const internalChangeEvent = 'internal-change';
 //
 // For definitions of the API in the platform object, see stubPlatform.js in the test code.
 
-export function initialize(env, user, specifiedOptions, platform, extraDefaults) {
+export function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
   const logger = createLogger();
   const emitter = EventEmitter(logger);
-  const options = configuration.validate(specifiedOptions, emitter, extraDefaults, logger);
+  const options = configuration.validate(specifiedOptions, emitter, extraOptionDefs, logger);
   const hash = options.hash;
   const sendEvents = options.sendEvents;
   let environment = env;
@@ -69,7 +69,7 @@ export function initialize(env, user, specifiedOptions, platform, extraDefaults)
     if (specifiedOptions && specifiedOptions.logger) {
       return specifiedOptions.logger;
     }
-    return (extraDefaults && extraDefaults.logger) || createConsoleLogger('warn');
+    return (extraOptionDefs && extraOptionDefs.logger && extraOptionDefs.logger.default) || createConsoleLogger('warn');
   }
 
   function readFlagsFromBootstrap(data) {

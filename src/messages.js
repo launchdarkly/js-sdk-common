@@ -21,6 +21,10 @@ export const clientNotReady = function() {
   return 'LaunchDarkly client is not ready';
 };
 
+export const eventCapacityExceeded = function() {
+  return 'Exceeded event queue capacity. Increase capacity to avoid dropping events.';
+};
+
 export const eventWithoutUser = function() {
   return 'Be sure to call `identify` in the LaunchDarkly client: https://docs.launchdarkly.com/docs/js-sdk-reference#section-analytics-events';
 };
@@ -81,9 +85,9 @@ export const bootstrapInvalid = function() {
 
 export const deprecated = function(oldName, newName) {
   if (newName) {
-    return '[LaunchDarkly] "' + oldName + '" is deprecated, please use "' + newName + '"';
+    return '"' + oldName + '" is deprecated, please use "' + newName + '"';
   }
-  return '[LaunchDarkly] "' + oldName + '" is deprecated';
+  return '"' + oldName + '" is deprecated';
 };
 
 export const httpErrorMessage = function(status, context, retryMessage) {
@@ -123,6 +127,17 @@ export const streamError = function(err, streamReconnectDelay) {
     ' milliseconds.'
   );
 };
+
+export const unknownOption = name => 'Ignoring unknown config option "' + name + '"';
+
+export const wrongOptionType = (name, expectedType, actualType) =>
+  'Config option "' + name + '" should be of type ' + expectedType + ', got ' + actualType + ', using default value';
+
+export const wrongOptionTypeBoolean = (name, actualType) =>
+  'Config option "' + name + '" should be a boolean, got ' + actualType + ', converting to boolean';
+
+export const optionBelowMinimum = (name, value, minimum) =>
+  'Config option "' + name + '" was set to ' + value + ', changing to minimum value of ' + minimum;
 
 export const debugPolling = function(url) {
   return 'polling for feature flags at ' + url;

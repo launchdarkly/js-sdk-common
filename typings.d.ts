@@ -186,6 +186,20 @@ declare module 'launchdarkly-js-sdk-common' {
     sendEventsOnlyForVariation?: boolean;
 
     /**
+     * The capacity of the analytics events queue.
+     * 
+     * The client buffers up to this many events in memory before flushing. If the capacity is exceeded
+     * before the queue is flushed, events will be discarded. Increasing the capacity means that events
+     * are less likely to be discarded, at the cost of consuming more memory. Note that in regular usage
+     * flag evaluations do not produce individual events, only summary counts, so you only need a large
+     * capacity if you are generating a large number of click, pageview, or identify events (or if you
+     * are using the event debugger).
+     * 
+     * The default value is 100.
+     */
+    eventCapacity?: number;
+
+    /**
      * The interval in between flushes of the analytics events queue, in milliseconds.
      *
      * The default value is 2000ms.
@@ -198,6 +212,8 @@ declare module 'launchdarkly-js-sdk-common' {
      *
      * When set to greater than zero, there is a 1 in `samplingInterval` chance that events will be
      * sent: for example, a value of 20 means that on average 1 in 20, or 5%, of all events will be sent.
+     *
+     * @deprecated This feature will be removed in a future version.
      */
     samplingInterval?: number;
 
