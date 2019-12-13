@@ -3,7 +3,7 @@ import * as utils from './utils';
 
 const MAX_URL_LENGTH = 2000;
 
-export default function EventSender(platform, eventsUrl, environmentId, imageCreator) {
+export default function EventSender(platform, eventsUrl, environmentId, imageCreator, options) {
   const postUrl = eventsUrl + '/events/bulk/' + environmentId;
   const imageUrl = eventsUrl + '/a/' + environmentId + '.gif';
   const sender = {};
@@ -35,7 +35,7 @@ export default function EventSender(platform, eventsUrl, environmentId, imageCre
           'Content-Type': 'application/json',
           'X-LaunchDarkly-Event-Schema': '3',
         },
-        utils.getLDHeaders(platform)
+        utils.getLDHeaders(platform, options)
       );
       return platform
         .httpRequest('POST', postUrl, headers, jsonBody)
