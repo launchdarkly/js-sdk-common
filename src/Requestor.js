@@ -17,7 +17,6 @@ export default function Requestor(platform, options, environment) {
   const baseUrl = options.baseUrl;
   const useReport = options.useReport;
   const withReasons = options.evaluationReasons;
-  const sendLDHeaders = options.sendLDHeaders;
   const logger = options.logger;
 
   const requestor = {};
@@ -32,7 +31,7 @@ export default function Requestor(platform, options, environment) {
     }
 
     const method = body ? 'REPORT' : 'GET';
-    const headers = sendLDHeaders ? utils.getLDHeaders(platform) : {};
+    const headers = utils.getLDHeaders(platform, options);
     if (body) {
       headers['Content-Type'] = 'application/json';
     }

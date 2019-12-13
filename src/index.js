@@ -192,17 +192,19 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
       clearFirst
         .then(() => userValidator.validateUser(user))
         .then(realUser =>
-          requestor.fetchFlagSettings(realUser, hash).then(requestedFlags => ({ requestedFlags, realUser }))
+          requestor
+            .fetchFlagSettings(realUser, hash)
+            // the following then() is nested within this one so we can use realUser from the previous closure
+            .then(requestedFlags => {
+              const flagValueMap = utils.transformVersionedValuesToValues(requestedFlags);
+              ident.setUser(realUser);
+              if (requestedFlags) {
+                return replaceAllFlags(requestedFlags).then(() => flagValueMap);
+              } else {
+                return flagValueMap;
+              }
+            })
         )
-        .then(({ requestedFlags, realUser }) => {
-          const flagValueMap = utils.transformVersionedValuesToValues(requestedFlags);
-          ident.setUser(realUser);
-          if (requestedFlags) {
-            return replaceAllFlags(requestedFlags).then(() => flagValueMap);
-          } else {
-            return flagValueMap;
-          }
-        })
         .then(flagValueMap => {
           if (streamActive) {
             connectStream();
