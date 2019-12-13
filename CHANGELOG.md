@@ -2,6 +2,18 @@
 
 All notable changes to the `launchdarkly-js-sdk-common` package will be documented in this file. Changes that affect the dependent SDKs such as `launchdarkly-js-client-sdk` should also be logged in those projects, in the next release that uses the updated version of this package. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [3.1.0] - 2019-12-13
+### Added:
+- Configuration options `wrapperName` and `wrapperVersion`.
+- Platform option `httpFallbackPing` (to be used for the browser image mechanism - see below).
+
+### Fixed:
+- When calling `identify`, the current user (as reported by `getUser()`) was being updated before the SDK had received the new flag values for that user, causing the client to be temporarily in an inconsistent state where flag evaluations would be associated with the wrong user in analytics events. Now, the current-user state will stay in sync with the flags and change only when they have finished changing. (Thanks, [edvinerikson](https://github.com/launchdarkly/js-sdk-common/pull/3)!)
+
+### Removed:
+- Logic for sending a one-way HTTP request in a browser by creating an image has been moved to the browser-specific code (`js-client-sdk`).
+
+
 ## [3.0.0] - 2019-12-13
 ### Added:
 - Configuration property `eventCapacity`: the maximum number of analytics events (not counting evaluation counters) that can be held at once, to prevent the SDK from consuming unexpected amounts of memory in case an application generates events unusually rapidly. In JavaScript code this would not normally be an issue, since the SDK flushes events every two seconds by default, but you may wish to increase this value if you will intentionally be generating a high volume of custom or identify events. The default value is 100.
