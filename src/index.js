@@ -191,10 +191,12 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
     return utils.wrapPromiseCallback(
       clearFirst
         .then(() => userValidator.validateUser(user))
-        .then(realUser => ident.setUser(realUser))
-        .then(() => requestor.fetchFlagSettings(ident.getUser(), hash))
-        .then(requestedFlags => {
+        .then(realUser =>
+          requestor.fetchFlagSettings(realUser, hash).then(requestedFlags => ({ requestedFlags, realUser }))
+        )
+        .then(({ requestedFlags, realUser }) => {
           const flagValueMap = utils.transformVersionedValuesToValues(requestedFlags);
+          ident.setUser(realUser);
           if (requestedFlags) {
             return replaceAllFlags(requestedFlags).then(() => flagValueMap);
           } else {
