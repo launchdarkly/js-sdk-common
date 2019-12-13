@@ -407,6 +407,23 @@ describe('LDClient', () => {
   });
 
   describe('identify', () => {
+    it('does not set user until the flag config has been updated', async () => {
+      function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+      }
+
+      const user2 = { key: 'user2' };
+      const client = platform.testing.makeClient(envName, user);
+      await client.waitForInitialization();
+      server.autoRespond = false;
+      const identifyPromise = client.identify(user2);
+      await sleep(200); // sleep to jump some async ticks.
+      expect(client.getUser()).toEqual(user);
+      server.respond();
+      await identifyPromise;
+      expect(client.getUser()).toEqual(user2);
+    });
+
     it('updates flag values when the user changes', async () => {
       const user2 = { key: 'user2' };
       const client = platform.testing.makeClient(envName, user);
