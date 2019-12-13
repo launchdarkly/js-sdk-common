@@ -4,7 +4,7 @@ import * as messages from '../messages';
 import * as utils from '../utils';
 
 import semverCompare from 'semver-compare';
-import { eventSink, promisifySingle, sleepAsync, withCloseable } from 'launchdarkly-js-test-helpers';
+import { eventSink, promisifySingle, sleepAsync, withCloseable, AsyncQueue } from 'launchdarkly-js-test-helpers';
 
 import { respond, respondJson } from './mockHttp';
 import * as stubPlatform from './stubPlatform';
@@ -453,20 +453,30 @@ describe('LDClient', () => {
 
   describe('identify', () => {
     it('does not set user until the flag config has been updated', async () => {
-      function sleep(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-      }
+      await withServers(async (baseConfig, pollServer) => {
+        pollServer.byDefault(respondJson({}));
+        await withClient(user, baseConfig, async client => {
+          const signal = new AsyncQueue();
+          const user2 = { key: 'user2' };
+          await client.waitForInitialization();
 
-      const user2 = { key: 'user2' };
-      const client = platform.testing.makeClient(envName, user);
-      await client.waitForInitialization();
-      server.autoRespond = false;
-      const identifyPromise = client.identify(user2);
-      await sleep(200); // sleep to jump some async ticks.
-      expect(client.getUser()).toEqual(user);
-      server.respond();
-      await identifyPromise;
-      expect(client.getUser()).toEqual(user2);
+          // Make the server wait until signaled to return the next response
+          pollServer.byDefault((req, res) => {
+            signal.take().then(() => {
+              respondJson({})(req, res);
+            });
+          });
+
+          const identifyPromise = client.identify(user2);
+          await sleepAsync(100); // sleep to jump some async ticks
+          expect(client.getUser()).toEqual(user);
+
+          signal.add();
+          await identifyPromise;
+
+          expect(client.getUser()).toEqual(user2);
+        });
+      });
     });
 
     it('updates flag values when the user changes', async () => {
