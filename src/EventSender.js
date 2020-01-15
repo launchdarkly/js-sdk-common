@@ -1,5 +1,6 @@
 import * as errors from './errors';
 import * as utils from './utils';
+import uuidv1 from 'uuid/v1';
 
 const MAX_URL_LENGTH = 2000;
 
@@ -23,12 +24,14 @@ export default function EventSender(platform, eventsUrl, environmentId, options)
 
   function sendChunk(events, usePost) {
     const jsonBody = JSON.stringify(events);
+    const payloadId = uuidv1();
 
     function doPostRequest(canRetry) {
       const headers = utils.extend(
         {
           'Content-Type': 'application/json',
           'X-LaunchDarkly-Event-Schema': '3',
+          'X-LaunchDarkly-Payload-ID': payloadId,
         },
         utils.getLDHeaders(platform, options)
       );
