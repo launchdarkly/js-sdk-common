@@ -330,6 +330,22 @@ describe('LDClient streaming', () => {
       });
     });
 
+    it('fires individual change event when flag reasons are updated from put event', async () => {
+      await withClientAndServer({ bootstrap: { flagKey: true }, evaluationReasons: true }, async client => {
+        await client.waitForInitialization();
+
+        const receivedChange = eventSink(client, 'change:flagKey');
+
+        const stream = await expectStreamConnecting(fullStreamUrlWithUser + '?withReasons=true');
+        stream.eventSource.mockEmit('put', {
+          data: '{"flagKey":{"value":true,"version":2, "reason": {"kind": "FALLTHROUGH"}}}',
+        });
+
+        const args = await receivedChange.take();
+        expect(args).toEqual([true, true]);
+      });
+    });
+
     it('handles patch message by updating flag', async () => {
       await withClientAndServer({ bootstrap: { flagKey: false } }, async client => {
         await client.waitForInitialization();
