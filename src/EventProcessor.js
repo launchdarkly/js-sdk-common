@@ -5,9 +5,17 @@ import * as errors from './errors';
 import * as messages from './messages';
 import * as utils from './utils';
 
-export default function EventProcessor(platform, options, environmentId, emitter = null, sender = null) {
+export default function EventProcessor(
+  platform,
+  options,
+  environmentId,
+  diagnosticsAccumulator = null,
+  emitter = null,
+  sender = null
+) {
   const processor = {};
-  const eventSender = sender || EventSender(platform, options.eventsUrl, environmentId, options);
+  const eventSender = sender || EventSender(platform, environmentId, options);
+  const mainEventsUrl = options.eventsUrl + '/events/bulk/' + environmentId;
   const summarizer = EventSummarizer();
   const userFilter = UserFilter(options);
   const inlineUsers = options.inlineUsersInEvents;
@@ -62,6 +70,10 @@ export default function EventProcessor(platform, options, environmentId, emitter
         exceededCapacity = true;
         logger.warn(messages.eventCapacityExceeded());
       }
+      if (diagnosticsAccumulator) {
+        // For diagnostic events, we track how many times we had to drop an event due to exceeding the capacity.
+        diagnosticsAccumulator.incrementDroppedEvents();
+      }
     }
   }
 
@@ -109,12 +121,18 @@ export default function EventProcessor(platform, options, environmentId, emitter
       summary.kind = 'summary';
       eventsToSend.push(summary);
     }
+    if (diagnosticsAccumulator) {
+      // For diagnostic events, we record how many events were in the queue at the last flush (since "how
+      // many events happened to be in the queue at the moment we decided to send a diagnostic event" would
+      // not be a very useful statistic).
+      diagnosticsAccumulator.setEventsInLastBatch(eventsToSend.length);
+    }
     if (eventsToSend.length === 0) {
       return Promise.resolve();
     }
     queue = [];
     logger.debug(messages.debugPostingEvents(eventsToSend.length));
-    return eventSender.sendEvents(eventsToSend).then(responseInfo => {
+    return eventSender.sendEvents(eventsToSend, mainEventsUrl).then(responseInfo => {
       if (responseInfo) {
         if (responseInfo.serverTime) {
           lastKnownPastTime = responseInfo.serverTime;

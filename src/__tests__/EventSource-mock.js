@@ -1,13 +1,6 @@
 import EventEmitter from 'events';
 
-export let sources = {};
-
-export function resetSources() {
-  sources = {};
-}
-
 export default function EventSource(url) {
-  sources[url] = this;
   this.__emitter = new EventEmitter();
 
   this.onerror = undefined;
@@ -19,6 +12,7 @@ export default function EventSource(url) {
   this.removeEventListener = removeEventListener;
   this.close = close;
 
+  this.mockUrl = url;
   this.mockEmit = mockEmit;
   this.mockError = mockError;
   this.mockOpen = mockOpen;
@@ -36,9 +30,9 @@ export default function EventSource(url) {
     this.readyState = EventSource.CLOSED;
   }
 
-  function mockEmit(eventName, callback) {
+  function mockEmit(eventName, param) {
     if (this.readyState !== EventSource.CLOSED) {
-      this.__emitter.emit(eventName, callback);
+      this.__emitter.emit(eventName, param);
     }
   }
 

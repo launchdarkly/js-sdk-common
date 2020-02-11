@@ -227,6 +227,25 @@ declare module 'launchdarkly-js-sdk-common' {
     streamReconnectDelay?: number;
 
     /**
+     * Set to true to opt out of sending diagnostics data.
+     * 
+     * Unless `diagnosticOptOut` is set to true, the client will send some diagnostics data to the LaunchDarkly
+     * servers in order to assist in the development of future SDK improvements. These diagnostics consist of
+     * an initial payload containing some details of SDK in use, the SDK's configuration, and the platform the
+     * SDK is being run on, as well as payloads sent periodically with information on irregular occurrences such
+     * as dropped events.
+     */
+    diagnosticOptOut?: boolean;
+    
+    /**
+     * The interval at which periodic diagnostic data is sent, in milliseconds.
+     * 
+     * The default is 900000 (every 15 minutes) and the minimum value is 6000. See [[diagnosticOptOut]]
+     * for more information on the diagnostics data being sent.
+     */
+    diagnosticRecordingInterval?: number;
+
+    /**
      * For use by wrapper libraries to set an identifying name for the wrapper being used.
      *
      * This will be sent as diagnostic information to the LaunchDarkly servers to allow recording

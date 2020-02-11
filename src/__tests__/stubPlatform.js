@@ -26,6 +26,9 @@ import { MockHttpState } from './mockHttp';
 //   // note that the options are ignored by the browser's built-in EventSource; they only work with polyfills
 // eventSourceIsActive?: (es: EventSource) => boolean  // returns true if it's open or connecting
 // eventSourceAllowsReport?: boolean  // returns true if we can set { method: 'REPORT' } in the options
+// diagnosticSdkData: object  // provides the "sdk" property in diagnostic events
+// diagnosticPlatformData: object  // provides the "platform" property in diagnostic events
+// diagnosticUseCombinedEvent: boolean  // true if diagnostic events should use the combined model (browser SDK)
 // userAgent: string
 // version?: string  // the SDK version for the User-Agent header, if that is *not* the same as the version of launchdarkly-js-sdk-common
 
