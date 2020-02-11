@@ -28,10 +28,10 @@ export default function createConsoleLogger(level, maybePrefix) {
     }
   }
 
-  logger.debug = msg => log(0, console.log, msg);
-  logger.info = msg => log(1, console.info, msg);
-  logger.warn = msg => log(2, console.warn, msg);
-  logger.error = msg => log(3, console.error, msg);
+  logger.debug = msg => log(0, console.log, msg); // eslint-disable-line no-console
+  logger.info = msg => log(1, console.info, msg); // eslint-disable-line no-console
+  logger.warn = msg => log(2, console.warn, msg); // eslint-disable-line no-console
+  logger.error = msg => log(3, console.error, msg); // eslint-disable-line no-console
 
   return logger;
 }
