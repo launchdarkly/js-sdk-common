@@ -20,8 +20,8 @@ globals:
   afterAll: true
   beforeEach: true
   afterEach: true
-  window: true
-  document: true
+  window: false # platform-agnostic code should *not* reference "window" or "document"
+  document: false
 rules:
   # https://eslint.org/docs/rules/array-callback-return
   array-callback-return: error
