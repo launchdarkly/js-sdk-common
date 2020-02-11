@@ -1,18 +1,19 @@
 import * as errors from './errors';
 import * as utils from './utils';
+import uuidv1 from 'uuid/v1';
 
 const MAX_URL_LENGTH = 2000;
 
 export default function EventSender(platform, environmentId, options) {
   const imageUrlPath = '/a/' + environmentId + '.gif';
-  const headers = utils.extend(
+  const baseHeaders = utils.extend(
     {
       'Content-Type': 'application/json',
       'X-LaunchDarkly-Event-Schema': '3',
     },
     utils.getLDHeaders(platform, options)
   );
-  const httpFallbackPing = platform.httpFallbackPing; // this will be set for us if we're in the browsr SDK
+  const httpFallbackPing = platform.httpFallbackPing; // this will be set for us if we're in the browser SDK
   const sender = {};
 
   function getResponseInfo(result) {
@@ -27,10 +28,17 @@ export default function EventSender(platform, environmentId, options) {
     return ret;
   }
 
-  sender.sendChunk = (events, url, usePost) => {
+  sender.sendChunk = (events, url, isDiagnostic, usePost) => {
     const jsonBody = JSON.stringify(events);
+    const payloadId = isDiagnostic ? null : uuidv1();
 
     function doPostRequest(canRetry) {
+      const headers = isDiagnostic
+        ? baseHeaders
+        : utils.extend({}, baseHeaders, {
+            'X-LaunchDarkly-Event-Schema': '3',
+            'X-LaunchDarkly-Payload-ID': payloadId,
+          });
       return platform
         .httpRequest('POST', url, headers, jsonBody)
         .promise.then(result => {
@@ -60,7 +68,7 @@ export default function EventSender(platform, environmentId, options) {
     }
   };
 
-  sender.sendEvents = function(events, url) {
+  sender.sendEvents = function(events, url, isDiagnostic) {
     if (!platform.httpRequest) {
       return Promise.resolve();
     }
@@ -74,7 +82,7 @@ export default function EventSender(platform, environmentId, options) {
     }
     const results = [];
     for (let i = 0; i < chunks.length; i++) {
-      results.push(sender.sendChunk(chunks[i], url, canPost));
+      results.push(sender.sendChunk(chunks[i], url, isDiagnostic, canPost));
     }
     return Promise.all(results);
   };

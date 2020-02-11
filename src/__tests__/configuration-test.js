@@ -110,6 +110,7 @@ describe('configuration', () => {
   checkBooleanProperty('useReport');
   checkBooleanProperty('evaluationReasons');
   checkBooleanProperty('diagnosticOptOut');
+  checkBooleanProperty('streaming');
 
   function checkNumericProperty(name, validValue) {
     it('enforces numeric type and default for "' + name + '"', async () => {

@@ -118,6 +118,24 @@ describe('EventSender', () => {
       expect(r.headers['x-launchdarkly-wrapper']).toBeUndefined();
     });
 
+    it('should send unique payload IDs', async () => {
+      const options = { sendLDHeaders: true };
+      const server = platform.testing.http.newServer();
+      server.byDefault(respond(202));
+      const sender = EventSender(platform, envId, options);
+      const event = { kind: 'identify', key: 'userKey' };
+      await sender.sendEvents([event], server.url, false);
+      await sender.sendEvents([event], server.url, false); // deliberately repeated
+
+      const r0 = await server.nextRequest();
+      const r1 = await server.nextRequest();
+      const id0 = r0.headers['x-launchdarkly-payload-id'];
+      const id1 = r1.headers['x-launchdarkly-payload-id'];
+      expect(id0).toBeTruthy();
+      expect(id1).toBeTruthy();
+      expect(id0).not.toEqual(id1);
+    });
+
     it('should send wrapper info if present', async () => {
       const options = { sendLDHeaders: true, wrapperName: 'FakeSDK' };
       const server = platform.testing.http.newServer();
@@ -144,12 +162,16 @@ describe('EventSender', () => {
           });
           const sender = EventSender(platform, envId);
           const event = { kind: 'false', key: 'userKey' };
-          await sender.sendEvents([event], server.url);
+          await sender.sendEvents([event], server.url, false);
 
           expect(server.requests.length()).toEqual(2);
-          await server.nextRequest();
+          const r0 = await server.nextRequest();
           const r1 = await server.nextRequest();
+          expect(JSON.parse(r0.body)).toEqual([event]);
           expect(JSON.parse(r1.body)).toEqual([event]);
+          const id0 = r0.headers['x-launchdarkly-payload-id'];
+          expect(id0).toBeTruthy();
+          expect(r1.headers['x-launchdarkly-payload-id']).toEqual(id0);
         });
       }
     });

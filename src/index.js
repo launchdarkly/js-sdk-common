@@ -36,7 +36,7 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
   const sendEvents = options.sendEvents;
   let environment = env;
 
-  const eventSender = EventSender(platform, environment);
+  const eventSender = EventSender(platform, environment, options);
 
   const diagnosticsEnabled = options.sendEvents && !options.diagnosticOptOut;
   const diagnosticId = diagnosticsEnabled ? diagnostics.DiagnosticId(environment) : null;
@@ -211,16 +211,20 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
     return utils.wrapPromiseCallback(
       clearFirst
         .then(() => userValidator.validateUser(user))
-        .then(realUser => ident.setUser(realUser))
-        .then(() => requestor.fetchFlagSettings(ident.getUser(), hash))
-        .then(requestedFlags => {
-          const flagValueMap = utils.transformVersionedValuesToValues(requestedFlags);
-          if (requestedFlags) {
-            return replaceAllFlags(requestedFlags).then(() => flagValueMap);
-          } else {
-            return flagValueMap;
-          }
-        })
+        .then(realUser =>
+          requestor
+            .fetchFlagSettings(realUser, hash)
+            // the following then() is nested within this one so we can use realUser from the previous closure
+            .then(requestedFlags => {
+              const flagValueMap = utils.transformVersionedValuesToValues(requestedFlags);
+              ident.setUser(realUser);
+              if (requestedFlags) {
+                return replaceAllFlags(requestedFlags).then(() => flagValueMap);
+              } else {
+                return flagValueMap;
+              }
+            })
+        )
         .then(flagValueMap => {
           if (streamActive) {
             connectStream();

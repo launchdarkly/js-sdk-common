@@ -94,7 +94,7 @@ function DiagnosticsManager(platform, accumulator, eventSender, environmentId, c
   // Send a diagnostic event and do not wait for completion.
   function sendDiagnosticEvent(event) {
     eventSender
-      .sendEvents(event, diagnosticEventsUrl)
+      .sendEvents(event, diagnosticEventsUrl, true)
       .then(() => undefined)
       .catch(() => undefined);
   }
