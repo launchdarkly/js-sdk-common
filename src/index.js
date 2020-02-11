@@ -145,9 +145,8 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
   function sendFlagEvent(key, detail, defaultValue, includeReason) {
     const user = ident.getUser();
     const now = new Date();
-    const value = detail ? detail.value : null;
     if (!options.allowFrequentDuplicateEvents) {
-      const cacheKey = JSON.stringify(value) + (user && user.key ? user.key : '') + key; // see below
+      const cacheKey = JSON.stringify(detail) + JSON.stringify(user) + key; // see below
       const cached = seenRequests[cacheKey];
       // cache TTL is five minutes
       if (cached && now - cached < 300000) {
@@ -160,7 +159,7 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
       kind: 'feature',
       key: key,
       user: user,
-      value: value,
+      value: detail ? detail.value : null,
       variation: detail ? detail.variationIndex : null,
       default: defaultValue,
       creationDate: now.getTime(),
