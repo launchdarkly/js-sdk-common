@@ -174,3 +174,7 @@ export const debugEnqueueingEvent = function(kind) {
 export const debugPostingEvents = function(count) {
   return 'sending ' + count + ' events';
 };
+
+export const debugPostingDiagnosticEvent = function(event) {
+  return 'sending diagnostic event (' + event.kind + ')';
+};

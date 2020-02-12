@@ -41,6 +41,8 @@ export function defaults() {
 
   const p = {
     httpRequest: mockHttpState.doRequest,
+    diagnosticSdkData: { name: 'stub-sdk' },
+    diagnosticPlatformData: { name: 'stub-platform' },
     httpAllowsPost: () => true,
     httpAllowsSync: () => true,
     getCurrentUrl: () => currentUrl,
