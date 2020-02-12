@@ -4,6 +4,7 @@ const uuidv1 = require('uuid/v1');
 // will use v1 here as well.
 
 const { baseOptionDefs } = require('./configuration');
+const messages = require('./messages');
 
 function DiagnosticId(sdkKey) {
   const ret = {
@@ -93,6 +94,7 @@ function DiagnosticsManager(platform, accumulator, eventSender, environmentId, c
 
   // Send a diagnostic event and do not wait for completion.
   function sendDiagnosticEvent(event) {
+    config.logger && config.logger.debug(messages.debugPostingDiagnosticEvent(event));
     eventSender
       .sendEvents(event, diagnosticEventsUrl, true)
       .then(() => undefined)
@@ -111,7 +113,9 @@ function DiagnosticsManager(platform, accumulator, eventSender, environmentId, c
             const props = JSON.parse(data);
             acc.setProps(props);
             eventSentTime = props.dataSinceDate;
-          } catch (e) {}
+          } catch (e) {
+            // disregard malformed cached data
+          }
         }
         callback(true);
       })

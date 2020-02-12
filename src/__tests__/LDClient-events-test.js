@@ -2,7 +2,7 @@ import * as messages from '../messages';
 
 import { withCloseable } from 'launchdarkly-js-test-helpers';
 
-import { respondJson } from './mockHttp';
+import { respond, respondJson } from './mockHttp';
 import * as stubPlatform from './stubPlatform';
 import { makeBootstrap, numericUser, stringifiedNumericUser } from './testUtils';
 
@@ -423,6 +423,81 @@ describe('LDClient events', () => {
       expect(ep.events.length).toEqual(0);
       expect(divertedEvents.length).toEqual(1);
       expect(divertedEvents[0].kind).toEqual('custom');
+    });
+  });
+
+  it('sends diagnostic init event on startup', async () => {
+    const server = platform.testing.http.newServer();
+    server.byDefault(respond(202));
+    await withCloseable(server, async () => {
+      const config = {
+        baseUrl: 'shouldnt-use-this',
+        bootstrap: {},
+        eventsUrl: server.url,
+      };
+      const client = platform.testing.makeClient(envName, user, config);
+      await withCloseable(client, async () => {
+        await client.waitForInitialization();
+        await client.flush();
+        const req0 = await server.nextRequest();
+        const req1 = await server.nextRequest();
+        const expectedPath = '/events/diagnostic/' + envName;
+        expect([req0.path, req1.path]).toContain(expectedPath);
+        const req = req0.path === expectedPath ? req0 : req1;
+        const data = JSON.parse(req.body);
+        expect(data.kind).toEqual('diagnostic-init');
+        expect(data.platform).toEqual(platform.diagnosticPlatformData);
+        expect(data.sdk).toEqual(platform.diagnosticSdkData);
+      });
+    });
+  });
+
+  it('sends diagnostic combined event on startup', async () => {
+    const platform1 = stubPlatform.defaults();
+    platform1.diagnosticUseCombinedEvent = true;
+    const server = platform1.testing.http.newServer();
+    server.byDefault(respond(202));
+    await withCloseable(server, async () => {
+      const config = {
+        baseUrl: 'shouldnt-use-this',
+        bootstrap: {},
+        eventsUrl: server.url,
+      };
+      const client = platform1.testing.makeClient(envName, user, config);
+      await withCloseable(client, async () => {
+        await client.waitForInitialization();
+        await client.flush();
+        const req0 = await server.nextRequest();
+        const req1 = await server.nextRequest();
+        const expectedPath = '/events/diagnostic/' + envName;
+        expect([req0.path, req1.path]).toContain(expectedPath);
+        const req = req0.path === expectedPath ? req0 : req1;
+        const data = JSON.parse(req.body);
+        expect(data.kind).toEqual('diagnostic-combined');
+        expect(data.platform).toEqual(platform1.diagnosticPlatformData);
+        expect(data.sdk).toEqual(platform1.diagnosticSdkData);
+      });
+    });
+  });
+
+  it('does not send diagnostic init event when opted out', async () => {
+    const server = platform.testing.http.newServer();
+    server.byDefault(respond(202));
+    await withCloseable(server, async () => {
+      const config = {
+        baseUrl: 'shouldnt-use-this',
+        bootstrap: {},
+        eventsUrl: server.url,
+        diagnosticOptOut: true,
+      };
+      const client = platform.testing.makeClient(envName, user, config);
+      await withCloseable(client, async () => {
+        await client.waitForInitialization();
+        await client.flush();
+        expect(server.requests.length()).toEqual(1);
+        const req = await server.nextRequest();
+        expect(req.path).toEqual('/events/bulk/' + envName);
+      });
     });
   });
 });
