@@ -113,7 +113,9 @@ function DiagnosticsManager(platform, accumulator, eventSender, environmentId, c
             const props = JSON.parse(data);
             acc.setProps(props);
             eventSentTime = props.dataSinceDate;
-          } catch (e) {}
+          } catch (e) {
+            // disregard malformed cached data
+          }
         }
         callback(true);
       })

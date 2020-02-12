@@ -6,10 +6,7 @@ const MAX_URL_LENGTH = 2000;
 
 export default function EventSender(platform, environmentId, options) {
   const imageUrlPath = '/a/' + environmentId + '.gif';
-  const baseHeaders = utils.extend(
-    {'Content-Type': 'application/json'},
-    utils.getLDHeaders(platform, options)
-  );
+  const baseHeaders = utils.extend({ 'Content-Type': 'application/json' }, utils.getLDHeaders(platform, options));
   const httpFallbackPing = platform.httpFallbackPing; // this will be set for us if we're in the browser SDK
   const sender = {};
 
