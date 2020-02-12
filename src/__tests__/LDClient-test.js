@@ -29,7 +29,12 @@ describe('LDClient', () => {
   }
 
   async function withClient(user, extraConfig, asyncCallback) {
-    const client = platform.testing.makeClient(envName, user, extraConfig);
+    const client = platform.testing.makeClient(envName, user, { diagnosticOptOut: true, ...extraConfig });
+    return await withCloseable(client, asyncCallback);
+  }
+
+  async function withDiagnosticsEnabledClient(user, extraConfig, asyncCallback) {
+    const client = platform.testing.makeClient(envName, user, { ...extraConfig });
     return await withCloseable(client, asyncCallback);
   }
 
@@ -715,6 +720,40 @@ describe('LDClient', () => {
           await promisifySingle(client.close)();
 
           expect(eventsServer.requests.length()).toEqual(1);
+        });
+      });
+    });
+  });
+
+  describe('diagnostic events', () => {
+    // Note, the default configuration provided by withClient() sets { diagnosticOptOut: true } so that the
+    // diagnostic events won't interfere with the rest of the tests in this file. In this test group, we will
+    // deliberately enable diagnostic events. The details of DiagnosticManager's behavior are covered by
+    // diagnosticEvents-test.js, so here we're just verifying that the client starts up the DiagnosticsManager
+    // and gives it the right eventsUrl.
+
+    it('sends diagnostic init event if not opted out', async () => {
+      await withServers(async (baseConfig, pollServer, eventsServer) => {
+        await withDiagnosticsEnabledClient(user, baseConfig, async client => {
+          await client.waitForInitialization();
+          await client.flush();
+
+          // We can't be sure which will be posted first, the regular events or the diagnostic event
+          const requests = [];
+          const req1 = await eventsServer.requests.take();
+          requests.push({ path: req1.path, data: JSON.parse(req1.body) });
+          const req2 = await eventsServer.requests.take();
+          requests.push({ path: req2.path, data: JSON.parse(req2.body) });
+
+          expect(requests).toContainEqual({
+            path: '/events/bulk/' + envName,
+            data: expect.arrayContaining([expect.objectContaining({ kind: 'identify' })]),
+          });
+
+          expect(requests).toContainEqual({
+            path: '/events/diagnostic/' + envName,
+            data: expect.objectContaining({ kind: 'diagnostic-init' }),
+          });
         });
       });
     });

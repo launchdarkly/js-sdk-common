@@ -1,7 +1,9 @@
 import EventProcessor from '../EventProcessor';
+import { DiagnosticsAccumulator } from '../diagnosticEvents';
 import * as messages from '../messages';
 
 import * as stubPlatform from './stubPlatform';
+import { MockEventSender } from './testUtils';
 
 // These tests verify that the event processor produces the expected event payload data for
 // various inputs. The actual delivery of data is done by EventSender, which has its own
@@ -22,31 +24,22 @@ describe('EventProcessor', () => {
   };
   const platform = stubPlatform.defaults();
 
-  function createMockEventSender() {
-    const calls = [];
-    let serverTime = null;
-    let status = 200;
-    const sender = {
-      calls,
-      sendEvents: (events, sync) => {
-        calls.push({ events: events, sync: !!sync });
-        return Promise.resolve({ serverTime, status });
-      },
-      setServerTime: time => {
-        serverTime = time;
-      },
-      setStatus: respStatus => {
-        status = respStatus;
-      },
-    };
-    return sender;
-  }
-
   async function withProcessorAndSender(config, asyncCallback) {
-    const sender = createMockEventSender();
-    const ep = EventProcessor(platform, config, envId, null, sender);
+    const sender = MockEventSender();
+    const ep = EventProcessor(platform, config, envId, null, null, sender);
     try {
       return await asyncCallback(ep, sender);
+    } finally {
+      ep.stop();
+    }
+  }
+
+  async function withDiagnosticProcessorAndSender(config, asyncCallback) {
+    const sender = MockEventSender();
+    const diagnosticAccumulator = DiagnosticsAccumulator(1000);
+    const ep = EventProcessor(platform, config, envId, diagnosticAccumulator, null, sender);
+    try {
+      return await asyncCallback(ep, sender, diagnosticAccumulator);
     } finally {
       ep.stop();
     }
@@ -90,8 +83,8 @@ describe('EventProcessor', () => {
       ep.enqueue(event);
       await ep.flush();
 
-      expect(mockEventSender.calls.length).toEqual(1);
-      expect(mockEventSender.calls[0].events).toEqual([event]);
+      expect(mockEventSender.calls.length()).toEqual(1);
+      expect((await mockEventSender.calls.take()).events).toEqual([event]);
     });
   });
 
@@ -102,8 +95,8 @@ describe('EventProcessor', () => {
       ep.enqueue(event);
       await ep.flush();
 
-      expect(mockEventSender.calls.length).toEqual(1);
-      expect(mockEventSender.calls[0].events).toEqual([
+      expect(mockEventSender.calls.length()).toEqual(1);
+      expect((await mockEventSender.calls.take()).events).toEqual([
         {
           kind: 'identify',
           creationDate: event.creationDate,
@@ -126,8 +119,8 @@ describe('EventProcessor', () => {
       ep.enqueue(event);
       await ep.flush();
 
-      expect(mockEventSender.calls.length).toEqual(1);
-      const output = mockEventSender.calls[0].events;
+      expect(mockEventSender.calls.length()).toEqual(1);
+      const output = (await mockEventSender.calls.take()).events;
       expect(output.length).toEqual(2);
       checkFeatureEvent(output[0], event, false);
       checkSummaryEvent(output[1]);
@@ -147,8 +140,8 @@ describe('EventProcessor', () => {
       ep.enqueue(event);
       await ep.flush();
 
-      expect(mockEventSender.calls.length).toEqual(1);
-      const output = mockEventSender.calls[0].events;
+      expect(mockEventSender.calls.length()).toEqual(1);
+      const output = (await mockEventSender.calls.take()).events;
       expect(output.length).toEqual(2);
       checkFeatureEvent(output[0], event, false, user);
       checkSummaryEvent(output[1]);
@@ -170,8 +163,8 @@ describe('EventProcessor', () => {
       ep.enqueue(event);
       await ep.flush();
 
-      expect(mockEventSender.calls.length).toEqual(1);
-      const output = mockEventSender.calls[0].events;
+      expect(mockEventSender.calls.length()).toEqual(1);
+      const output = (await mockEventSender.calls.take()).events;
       expect(output.length).toEqual(2);
       checkFeatureEvent(output[0], event, false, user);
       checkSummaryEvent(output[1]);
@@ -191,8 +184,8 @@ describe('EventProcessor', () => {
       ep.enqueue(event);
       await ep.flush();
 
-      expect(mockEventSender.calls.length).toEqual(1);
-      const output = mockEventSender.calls[0].events;
+      expect(mockEventSender.calls.length()).toEqual(1);
+      const output = (await mockEventSender.calls.take()).events;
       expect(output.length).toEqual(2);
       checkFeatureEvent(output[0], event, false, filteredUser);
       checkSummaryEvent(output[1]);
@@ -216,8 +209,8 @@ describe('EventProcessor', () => {
       ep.enqueue(e);
       await ep.flush();
 
-      expect(mockEventSender.calls.length).toEqual(1);
-      const output = mockEventSender.calls[0].events;
+      expect(mockEventSender.calls.length()).toEqual(1);
+      const output = (await mockEventSender.calls.take()).events;
       expect(output.length).toEqual(2);
       checkFeatureEvent(output[0], e, true, user);
       checkSummaryEvent(output[1]);
@@ -241,8 +234,8 @@ describe('EventProcessor', () => {
       ep.enqueue(e);
       await ep.flush();
 
-      expect(mockEventSender.calls.length).toEqual(1);
-      const output = mockEventSender.calls[0].events;
+      expect(mockEventSender.calls.length()).toEqual(1);
+      const output = (await mockEventSender.calls.take()).events;
       expect(output.length).toEqual(3);
       checkFeatureEvent(output[0], e, false);
       checkFeatureEvent(output[1], e, true, user);
@@ -278,8 +271,9 @@ describe('EventProcessor', () => {
 
       // Should get a summary event only, not a full feature event
       await ep.flush();
-      expect(mockEventSender.calls.length).toEqual(2);
-      const output = mockEventSender.calls[1].events;
+      expect(mockEventSender.calls.length()).toEqual(2);
+      await mockEventSender.calls.take();
+      const output = (await mockEventSender.calls.take()).events;
       expect(output.length).toEqual(1);
       checkSummaryEvent(output[0]);
     });
@@ -313,8 +307,9 @@ describe('EventProcessor', () => {
 
       // Should get a summary event only, not a full feature event
       await ep.flush();
-      expect(mockEventSender.calls.length).toEqual(2);
-      const output = mockEventSender.calls[1].events;
+      expect(mockEventSender.calls.length()).toEqual(2);
+      await mockEventSender.calls.take();
+      const output = (await mockEventSender.calls.take()).events;
       expect(output.length).toEqual(1);
       checkSummaryEvent(output[0]);
     });
@@ -341,8 +336,8 @@ describe('EventProcessor', () => {
       ep.enqueue(e2);
       await ep.flush();
 
-      expect(mockEventSender.calls.length).toEqual(1);
-      const output = mockEventSender.calls[0].events;
+      expect(mockEventSender.calls.length()).toEqual(1);
+      const output = (await mockEventSender.calls.take()).events;
       expect(output.length).toEqual(1);
       const se = output[0];
       checkSummaryEvent(se);
@@ -374,8 +369,8 @@ describe('EventProcessor', () => {
       ep.enqueue(e);
       await ep.flush();
 
-      expect(mockEventSender.calls.length).toEqual(1);
-      const output = mockEventSender.calls[0].events;
+      expect(mockEventSender.calls.length()).toEqual(1);
+      const output = (await mockEventSender.calls.take()).events;
       expect(output.length).toEqual(1);
       checkCustomEvent(output[0], e);
     });
@@ -394,8 +389,8 @@ describe('EventProcessor', () => {
       ep.enqueue(e);
       await ep.flush();
 
-      expect(mockEventSender.calls.length).toEqual(1);
-      const output = mockEventSender.calls[0].events;
+      expect(mockEventSender.calls.length()).toEqual(1);
+      const output = (await mockEventSender.calls.take()).events;
       expect(output.length).toEqual(1);
       checkCustomEvent(output[0], e, user);
     });
@@ -414,8 +409,8 @@ describe('EventProcessor', () => {
       ep.enqueue(e);
       await ep.flush();
 
-      expect(mockEventSender.calls.length).toEqual(1);
-      const output = mockEventSender.calls[0].events;
+      expect(mockEventSender.calls.length()).toEqual(1);
+      const output = (await mockEventSender.calls.take()).events;
       expect(output.length).toEqual(1);
       checkCustomEvent(output[0], e, filteredUser);
     });
@@ -432,8 +427,8 @@ describe('EventProcessor', () => {
       ep.enqueue(e2);
       await ep.flush();
 
-      expect(mockEventSender.calls.length).toEqual(1);
-      const output = mockEventSender.calls[0].events;
+      expect(mockEventSender.calls.length()).toEqual(1);
+      const output = (await mockEventSender.calls.take()).events;
       expect(output.length).toEqual(1);
       checkCustomEvent(output[0], e0);
 
@@ -444,7 +439,7 @@ describe('EventProcessor', () => {
   it('sends nothing if there are no events to flush', async () => {
     await withProcessorAndSender(defaultConfig, async (ep, mockEventSender) => {
       await ep.flush();
-      expect(mockEventSender.calls.length).toEqual(0);
+      expect(mockEventSender.calls.length()).toEqual(0);
     });
   });
 
@@ -455,11 +450,11 @@ describe('EventProcessor', () => {
       mockEventSender.setStatus(status);
       await ep.flush();
 
-      expect(mockEventSender.calls.length).toEqual(1);
+      expect(mockEventSender.calls.length()).toEqual(1);
       ep.enqueue(e);
       await ep.flush();
 
-      expect(mockEventSender.calls.length).toEqual(1); // still the one from our first flush
+      expect(mockEventSender.calls.length()).toEqual(1); // still the one from our first flush
     });
   }
 
@@ -470,18 +465,65 @@ describe('EventProcessor', () => {
       mockEventSender.setStatus(status);
       await ep.flush();
 
-      expect(mockEventSender.calls.length).toEqual(1);
+      expect(mockEventSender.calls.length()).toEqual(1);
       ep.enqueue(e);
       await ep.flush();
 
-      expect(mockEventSender.calls.length).toEqual(2);
+      expect(mockEventSender.calls.length()).toEqual(2);
     });
   }
 
-  it('stops sending events after a 401 error', () => verifyUnrecoverableHttpError(401));
-  it('stops sending events after a 403 error', () => verifyUnrecoverableHttpError(403));
-  it('stops sending events after a 404 error', () => verifyUnrecoverableHttpError(404));
-  it('continues sending events after a 408 error', () => verifyRecoverableHttpError(408));
-  it('continues sending events after a 429 error', () => verifyRecoverableHttpError(429));
-  it('continues sending events after a 500 error', () => verifyRecoverableHttpError(500));
+  describe('stops sending events after unrecoverable HTTP error', () => {
+    [401, 403, 404].forEach(status => {
+      it('status ' + status, async () => await verifyUnrecoverableHttpError(status));
+    });
+  });
+
+  describe('continues sending events after recoverable HTTP error', () => {
+    [408, 429, 500].forEach(status => {
+      it('status ' + status, async () => await verifyRecoverableHttpError(status));
+    });
+  });
+
+  describe('interaction with diagnostic events', () => {
+    it('sets eventsInLastBatch on flush', async () => {
+      const e0 = { kind: 'custom', creationDate: 1000, user: user, key: 'key0' };
+      const e1 = { kind: 'custom', creationDate: 1001, user: user, key: 'key1' };
+      await withDiagnosticProcessorAndSender(defaultConfig, async (ep, mockEventSender, diagnosticAccumulator) => {
+        expect(diagnosticAccumulator.getProps().eventsInLastBatch).toEqual(0);
+
+        ep.enqueue(e0);
+        ep.enqueue(e1);
+        await ep.flush();
+
+        expect(mockEventSender.calls.length()).toEqual(1);
+        const output = (await mockEventSender.calls.take()).events;
+        expect(output.length).toEqual(2);
+
+        expect(diagnosticAccumulator.getProps().eventsInLastBatch).toEqual(2);
+      });
+    });
+
+    it('increments droppedEvents when capacity is exceeded', async () => {
+      const config = { ...defaultConfig, eventCapacity: 1, logger: stubPlatform.logger() };
+      const e0 = { kind: 'custom', creationDate: 1000, user: user, key: 'key0' };
+      const e1 = { kind: 'custom', creationDate: 1001, user: user, key: 'key1' };
+      const e2 = { kind: 'custom', creationDate: 1002, user: user, key: 'key2' };
+      await withDiagnosticProcessorAndSender(config, async (ep, mockEventSender, diagnosticAccumulator) => {
+        ep.enqueue(e0);
+        ep.enqueue(e1);
+        ep.enqueue(e2);
+        await ep.flush();
+
+        expect(mockEventSender.calls.length()).toEqual(1);
+        const output = (await mockEventSender.calls.take()).events;
+        expect(output.length).toEqual(1);
+        checkCustomEvent(output[0], e0);
+
+        expect(config.logger.output.warn).toEqual([messages.eventCapacityExceeded()]); // warning is not repeated for e2
+
+        expect(diagnosticAccumulator.getProps().droppedEvents).toEqual(2);
+      });
+    });
+  });
 });

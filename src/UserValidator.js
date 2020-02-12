@@ -43,7 +43,6 @@ export default function UserValidator(localStorageProvider, logger) {
     if (userOut.key !== null && userOut.key !== undefined) {
       userOut.key = userOut.key.toString();
       return Promise.resolve(userOut);
-      return;
     }
     if (userOut.anonymous) {
       return getCachedUserId().then(cachedId => {

@@ -4,9 +4,9 @@ import uuidv1 from 'uuid/v1';
 
 const MAX_URL_LENGTH = 2000;
 
-export default function EventSender(platform, eventsUrl, environmentId, options) {
-  const postUrl = eventsUrl + '/events/bulk/' + environmentId;
-  const imageUrl = eventsUrl + '/a/' + environmentId + '.gif';
+export default function EventSender(platform, environmentId, options) {
+  const imageUrlPath = '/a/' + environmentId + '.gif';
+  const baseHeaders = utils.extend({ 'Content-Type': 'application/json' }, utils.getLDHeaders(platform, options));
   const httpFallbackPing = platform.httpFallbackPing; // this will be set for us if we're in the browser SDK
   const sender = {};
 
@@ -22,21 +22,19 @@ export default function EventSender(platform, eventsUrl, environmentId, options)
     return ret;
   }
 
-  function sendChunk(events, usePost) {
+  sender.sendChunk = (events, url, isDiagnostic, usePost) => {
     const jsonBody = JSON.stringify(events);
-    const payloadId = uuidv1();
+    const payloadId = isDiagnostic ? null : uuidv1();
 
     function doPostRequest(canRetry) {
-      const headers = utils.extend(
-        {
-          'Content-Type': 'application/json',
-          'X-LaunchDarkly-Event-Schema': '3',
-          'X-LaunchDarkly-Payload-ID': payloadId,
-        },
-        utils.getLDHeaders(platform, options)
-      );
+      const headers = isDiagnostic
+        ? baseHeaders
+        : utils.extend({}, baseHeaders, {
+            'X-LaunchDarkly-Event-Schema': '3',
+            'X-LaunchDarkly-Payload-ID': payloadId,
+          });
       return platform
-        .httpRequest('POST', postUrl, headers, jsonBody)
+        .httpRequest('POST', url, headers, jsonBody)
         .promise.then(result => {
           if (!result) {
             // This was a response from a fire-and-forget request, so we won't have a status.
@@ -59,12 +57,12 @@ export default function EventSender(platform, eventsUrl, environmentId, options)
     if (usePost) {
       return doPostRequest(true).catch(() => {});
     } else {
-      httpFallbackPing && httpFallbackPing(imageUrl + '?d=' + utils.base64URLEncode(jsonBody));
+      httpFallbackPing && httpFallbackPing(url + imageUrlPath + '?d=' + utils.base64URLEncode(jsonBody));
       return Promise.resolve(); // we don't wait for this request to complete, it's just a one-way ping
     }
-  }
+  };
 
-  sender.sendEvents = function(events) {
+  sender.sendEvents = function(events, url, isDiagnostic) {
     if (!platform.httpRequest) {
       return Promise.resolve();
     }
@@ -74,11 +72,11 @@ export default function EventSender(platform, eventsUrl, environmentId, options)
       // no need to break up events into chunks if we can send a POST
       chunks = [events];
     } else {
-      chunks = utils.chunkUserEventsForUrl(MAX_URL_LENGTH - eventsUrl.length, events);
+      chunks = utils.chunkUserEventsForUrl(MAX_URL_LENGTH - url.length, events);
     }
     const results = [];
     for (let i = 0; i < chunks.length; i++) {
-      results.push(sendChunk(chunks[i], canPost));
+      results.push(sender.sendChunk(chunks[i], url, isDiagnostic, canPost));
     }
     return Promise.all(results);
   };
