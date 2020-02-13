@@ -2,6 +2,10 @@
 
 All notable changes to the `launchdarkly-js-sdk-common` package will be documented in this file. Changes that affect the dependent SDKs such as `launchdarkly-js-client-sdk` should also be logged in those projects, in the next release that uses the updated version of this package. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [3.2.1] - 2020-02-13
+### Fixed:
+- When using secure mode in conjunction with streaming mode, if an application specified a new `hash` parameter while changing the current user with `identify()`, the SDK was not using the new `hash` value when recomputing the stream URL, causing the stream to fail. ([#13](https://github.com/launchdarkly/js-sdk-common/issues/13))
+
 ## [3.2.0] - 2020-02-12
 ### Added:
 - The SDKs now periodically send diagnostic data to LaunchDarkly, describing the version and configuration of the SDK, the architecture and version of the runtime platform (provided by the platform-specific SDK packages), and performance statistics. No credentials, hostnames, or other identifiable values are included. This behavior can be disabled with the `diagnosticOptOut` option or configured with `diagnosticRecordingInterval`.
