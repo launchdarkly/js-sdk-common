@@ -27,6 +27,18 @@ describe('Stream', () => {
     baseHeaders = getLDHeaders(platform, defaultConfig);
   });
 
+  function makeExpectedStreamUrl(base64User, userHash, withReasons) {
+    const url = baseUrl + '/eval/' + envName + '/' + base64User;
+    const queryParams = [];
+    if (userHash) {
+      queryParams.push('h=' + userHash);
+    }
+    if (withReasons) {
+      queryParams.push('?withReasons=true');
+    }
+    return url + (queryParams.length ? '?' + queryParams.join('&') : '');
+  }
+
   it('should not throw on EventSource when it does not exist', () => {
     const platform1 = { ...platform };
     delete platform1['eventSourceFactory'];
@@ -51,22 +63,22 @@ describe('Stream', () => {
 
   it('connects to EventSource with eval stream URL by default', async () => {
     const stream = new Stream(platform, defaultConfig, envName);
-    stream.connect(user, {});
+    stream.connect(user, null, {});
 
-    await platform.testing.expectStream(baseUrl + '/eval/' + envName + '/' + encodedUser);
+    await platform.testing.expectStream(makeExpectedStreamUrl(encodedUser));
   });
 
   it('adds secure mode hash to URL if provided', async () => {
-    const stream = new Stream(platform, defaultConfig, envName, null, hash);
-    stream.connect(user, {});
+    const stream = new Stream(platform, defaultConfig, envName);
+    stream.connect(user, hash, {});
 
-    await platform.testing.expectStream(baseUrl + '/eval/' + envName + '/' + encodedUser + '?h=' + hash);
+    await platform.testing.expectStream(makeExpectedStreamUrl(encodedUser, hash));
   });
 
   it('falls back to ping stream URL if useReport is true and REPORT is not supported', async () => {
     const config = { ...defaultConfig, useReport: true };
     const stream = new Stream(platform, config, envName);
-    stream.connect(user, {});
+    stream.connect(user, null, {});
 
     await platform.testing.expectStream(baseUrl + '/ping/' + envName);
   });
@@ -75,7 +87,7 @@ describe('Stream', () => {
     const platform1 = { ...platform, eventSourceAllowsReport: true };
     const config = { ...defaultConfig, useReport: true };
     const stream = new Stream(platform1, config, envName);
-    stream.connect(user, {});
+    stream.connect(user, null, {});
 
     const created = await platform.testing.expectStream(baseUrl + '/eval/' + envName);
     expect(created.options.method).toEqual('REPORT');
@@ -84,27 +96,27 @@ describe('Stream', () => {
 
   it('sends default SDK headers', async () => {
     const stream = new Stream(platform, defaultConfig, envName);
-    stream.connect(user, {});
+    stream.connect(user, null, {});
 
-    const created = await platform.testing.expectStream(baseUrl + '/eval/' + envName + '/' + encodedUser);
+    const created = await platform.testing.expectStream(makeExpectedStreamUrl(encodedUser));
     expect(created.options.headers).toEqual(baseHeaders);
   });
 
   it('sends SDK headers with wrapper info', async () => {
     const config = { ...defaultConfig, wrapperName: 'FakeSDK' };
     const stream = new Stream(platform, config, envName);
-    stream.connect(user, {});
+    stream.connect(user, null, {});
 
-    const created = await platform.testing.expectStream(baseUrl + '/eval/' + envName + '/' + encodedUser);
+    const created = await platform.testing.expectStream(makeExpectedStreamUrl(encodedUser));
     expect(created.options.headers).toEqual({ ...baseHeaders, 'X-LaunchDarkly-Wrapper': 'FakeSDK' });
   });
 
   it('does not send SDK headers when sendLDHeaders is false', async () => {
     const config = { ...defaultConfig, sendLDHeaders: false };
     const stream = new Stream(platform, config, envName);
-    stream.connect(user, {});
+    stream.connect(user, null, {});
 
-    const created = await platform.testing.expectStream(baseUrl + '/eval/' + envName + '/' + encodedUser);
+    const created = await platform.testing.expectStream(makeExpectedStreamUrl(encodedUser));
     expect(created.options.headers).toEqual({});
   });
 
@@ -113,7 +125,7 @@ describe('Stream', () => {
     const fn1 = jest.fn();
     const fn2 = jest.fn();
 
-    stream.connect(user, {
+    stream.connect(user, null, {
       birthday: fn1,
       anniversary: fn2,
     });
@@ -184,7 +196,7 @@ describe('Stream', () => {
     const config = { ...defaultConfig, streamReconnectDelay: 1 };
     const stream = new Stream(platform, config, envName);
     const fakePut = jest.fn();
-    stream.connect(user, {
+    stream.connect(user, null, {
       put: fakePut,
     });
 
@@ -227,7 +239,7 @@ describe('Stream', () => {
 
       expect(acc.getProps().streamInits.length).toEqual(0);
 
-      stream.connect(user, {
+      stream.connect(user, null, {
         put: jest.fn(),
       });
 
@@ -255,7 +267,7 @@ describe('Stream', () => {
 
       expect(acc.getProps().streamInits.length).toEqual(0);
 
-      stream.connect(user, {
+      stream.connect(user, null, {
         put: jest.fn(),
       });
 

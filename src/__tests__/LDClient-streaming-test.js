@@ -13,6 +13,7 @@ import { makeBootstrap } from './testUtils';
 // implementation, verifying that the SDK interacts properly with the stream abstraction.
 
 describe('LDClient streaming', () => {
+  const defaultStreamBaseUrl = 'https://clientstream.launchdarkly.com';
   const envName = 'UNKNOWN_ENVIRONMENT_ID';
   const lsKey = 'ld:UNKNOWN_ENVIRONMENT_ID:' + utils.btoa('{"key":"user"}');
   const user = { key: 'user' };
@@ -32,9 +33,20 @@ describe('LDClient streaming', () => {
     return await withCloseable(client, async () => await asyncCallback(client, server));
   }
 
+  function makeExpectedStreamUrl(base64User, userHash, withReasons) {
+    const baseUrl = defaultStreamBaseUrl + '/eval/' + envName + '/' + base64User;
+    const queryParams = [];
+    if (userHash) {
+      queryParams.push('h=' + userHash);
+    }
+    if (withReasons) {
+      queryParams.push('?withReasons=true');
+    }
+    return baseUrl + (queryParams.length ? '?' + queryParams.join('&') : '');
+  }
+
   describe('streaming/event listening', () => {
-    const streamUrl = 'https://clientstream.launchdarkly.com';
-    const fullStreamUrlWithUser = streamUrl + '/eval/' + envName + '/' + encodedUser;
+    const fullStreamUrlWithUser = makeExpectedStreamUrl(encodedUser);
 
     async function expectStreamConnecting(url) {
       const stream = await platform.testing.expectStream(url);
@@ -599,10 +611,26 @@ describe('LDClient streaming', () => {
         await client.waitForInitialization();
         client.setStreaming(true);
 
-        await expectStreamConnecting(streamUrl + '/eval/' + envName + '/' + encodedUser);
+        await expectStreamConnecting(makeExpectedStreamUrl(encodedUser));
 
         await client.identify(user2);
-        await expectStreamConnecting(streamUrl + '/eval/' + envName + '/' + encodedUser2);
+        await expectStreamConnecting(makeExpectedStreamUrl(encodedUser2));
+      });
+    });
+
+    it('reconnects to stream with new hash value in secure mode if the user changes', async () => {
+      const newUser = { key: 'user2' };
+      const newEncodedUser = 'eyJrZXkiOiJ1c2VyMiJ9';
+      const newHash = hash + 'xxx';
+
+      await withClientAndServer({ hash }, async client => {
+        await client.waitForInitialization();
+        client.setStreaming(true);
+
+        await expectStreamConnecting(makeExpectedStreamUrl(encodedUser, hash));
+
+        await client.identify(newUser, newHash);
+        await expectStreamConnecting(makeExpectedStreamUrl(newEncodedUser, newHash));
       });
     });
   });
