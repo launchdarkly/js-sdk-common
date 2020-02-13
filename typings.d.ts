@@ -468,7 +468,7 @@ declare module 'launchdarkly-js-sdk-common' {
      * @param user
      *   The user properties. Must contain at least the `key` property.
      * @param hash
-     *   The signed user key for [Secure Mode](http://docs.launchdarkly.com/docs/js-sdk-reference#secure-mode).
+     *   The signed user key if you are using [Secure Mode](http://docs.launchdarkly.com/docs/js-sdk-reference#secure-mode).
      * @param onDone
      *   A function which will be called as soon as the flag values for the new user are available,
      *   with two parameters: an error value (if any), and an [[LDFlagSet]] containing the new values

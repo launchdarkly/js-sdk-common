@@ -32,9 +32,9 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
   const logger = createLogger();
   const emitter = EventEmitter(logger);
   const options = configuration.validate(specifiedOptions, emitter, extraOptionDefs, logger);
-  const hash = options.hash;
   const sendEvents = options.sendEvents;
   let environment = env;
+  let hash = options.hash;
 
   const eventSender = EventSender(platform, environment, options);
 
@@ -48,7 +48,7 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
     diagnosticsManager.start();
   }
 
-  const stream = Stream(platform, options, environment, diagnosticsAccumulator, hash);
+  const stream = Stream(platform, options, environment, diagnosticsAccumulator);
 
   const events =
     options.eventProcessor ||
@@ -198,7 +198,7 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
     enqueueEvent(event);
   }
 
-  function identify(user, hash, onDone) {
+  function identify(user, newHash, onDone) {
     if (closed) {
       return utils.wrapPromiseCallback(Promise.resolve({}), onDone);
     }
@@ -213,11 +213,12 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
         .then(() => userValidator.validateUser(user))
         .then(realUser =>
           requestor
-            .fetchFlagSettings(realUser, hash)
+            .fetchFlagSettings(realUser, newHash)
             // the following then() is nested within this one so we can use realUser from the previous closure
             .then(requestedFlags => {
               const flagValueMap = utils.transformVersionedValuesToValues(requestedFlags);
               ident.setUser(realUser);
+              hash = newHash;
               if (requestedFlags) {
                 return replaceAllFlags(requestedFlags).then(() => flagValueMap);
               } else {
@@ -334,7 +335,7 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
     if (!ident.getUser()) {
       return;
     }
-    stream.connect(ident.getUser(), {
+    stream.connect(ident.getUser(), hash, {
       ping: function() {
         logger.debug(messages.debugStreamPing());
         requestor
