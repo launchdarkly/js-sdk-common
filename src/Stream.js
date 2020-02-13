@@ -10,7 +10,7 @@ import { base64URLEncode, getLDHeaders } from './utils';
 //   it is in an active state (connected or connecting).
 // eventSourceAllowsReport: true if REPORT is supported.
 
-export default function Stream(platform, config, environment, diagnosticsAccumulator, hash) {
+export default function Stream(platform, config, environment, diagnosticsAccumulator) {
   const baseUrl = config.streamUrl;
   const logger = config.logger;
   const stream = {};
@@ -24,10 +24,12 @@ export default function Stream(platform, config, environment, diagnosticsAccumul
   let reconnectTimeoutReference = null;
   let connectionAttemptStartTime;
   let user = null;
+  let hash = null;
   let handlers = null;
 
-  stream.connect = function(newUser, newHandlers) {
+  stream.connect = function(newUser, newHash, newHandlers) {
     user = newUser;
+    hash = newHash;
     handlers = {};
     for (const key in newHandlers || {}) {
       handlers[key] = function(e) {
