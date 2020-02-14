@@ -49,7 +49,7 @@ describe('DiagnosticsAccumulator', () => {
   it('records successful stream init', () => {
     const acc = DiagnosticsAccumulator(1000);
     acc.recordStreamInit(1001, false, 500);
-    expect(acc.getProps().streamInits).toEqual([{ timestamp: 1001, durationMillis: 500 }]);
+    expect(acc.getProps().streamInits).toEqual([{ timestamp: 1001, failed: false, durationMillis: 500 }]);
   });
 
   it('records failed stream init', () => {
