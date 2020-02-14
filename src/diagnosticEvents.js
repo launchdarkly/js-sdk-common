@@ -51,10 +51,7 @@ function DiagnosticsAccumulator(startTime) {
       eventsInLastBatch = n;
     },
     recordStreamInit: (timestamp, failed, durationMillis) => {
-      const info = { timestamp, durationMillis };
-      if (failed) {
-        info.failed = true;
-      }
+      const info = { timestamp, failed, durationMillis };
       streamInits.push(info);
     },
     reset,
@@ -200,8 +197,6 @@ function DiagnosticsManager(platform, accumulator, eventSender, environmentId, c
     };
     // Client-side JS SDKs do not have the following properties which other SDKs have:
     // connectTimeoutMillis
-    // eventsCapacity
-    // offline
     // pollingIntervalMillis
     // samplingInterval
     // socketTimeoutMillis
