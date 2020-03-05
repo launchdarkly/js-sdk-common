@@ -28,13 +28,13 @@ function InitializationStateTracker(eventEmitter) {
     const onReady = () => {
       eventEmitter.off(readyEvent, onReady); // we can't use "once" because it's not available on some JS platforms
       resolve();
-    }
+    };
     eventEmitter.on(readyEvent, onReady);
   }).catch(() => {}); // this Promise should never be rejected, but the catch handler is a safety measure
 
   return {
     getInitializationPromise: () => {
-      if (initializationPromise != null) {
+      if (initializationPromise) {
         return initializationPromise;
       }
       if (succeeded) {
@@ -47,11 +47,11 @@ function InitializationStateTracker(eventEmitter) {
         const onSuccess = () => {
           eventEmitter.off(successEvent, onSuccess);
           resolve();
-        }
+        };
         const onFailure = err => {
           eventEmitter.off(failureEvent, onFailure);
           reject(err);
-        }
+        };
         eventEmitter.on(successEvent, onSuccess);
         eventEmitter.on(failureEvent, onFailure);
       });

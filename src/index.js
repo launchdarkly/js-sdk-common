@@ -14,9 +14,6 @@ import * as utils from './utils';
 import * as errors from './errors';
 import * as messages from './messages';
 
-const readyEvent = 'ready';
-const successEvent = 'initialized';
-const failedEvent = 'failed';
 const changeEvent = 'change';
 const internalChangeEvent = 'internal-change';
 

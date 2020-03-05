@@ -1,5 +1,4 @@
 import * as LDClient from '../index';
-import * as errors from '../errors';
 import * as messages from '../messages';
 import * as utils from '../utils';
 
@@ -243,28 +242,28 @@ describe('LDClient', () => {
     }
 
     describe('environment key not specified', () => {
-      doErrorTests(messages.environmentNotSpecified(),
-        async callback => await withCloseable(platform.testing.makeClient('', user), callback));
+      doErrorTests(
+        messages.environmentNotSpecified(),
+        async callback => await withCloseable(platform.testing.makeClient('', user), callback)
+      );
     });
 
     describe('invalid environment key (404 error)', () => {
-      doErrorTests(messages.environmentNotFound(),
-        async callback => {
-          await withServers(async (baseConfig, pollServer) => {
-            pollServer.byDefault(respond(404));
-            await withClient(user, baseConfig, callback);
-          });
+      doErrorTests(messages.environmentNotFound(), async callback => {
+        await withServers(async (baseConfig, pollServer) => {
+          pollServer.byDefault(respond(404));
+          await withClient(user, baseConfig, callback);
         });
+      });
     });
 
     describe('HTTP error other than 404 on initial poll', () => {
-      doErrorTests(messages.errorFetchingFlags(503),
-        async callback => {
-          await withServers(async (baseConfig, pollServer) => {
-            pollServer.byDefault(respond(503));
-            await withClient(user, baseConfig, callback);
-          });
+      doErrorTests(messages.errorFetchingFlags(503), async callback => {
+        await withServers(async (baseConfig, pollServer) => {
+          pollServer.byDefault(respond(503));
+          await withClient(user, baseConfig, callback);
         });
+      });
     });
   });
 

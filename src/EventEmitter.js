@@ -30,7 +30,7 @@ export default function EventEmitter(logger) {
     // Copy the list of handlers before iterating, in case any handler adds or removes another handler.
     // Any such changes should not affect what we do here-- we want to notify every handler that existed
     // at the moment that the event was fired.
-    var copiedHandlers = events[event].slice(0);
+    const copiedHandlers = events[event].slice(0);
     for (let i = 0; i < copiedHandlers.length; i++) {
       copiedHandlers[i].handler.apply(copiedHandlers[i].context, Array.prototype.slice.call(arguments, 1));
     }
