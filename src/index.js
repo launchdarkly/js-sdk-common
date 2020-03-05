@@ -1,6 +1,7 @@
 import EventProcessor from './EventProcessor';
 import EventEmitter from './EventEmitter';
 import EventSender from './EventSender';
+import InitializationStateTracker from './InitializationState';
 import Store from './Store';
 import Stream from './Stream';
 import Requestor from './Requestor';
@@ -31,6 +32,7 @@ const internalChangeEvent = 'internal-change';
 export function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
   const logger = createLogger();
   const emitter = EventEmitter(logger);
+  const initializationStateTracker = InitializationStateTracker(emitter);
   const options = configuration.validate(specifiedOptions, emitter, extraOptionDefs, logger);
   const sendEvents = options.sendEvents;
   let environment = env;
@@ -517,24 +519,6 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
     return event === changeEvent || event.substr(0, changeEvent.length + 1) === changeEvent + ':';
   }
 
-  const readyPromise = new Promise(resolve => {
-    const onReady = emitter.on(readyEvent, () => {
-      emitter.off(readyEvent, onReady);
-      resolve();
-    });
-  });
-
-  const initPromise = new Promise((resolve, reject) => {
-    const onSuccess = emitter.on(successEvent, () => {
-      emitter.off(successEvent, onSuccess);
-      resolve();
-    });
-    const onFailure = emitter.on(failedEvent, err => {
-      emitter.off(failedEvent, onFailure);
-      reject(err);
-    });
-  });
-
   if (typeof options.bootstrap === 'string' && options.bootstrap.toUpperCase() === 'LOCALSTORAGE') {
     if (store) {
       useLocalStorage = true;
@@ -562,7 +546,7 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
     }
     stateProvider.on('update', updateFromStateProvider);
   } else {
-    finishInit().catch(err => emitter.maybeReportError(err));
+    finishInit().catch(signalFailedInit);
   }
 
   function finishInit() {
@@ -646,14 +630,11 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
     logger.info(messages.clientInitialized());
     inited = true;
     updateStreamingState();
-    emitter.emit(readyEvent);
-    emitter.emit(successEvent); // allows initPromise to distinguish between success and failure
+    initializationStateTracker.signalSuccess();
   }
 
   function signalFailedInit(err) {
-    emitter.maybeReportError(err);
-    emitter.emit(failedEvent, err);
-    emitter.emit(readyEvent); // for backward compatibility, this event happens even on failure
+    initializationStateTracker.signalFailure(err);
   }
 
   function start() {
@@ -695,8 +676,8 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
   }
 
   const client = {
-    waitForInitialization: () => initPromise,
-    waitUntilReady: () => readyPromise,
+    waitForInitialization: () => initializationStateTracker.getInitializationPromise(),
+    waitUntilReady: () => initializationStateTracker.getReadyPromise(),
     identify: identify,
     getUser: getUser,
     variation: variation,
