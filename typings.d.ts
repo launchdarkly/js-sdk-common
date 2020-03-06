@@ -426,8 +426,20 @@ declare module 'launchdarkly-js-sdk-common' {
      * Returns a Promise that tracks the client's initialization state.
      *
      * The returned Promise will be resolved once the client has either successfully initialized
-     * or failed to initialize (e.g. due to an invalid environment key or a server error).
-     * 
+     * or failed to initialize (e.g. due to an invalid environment key or a server error). It will
+     * never be rejected.
+     *
+     * ```
+     *     // using a Promise then() handler
+     *     client.waitUntilReady().then(() => {
+     *         doSomethingWithClient();
+     *     });
+     *
+     *     // using async/await
+     *     await client.waitUntilReady();
+     *     doSomethingWithClient();
+     * ```
+     *
      * If you want to distinguish between these success and failure conditions, use
      * [[waitForInitialization]] instead.
      * 
@@ -444,6 +456,28 @@ declare module 'launchdarkly-js-sdk-common' {
      *
      * The Promise will be resolved if the client successfully initializes, or rejected if client
      * initialization has irrevocably failed (for instance, if it detects that the SDK key is invalid).
+     *
+     * ```
+     *     // using Promise then() and catch() handlers
+     *     client.waitForInitialization().then(() => {
+     *         doSomethingWithSuccessfullyInitializedClient();
+     *     }).catch(err => {
+     *         doSomethingForFailedStartup(err);
+     *     });
+     *
+     *     // using async/await
+     *     try {
+     *         await client.waitForInitialization();
+     *         doSomethingWithSuccessfullyInitializedClient();
+     *     } catch (err) {
+     *         doSomethingForFailedStartup(err); 
+     *     }
+     * ```
+     *
+     * It is important that you handle the rejection case; otherwise it will become an unhandled Promise
+     * rejection, which is a serious error on some platforms. The Promise is not created unless you
+     * request it, so if you never call `waitForInitialization()` then you do not have to worry about
+     * unhandled rejections.
      *
      * Note that you can also use event listeners ([[on]]) for the same purpose: the event `"initialized"`
      * indicates success, and `"failed"` indicates failure.
