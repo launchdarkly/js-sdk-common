@@ -1,5 +1,4 @@
 import * as LDClient from '../index';
-import * as errors from '../errors';
 import * as messages from '../messages';
 import * as utils from '../utils';
 
@@ -43,7 +42,7 @@ describe('LDClient', () => {
   });
 
   describe('initialization', () => {
-    it('should trigger the ready event', async () => {
+    it('triggers "ready" event', async () => {
       await withServers(async baseConfig => {
         await withClient(user, baseConfig, async client => {
           const gotReady = eventSink(client, 'ready');
@@ -54,7 +53,7 @@ describe('LDClient', () => {
       });
     });
 
-    it('should trigger the initialized event', async () => {
+    it('triggers "initialized" event', async () => {
       await withServers(async baseConfig => {
         await withClient(user, baseConfig, async client => {
           const gotInited = eventSink(client, 'initialized');
@@ -63,49 +62,18 @@ describe('LDClient', () => {
       });
     });
 
-    it('should emit an error when initialize is called without an environment key', async () => {
-      const client = platform.testing.makeClient('', user);
-      const gotError = eventSink(client, 'error');
-
-      const err = await gotError.take();
-      expect(err.message).toEqual(messages.environmentNotSpecified());
-    });
-
-    it('should emit an error when an invalid environment key is specified', async () => {
-      await withServers(async (baseConfig, pollServer) => {
-        pollServer.byDefault(respond(404));
+    it('resolves waitForInitialization promise', async () => {
+      await withServers(async baseConfig => {
         await withClient(user, baseConfig, async client => {
-          const gotError = eventSink(client, 'error');
-
-          await expect(client.waitForInitialization()).rejects.toThrow();
-
-          const err = await gotError.take();
-          expect(err).toEqual(new errors.LDInvalidEnvironmentIdError(messages.environmentNotFound()));
+          await client.waitForInitialization();
         });
       });
     });
 
-    it('should emit a failure event when an invalid environment key is specified', async () => {
-      await withServers(async (baseConfig, pollServer) => {
-        pollServer.byDefault(respond(404));
+    it('resolves waitUntilReady promise', async () => {
+      await withServers(async baseConfig => {
         await withClient(user, baseConfig, async client => {
-          const gotFailed = eventSink(client, 'failed');
-
-          await expect(client.waitForInitialization()).rejects.toThrow();
-
-          const err = await gotFailed.take();
-          expect(err).toEqual(new errors.LDInvalidEnvironmentIdError(messages.environmentNotFound()));
-        });
-      });
-    });
-
-    it('returns default values when an invalid environment key is specified', async () => {
-      await withServers(async (baseConfig, pollServer) => {
-        pollServer.byDefault(respond(404));
-        await withClient(user, baseConfig, async client => {
-          await expect(client.waitForInitialization()).rejects.toThrow();
-
-          expect(client.variation('flag-key', 1)).toEqual(1);
+          await client.waitUntilReady();
         });
       });
     });
@@ -143,19 +111,6 @@ describe('LDClient', () => {
       // All client bundles above 1.0.7 should contain package version
       const result = semverCompare(version, '1.0.6');
       expect(result).toEqual(1);
-    });
-
-    it('should emit an error event if there was an error fetching flags', async () => {
-      await withServers(async (baseConfig, pollServer) => {
-        pollServer.byDefault(respond(503));
-        await withClient(user, baseConfig, async client => {
-          const gotError = eventSink(client, 'error');
-
-          await expect(client.waitForInitialization()).rejects.toThrow();
-          const err = await gotError.take();
-          expect(err).toEqual(new errors.LDFlagFetchError(messages.errorFetchingFlags(503)));
-        });
-      });
     });
 
     async function verifyCustomHeader(sendLDHeaders, shouldGetHeaders) {
@@ -231,6 +186,87 @@ describe('LDClient', () => {
     });
   });
 
+  describe('failed initialization', () => {
+    function doErrorTests(expectedMessage, doWithClientAsyncFn) {
+      async function runTest(asyncTest) {
+        try {
+          await doWithClientAsyncFn(asyncTest);
+        } finally {
+          // sleep briefly so any unhandled promise rejections will show up in this test, instead of
+          // in a later test
+          await sleepAsync(2);
+        }
+      }
+
+      it('rejects waitForInitialization promise', async () => {
+        await runTest(async client => {
+          await expect(client.waitForInitialization()).rejects.toThrow();
+        });
+      });
+
+      it('resolves waitUntilReady promise', async () => {
+        await runTest(async client => {
+          await client.waitUntilReady();
+        });
+      });
+
+      it('emits "error" event', async () => {
+        await runTest(async client => {
+          const gotError = eventSink(client, 'error');
+          const err = await gotError.take();
+          expect(err.message).toEqual(expectedMessage);
+        });
+      });
+
+      it('emits "failed" event', async () => {
+        await runTest(async client => {
+          const gotFailed = eventSink(client, 'failed');
+          const err = await gotFailed.take();
+          expect(err.message).toEqual(expectedMessage);
+        });
+      });
+
+      it('emits "ready" event', async () => {
+        await runTest(async client => {
+          const gotReady = eventSink(client, 'ready');
+          await gotReady.take();
+        });
+      });
+
+      it('returns default values', async () => {
+        await runTest(async client => {
+          await client.waitUntilReady();
+          expect(client.variation('flag-key', 1)).toEqual(1);
+        });
+      });
+    }
+
+    describe('environment key not specified', () => {
+      doErrorTests(
+        messages.environmentNotSpecified(),
+        async callback => await withCloseable(platform.testing.makeClient('', user), callback)
+      );
+    });
+
+    describe('invalid environment key (404 error)', () => {
+      doErrorTests(messages.environmentNotFound(), async callback => {
+        await withServers(async (baseConfig, pollServer) => {
+          pollServer.byDefault(respond(404));
+          await withClient(user, baseConfig, callback);
+        });
+      });
+    });
+
+    describe('HTTP error other than 404 on initial poll', () => {
+      doErrorTests(messages.errorFetchingFlags(503), async callback => {
+        await withServers(async (baseConfig, pollServer) => {
+          pollServer.byDefault(respond(503));
+          await withClient(user, baseConfig, callback);
+        });
+      });
+    });
+  });
+
   describe('initialization with bootstrap object', () => {
     it('should not fetch flag settings', async () => {
       await withServers(async (baseConfig, pollServer) => {
@@ -267,42 +303,6 @@ describe('LDClient', () => {
 
         expect(platform.testing.logger.output.warn).toEqual([]);
         expect(client.variation('foo')).toEqual('bar');
-      });
-    });
-  });
-
-  describe('waitUntilReady', () => {
-    it('should resolve waitUntilReady promise when ready', async () => {
-      await withServers(async baseConfig => {
-        await withClient(user, baseConfig, async client => {
-          const gotReady = eventSink(client, 'ready');
-
-          await gotReady.take();
-          await client.waitUntilReady();
-        });
-      });
-    });
-  });
-
-  describe('waitForInitialization', () => {
-    it('resolves promise on successful init', async () => {
-      await withServers(async baseConfig => {
-        await withClient(user, baseConfig, async client => {
-          const gotReady = eventSink(client, 'ready');
-
-          await gotReady.take();
-          await client.waitForInitialization();
-        });
-      });
-    });
-
-    it('rejects promise if flags request fails', async () => {
-      await withServers(async (baseConfig, pollServer) => {
-        pollServer.byDefault(respond(404));
-        await withClient(user, baseConfig, async client => {
-          const err = new errors.LDInvalidEnvironmentIdError(messages.environmentNotFound());
-          await expect(client.waitForInitialization()).rejects.toThrow(err);
-        });
       });
     });
   });
