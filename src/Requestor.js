@@ -3,7 +3,7 @@ import * as errors from './errors';
 import * as messages from './messages';
 import promiseCoalescer from './promiseCoalescer';
 
-const json = 'application/json';
+const jsonContentType = 'application/json';
 
 function getResponseError(result) {
   if (result.status === 404) {
@@ -33,7 +33,7 @@ export default function Requestor(platform, options, environment) {
     const method = body ? 'REPORT' : 'GET';
     const headers = utils.getLDHeaders(platform, options);
     if (body) {
-      headers['Content-Type'] = 'application/json';
+      headers['Content-Type'] = jsonContentType;
     }
 
     let coalescer = activeRequests[endpoint];
@@ -49,7 +49,7 @@ export default function Requestor(platform, options, environment) {
     const p = req.promise.then(
       result => {
         if (result.status === 200) {
-          if (result.header('content-type') && result.header('content-type').lastIndexOf(json) === 0) {
+          if (result.header('content-type') && result.header('content-type').startsWith(jsonContentType)) {
             return JSON.parse(result.body);
           } else {
             const message = messages.invalidContentType(result.header('content-type') || '');
