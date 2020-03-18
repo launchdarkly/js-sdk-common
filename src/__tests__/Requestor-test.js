@@ -238,6 +238,27 @@ describe('Requestor', () => {
     });
   });
 
+  it('allows JSON content type with charset', async () => {
+    await withServer(async (baseConfig, server) => {
+      server.byDefault(respond(200, { 'content-type': 'application/json; charset=utf-8' }, '{}'));
+      const requestor = Requestor(platform, baseConfig, env);
+
+      const result = await requestor.fetchFlagSettings(user);
+      expect(result).toEqual({});
+    });
+  });
+
+  it('allows extra JSON content type header', async () => {
+    await withServer(async (baseConfig, server) => {
+      // this could happen if a proxy/gateway interpolated its own content-type header; https://github.com/launchdarkly/js-client-sdk/issues/205
+      server.byDefault(respond(200, { 'content-type': 'application/json, application/json; charset=utf-8' }, '{}'));
+      const requestor = Requestor(platform, baseConfig, env);
+
+      const result = await requestor.fetchFlagSettings(user);
+      expect(result).toEqual({});
+    });
+  });
+
   it('returns error for non-JSON content type', async () => {
     await withServer(async (baseConfig, server) => {
       server.byDefault(respond(200, { 'content-type': 'text/plain' }, 'sorry'));
