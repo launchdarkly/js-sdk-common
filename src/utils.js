@@ -85,7 +85,7 @@ export function wrapPromiseCallback(promise, callback) {
 export function transformValuesToVersionedValues(flags) {
   const ret = {};
   for (const key in flags) {
-    if (flags.hasOwnProperty(key)) {
+    if (objectHasOwnProperty(flags, key)) {
       ret[key] = { value: flags[key], version: 0 };
     }
   }
@@ -98,7 +98,7 @@ export function transformValuesToVersionedValues(flags) {
 export function transformVersionedValuesToValues(flagsState) {
   const ret = {};
   for (const key in flagsState) {
-    if (flagsState.hasOwnProperty(key)) {
+    if (objectHasOwnProperty(flagsState, key)) {
       ret[key] = flagsState[key].value;
     }
   }
@@ -167,6 +167,10 @@ export function getLDHeaders(platform, options) {
 
 export function extend(...objects) {
   return objects.reduce((acc, obj) => ({ ...acc, ...obj }), {});
+}
+
+export function objectHasOwnProperty(object, name) {
+  return Object.prototype.hasOwnProperty.call(object, name);
 }
 
 export function sanitizeUser(user) {

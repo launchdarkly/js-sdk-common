@@ -1,5 +1,5 @@
 import * as messages from './messages';
-import { base64URLEncode, getLDHeaders } from './utils';
+import { base64URLEncode, getLDHeaders, objectHasOwnProperty } from './utils';
 
 // The underlying event source implementation is abstracted via the platform object, which should
 // have these three properties:
@@ -109,7 +109,7 @@ export default function Stream(platform, config, environment, diagnosticsAccumul
 
       es = platform.eventSourceFactory(url, options);
       for (const key in handlers) {
-        if (handlers.hasOwnProperty(key)) {
+        if (objectHasOwnProperty(handlers, key)) {
           es.addEventListener(key, handlers[key]);
         }
       }
