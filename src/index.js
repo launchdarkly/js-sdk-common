@@ -258,7 +258,7 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
   function variationDetailInternal(key, defaultValue, sendEvent, includeReasonInEvent) {
     let detail;
 
-    if (flags && flags.hasOwnProperty(key) && flags[key] && !flags[key].deleted) {
+    if (flags && utils.objectHasOwnProperty(flags, key) && flags[key] && !flags[key].deleted) {
       const flag = flags[key];
       detail = getFlagDetail(flag);
       if (flag.value === null || flag.value === undefined) {
@@ -294,7 +294,7 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
     }
 
     for (const key in flags) {
-      if (flags.hasOwnProperty(key)) {
+      if (utils.objectHasOwnProperty(flags, key)) {
         results[key] = variationDetailInternal(key, null, !options.sendEventsOnlyForVariation).value;
       }
     }
@@ -407,7 +407,7 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
     }
 
     for (const key in flags) {
-      if (flags.hasOwnProperty(key) && flags[key]) {
+      if (utils.objectHasOwnProperty(flags, key) && flags[key]) {
         if (newFlags[key] && !utils.deepEquals(newFlags[key].value, flags[key].value)) {
           changes[key] = { previous: flags[key].value, current: getFlagDetail(newFlags[key]) };
         } else if (!newFlags[key] || newFlags[key].deleted) {
@@ -416,7 +416,7 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
       }
     }
     for (const key in newFlags) {
-      if (newFlags.hasOwnProperty(key) && newFlags[key] && (!flags[key] || flags[key].deleted)) {
+      if (utils.objectHasOwnProperty(newFlags, key) && newFlags[key] && (!flags[key] || flags[key].deleted)) {
         changes[key] = { current: getFlagDetail(newFlags[key]) };
       }
     }
