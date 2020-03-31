@@ -93,6 +93,25 @@ describe('createConsoleLogger', () => {
         expect(infoSpy).not.toHaveBeenCalled();
         expect(warnSpy).not.toHaveBeenCalled();
       });
+
+      it('does not throw an error if console is undefined or null', () => {
+        // see comments in ConsoleLogger.js
+        const oldConsole = console;
+        try {
+          console = null; // eslint-disable-line no-global-assign
+          logger.debug('x');
+          logger.info('x');
+          logger.warn('x');
+          logger.error('x');
+          console = undefined; // eslint-disable-line no-global-assign
+          logger.debug('x');
+          logger.info('x');
+          logger.warn('x');
+          logger.error('x');
+        } finally {
+          console = oldConsole; // eslint-disable-line no-global-assign
+        }
+      });
     });
   });
 });
