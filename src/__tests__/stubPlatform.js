@@ -83,7 +83,14 @@ export function defaults() {
 
       makeClient: (env, user, options = {}) => {
         const config = { logger: p.testing.logger, ...options };
-        return LDClient.initialize(env, user, config, p).client;
+        // We want to simulate what the platform-specific SDKs will do in their own initialization functions.
+        // They will call the common package's LDClient.initialize() and receive the clientVars object which
+        // contains both the underlying client (in its "client" property) and some internal methods that the
+        // platform-specific SDKs can use to do internal stuff. One of those is start(), which they will
+        // call after doing any other initialization things they may need to do.
+        const clientVars = LDClient.initialize(env, user, config, p);
+        clientVars.start();
+        return clientVars.client;
       },
 
       setCurrentUrl: url => {

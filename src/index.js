@@ -43,9 +43,6 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
   const diagnosticsManager = diagnosticsEnabled
     ? diagnostics.DiagnosticsManager(platform, diagnosticsAccumulator, eventSender, environment, options, diagnosticId)
     : null;
-  if (diagnosticsManager) {
-    diagnosticsManager.start();
-  }
 
   const stream = Stream(platform, options, environment, diagnosticsAccumulator);
 
