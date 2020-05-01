@@ -1,6 +1,6 @@
 import * as messages from '../messages';
 
-import { withCloseable } from 'launchdarkly-js-test-helpers';
+import { withCloseable, sleepAsync } from 'launchdarkly-js-test-helpers';
 
 import { respond, respondJson } from './mockHttp';
 import * as stubPlatform from './stubPlatform';
@@ -426,6 +426,28 @@ describe('LDClient events', () => {
     });
   });
 
+  async function expectDiagnosticEventAndDiscardRegularEvent(server) {
+    const req0 = await server.nextRequest();
+    const req1 = await server.nextRequest();
+    const expectedPath = '/events/diagnostic/' + envName;
+    const otherPath = '/events/bulk/' + envName;
+    let initEventReq;
+    if (req0.path === expectedPath) {
+      expect(req1.path).toEqual(otherPath);
+      initEventReq = req0;
+    } else {
+      expect(req0.path).toEqual(otherPath);
+      expect(req1.path).toEqual(expectedPath);
+      initEventReq = req1;
+    }
+    return JSON.parse(initEventReq.body);
+  }
+
+  async function expectNoMoreRequests(server, timeout) {
+    await sleepAsync(timeout);
+    expect(server.requests.length()).toEqual(0);
+  }
+
   it('sends diagnostic init event on startup', async () => {
     const server = platform.testing.http.newServer();
     server.byDefault(respond(202));
@@ -439,15 +461,11 @@ describe('LDClient events', () => {
       await withCloseable(client, async () => {
         await client.waitForInitialization();
         await client.flush();
-        const req0 = await server.nextRequest();
-        const req1 = await server.nextRequest();
-        const expectedPath = '/events/diagnostic/' + envName;
-        expect([req0.path, req1.path]).toContain(expectedPath);
-        const req = req0.path === expectedPath ? req0 : req1;
-        const data = JSON.parse(req.body);
+        const data = await expectDiagnosticEventAndDiscardRegularEvent(server);
         expect(data.kind).toEqual('diagnostic-init');
         expect(data.platform).toEqual(platform.diagnosticPlatformData);
         expect(data.sdk).toEqual(platform.diagnosticSdkData);
+        await expectNoMoreRequests(server, 50);
       });
     });
   });
@@ -467,15 +485,11 @@ describe('LDClient events', () => {
       await withCloseable(client, async () => {
         await client.waitForInitialization();
         await client.flush();
-        const req0 = await server.nextRequest();
-        const req1 = await server.nextRequest();
-        const expectedPath = '/events/diagnostic/' + envName;
-        expect([req0.path, req1.path]).toContain(expectedPath);
-        const req = req0.path === expectedPath ? req0 : req1;
-        const data = JSON.parse(req.body);
+        const data = await expectDiagnosticEventAndDiscardRegularEvent(server);
         expect(data.kind).toEqual('diagnostic-combined');
         expect(data.platform).toEqual(platform1.diagnosticPlatformData);
         expect(data.sdk).toEqual(platform1.diagnosticSdkData);
+        await expectNoMoreRequests(server, 50);
       });
     });
   });
@@ -497,6 +511,7 @@ describe('LDClient events', () => {
         expect(server.requests.length()).toEqual(1);
         const req = await server.nextRequest();
         expect(req.path).toEqual('/events/bulk/' + envName);
+        await expectNoMoreRequests(server, 50);
       });
     });
   });
