@@ -49,7 +49,11 @@ export default function Requestor(platform, options, environment) {
     const p = req.promise.then(
       result => {
         if (result.status === 200) {
-          if (result.header('content-type') && result.header('content-type').startsWith(jsonContentType)) {
+          // We're using substring here because using startsWith would require a polyfill in IE.
+          if (
+            result.header('content-type') &&
+            result.header('content-type').substring(0, jsonContentType.length) === jsonContentType
+          ) {
             return JSON.parse(result.body);
           } else {
             const message = messages.invalidContentType(result.header('content-type') || '');
