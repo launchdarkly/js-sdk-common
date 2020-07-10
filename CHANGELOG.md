@@ -2,6 +2,10 @@
 
 All notable changes to the `launchdarkly-js-sdk-common` package will be documented in this file. Changes that affect the dependent SDKs such as `launchdarkly-js-client-sdk` should also be logged in those projects, in the next release that uses the updated version of this package. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [3.2.9] - 2020-07-10
+### Fixed:
+- Removed uses of `String.startsWith` that caused errors in Internet Explorer unless a polyfill for that function was present.
+
 ## [3.2.8] - 2020-05-13
 ### Fixed:
 - The TypeScript declaration for `track()` was missing the optional `metricValue` parameter. ([#23](https://github.com/launchdarkly/js-sdk-common/issues/23))
