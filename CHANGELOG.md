@@ -2,6 +2,10 @@
 
 All notable changes to the `launchdarkly-js-sdk-common` package will be documented in this file. Changes that affect the dependent SDKs such as `launchdarkly-js-client-sdk` should also be logged in those projects, in the next release that uses the updated version of this package. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [3.2.10] - 2020-09-14
+### Fixed:
+- In streaming mode, when connecting to the Relay Proxy rather than directly to the LaunchDarkly streaming service, if the current user was changed twice within a short time it was possible for the SDK to revert to flag values from the previous user.
+
 ## [3.2.9] - 2020-07-10
 ### Fixed:
 - Removed uses of `String.startsWith` that caused errors in Internet Explorer unless a polyfill for that function was present.
