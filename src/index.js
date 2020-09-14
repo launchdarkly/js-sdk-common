@@ -334,9 +334,16 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
     stream.connect(ident.getUser(), hash, {
       ping: function() {
         logger.debug(messages.debugStreamPing());
+        const userAtTimeOfPingEvent = ident.getUser();
         requestor
-          .fetchFlagSettings(ident.getUser(), hash)
-          .then(requestedFlags => replaceAllFlags(requestedFlags || {}))
+          .fetchFlagSettings(userAtTimeOfPingEvent, hash)
+          .then(requestedFlags => {
+            // Check whether the current user is still the same - we don't want to overwrite the flags if
+            // the application has called identify() while this request was in progress
+            if (utils.deepEquals(userAtTimeOfPingEvent, ident.getUser())) {
+              replaceAllFlags(requestedFlags || {});
+            }
+          })
           .catch(err => {
             emitter.maybeReportError(new errors.LDFlagFetchError(messages.errorFetchingFlags(err)));
           });

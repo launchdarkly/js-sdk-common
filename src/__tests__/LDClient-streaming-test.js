@@ -1,6 +1,6 @@
 import * as utils from '../utils';
 
-import { eventSink, sleepAsync, withCloseable } from 'launchdarkly-js-test-helpers';
+import { AsyncQueue, eventSink, sleepAsync, withCloseable } from 'launchdarkly-js-test-helpers';
 
 import EventSource from './EventSource-mock';
 import { respondJson } from './mockHttp';
@@ -247,6 +247,52 @@ describe('LDClient streaming', () => {
         await sleepAsync(20); // give response handler a chance to execute
 
         expect(client.variation('flagKey')).toEqual(true);
+      });
+    });
+
+    it("poll request triggered by stream ping can't overwrite another user's flags", async () => {
+      const otherUser = { key: 'otherUser' };
+      const initUserBase64 = utils.base64URLEncode(JSON.stringify(user));
+      const otherUserBase64 = utils.base64URLEncode(JSON.stringify(otherUser));
+
+      await withClientAndServer({}, async (client, server) => {
+        const reqRespQueue = new AsyncQueue();
+        server.byDefault((req, resp) => {
+          reqRespQueue.add({ req: req, resp: resp });
+        });
+
+        const initPromise = client.waitForInitialization();
+        const poll1 = await reqRespQueue.take();
+        expect(poll1.req.path).toContain(initUserBase64);
+        respondJson({ flagKey: { value: 1 } })(poll1.req, poll1.resp);
+        await initPromise;
+
+        // The flag value is now 1, from the initial poll
+        expect(client.variation('flagKey')).toEqual(1);
+
+        client.setStreaming(true);
+        const stream = await expectStreamConnecting(fullStreamUrlWithUser);
+
+        stream.eventSource.mockEmit('ping');
+        const poll2 = await reqRespQueue.take();
+        // poll2 is the poll request that was triggered by the ping; don't respond to it yet
+        expect(poll2.req.path).toContain(initUserBase64);
+
+        const identifyPromise = client.identify(otherUser);
+        const poll3 = await reqRespQueue.take();
+        // poll3 is the poll request for the identify
+        expect(poll3.req.path).toContain(otherUserBase64);
+
+        // Now let's say poll3 completes first, setting the flag value to 3 for the new user
+        respondJson({ flagKey: { value: 3 } })(poll3.req, poll3.resp);
+
+        // And then poll2, which was for the previous user, completes with a flag value of 2
+        respondJson({ flagKey: { value: 2 } })(poll2.req, poll2.resp);
+
+        await identifyPromise;
+
+        // The flag value should now be 3, not 2
+        expect(client.variation('flagKey')).toEqual(3);
       });
     });
 
