@@ -409,7 +409,7 @@ declare module 'launchdarkly-js-sdk-common' {
 
     /**
      * An object describing the main factor that influenced the flag evaluation value.
-     * Will be `null` if the `evaluationReasons` client option is `false`.
+     * Will be `null` if `[[LDOptions.evaluationReasons]]` is `false`.
      */
     reason: LDEvaluationReason | null;
   }
