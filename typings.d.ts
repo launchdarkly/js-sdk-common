@@ -349,8 +349,12 @@ declare module 'launchdarkly-js-sdk-common' {
   /**
    * Describes the reason that a flag evaluation produced a particular value. This is
    * part of the [[LDEvaluationDetail]] object returned by [[LDClient.variationDetail]].
+   * 
+   * This type is separate from `[[LDEvaluationReason]]` for backwards compatibility. In 
+   * earlier versions of this SDK, `[[LDEvaluationReason]]` was incorrectly defined as 
+   * being non-nullable.
    */
-  export interface LDEvaluationReason {
+  interface NonNullableLDEvaluationReason {
     /**
      * The general category of the reason:
      *
@@ -385,6 +389,14 @@ declare module 'launchdarkly-js-sdk-common' {
      */
     prerequisiteKey?: string;
   }
+
+  /**
+   * Describes the reason that a flag evaluation produced a particular value. This is
+   * part of the [[LDEvaluationDetail]] object returned by [[LDClient.variationDetail]].
+   * 
+   * Will be null when `[[LDOptions.evaluationReasons]]` is `false`.
+   */
+  export type LDEvaluationReason = NonNullableLDEvaluationReason | null;
 
   /**
    * An object that combines the result of a feature flag evaluation with information about
