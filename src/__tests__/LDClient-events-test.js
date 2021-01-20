@@ -53,7 +53,36 @@ describe('LDClient events', () => {
     expect(e.user).toEqual(user);
   }
 
-  function expectFeatureEvent(e, key, value, variation, version, defaultVal, trackEvents, debugEventsUntilDate) {
+  function expectAliasEvent(e, user, previousUser) {
+    function userContextKind(user) {
+      return user.anonymous ? 'anonymousUser' : 'user';
+    }
+    expect(e.kind).toEqual('alias');
+    expect(e.key).toEqual(user.key);
+    expect(e.previousKey).toEqual(previousUser.key);
+    expect(e.contextKind).toEqual(userContextKind(user));
+    expect(e.previousContextKind).toEqual(userContextKind(previousUser));
+  }
+
+  function expectContextKindInEvent(e, user) {
+    if (user.anonymous) {
+      expect(e.contextKind).toEqual('anonymousUser');
+    } else {
+      expect(e.contextKind).toBe(undefined);
+    }
+  }
+
+  function expectFeatureEvent({
+    e,
+    key,
+    user,
+    value,
+    variation,
+    version,
+    defaultVal,
+    trackEvents,
+    debugEventsUntilDate,
+  }) {
     expect(e.kind).toEqual('feature');
     expect(e.key).toEqual(key);
     expect(e.value).toEqual(value);
@@ -62,6 +91,7 @@ describe('LDClient events', () => {
     expect(e.default).toEqual(defaultVal);
     expect(e.trackEvents).toEqual(trackEvents);
     expect(e.debugEventsUntilDate).toEqual(debugEventsUntilDate);
+    expectContextKindInEvent(e, user);
   }
 
   it('sends an identify event at startup', async () => {
@@ -95,6 +125,126 @@ describe('LDClient events', () => {
 
         expect(ep.events.length).toEqual(2);
         expectIdentifyEvent(ep.events[1], user1);
+      });
+    });
+  });
+
+  it('sends an alias event when alias() is called', async () => {
+    await withClientAndEventProcessor(user, {}, async (client, ep) => {
+      const anon1 = { key: 'user1', anonymous: true };
+      const anon2 = { key: 'user2', anonymous: true };
+      const known1 = { key: 'user3' };
+      const known2 = { key: 'user4' };
+      await client.waitForInitialization();
+      expect(ep.events.length).toEqual(1);
+
+      await client.alias(anon2, anon1);
+      expectAliasEvent(ep.events[1], anon2, anon1);
+
+      await client.alias(known1, anon1);
+      expectAliasEvent(ep.events[2], known1, anon1);
+
+      await client.alias(known2, known1);
+      expectAliasEvent(ep.events[3], known2, known1);
+
+      await client.alias(anon1, known1);
+      expectAliasEvent(ep.events[4], anon1, known1);
+
+      expect(ep.events.length).toEqual(5);
+    });
+  });
+
+  it('sends an alias event when identify() is called for anon to known', async () => {
+    // need a server because it'll do a polling request when we call identify
+    await withServer(async server => {
+      const anonUser = { key: 'anon-user', anonymous: true };
+      const knownUser = { key: 'known-user' };
+      await withClientAndEventProcessor(anonUser, { baseUrl: server.url }, async (client, ep) => {
+        await client.waitForInitialization();
+
+        expect(ep.events.length).toEqual(1);
+        expectIdentifyEvent(ep.events[0], anonUser);
+
+        await client.identify(knownUser);
+        expect(ep.events.length).toEqual(3);
+        expectIdentifyEvent(ep.events[1], knownUser);
+        expectAliasEvent(ep.events[2], knownUser, anonUser);
+      });
+    });
+  });
+
+  it('does not send an alias event when identify() is called if auto-aliasing is disabled', async () => {
+    // need a server because it'll do a polling request when we call identify
+    await withServer(async server => {
+      const anonUser = { key: 'anon-user', anonymous: true };
+      const knownUser = { key: 'known-user' };
+      await withClientAndEventProcessor(
+        anonUser,
+        { baseUrl: server.url, autoAliasingOptOut: true },
+        async (client, ep) => {
+          await client.waitForInitialization();
+
+          expect(ep.events.length).toEqual(1);
+          expectIdentifyEvent(ep.events[0], anonUser);
+
+          await client.identify(knownUser);
+          expect(ep.events.length).toEqual(2); //no additional alias events
+          expectIdentifyEvent(ep.events[1], knownUser);
+        }
+      );
+    });
+  });
+
+  it('does not send an alias event when identify() is called for known to anon', async () => {
+    // need a server because it'll do a polling request when we call identify
+    await withServer(async server => {
+      const knownUser = { key: 'known-user' };
+      const anonUser = { key: 'anon-user', anonymous: true };
+      await withClientAndEventProcessor(knownUser, { baseUrl: server.url }, async (client, ep) => {
+        await client.waitForInitialization();
+
+        expect(ep.events.length).toEqual(1);
+        expectIdentifyEvent(ep.events[0], knownUser);
+
+        await client.identify(anonUser);
+        expect(ep.events.length).toEqual(2); //no additional alias events
+        expectIdentifyEvent(ep.events[1], anonUser);
+      });
+    });
+  });
+
+  it('does not send an alias event when identify() is called for anon to anon', async () => {
+    // need a server because it'll do a polling request when we call identify
+    await withServer(async server => {
+      const anonUser1 = { key: 'anon-user1', anonymous: true };
+      const anonUser2 = { key: 'anon-user2', anonymous: true };
+      await withClientAndEventProcessor(anonUser1, { baseUrl: server.url }, async (client, ep) => {
+        await client.waitForInitialization();
+
+        expect(ep.events.length).toEqual(1);
+        expectIdentifyEvent(ep.events[0], anonUser1);
+
+        await client.identify(anonUser2);
+        expect(ep.events.length).toEqual(2); //no additional alias events
+        expectIdentifyEvent(ep.events[1], anonUser2);
+      });
+    });
+  });
+
+  it('does not send an alias event when identify() is called for known to known', async () => {
+    // need a server because it'll do a polling request when we call identify
+    await withServer(async server => {
+      const knownUser1 = { key: 'known-user1' };
+      const knownUser2 = { key: 'known-user2' };
+      await withClientAndEventProcessor(knownUser1, { baseUrl: server.url }, async (client, ep) => {
+        await client.waitForInitialization();
+
+        expect(ep.events.length).toEqual(1);
+        expectIdentifyEvent(ep.events[0], knownUser1);
+
+        await client.identify(knownUser2);
+        expect(ep.events.length).toEqual(2); //no additional alias events
+        expectIdentifyEvent(ep.events[1], knownUser2);
       });
     });
   });
@@ -137,7 +287,39 @@ describe('LDClient events', () => {
 
       expect(ep.events.length).toEqual(2);
       expectIdentifyEvent(ep.events[0], user);
-      expectFeatureEvent(ep.events[1], 'foo', 'a', 1, 2000, 'x');
+      expectFeatureEvent({
+        e: ep.events[1],
+        key: 'foo',
+        user,
+        value: 'a',
+        variation: 1,
+        version: 2000,
+        defaultVal: 'x',
+      });
+    });
+  });
+
+  it('sends a feature event for variation() when user is anonymous', async () => {
+    const initData = makeBootstrap({ foo: { value: 'a', variation: 1, version: 2, flagVersion: 2000 } });
+    await withServer(async server => {
+      const anonUser = { key: 'anon-user', anonymous: true };
+      await withClientAndEventProcessor(anonUser, { baseUrl: server.url, bootstrap: initData }, async (client, ep) => {
+        await client.waitForInitialization();
+
+        client.variation('foo', 'x');
+
+        expect(ep.events.length).toEqual(2);
+        expectIdentifyEvent(ep.events[0], anonUser);
+        expectFeatureEvent({
+          e: ep.events[1],
+          key: 'foo',
+          user: anonUser,
+          value: 'a',
+          variation: 1,
+          version: 2000,
+          defaultVal: 'x',
+        });
+      });
     });
   });
 
@@ -151,7 +333,15 @@ describe('LDClient events', () => {
 
       expect(ep.events.length).toEqual(2);
       expectIdentifyEvent(ep.events[0], user);
-      expectFeatureEvent(ep.events[1], 'foo', 'a', 1, 2000, 'x');
+      expectFeatureEvent({
+        e: ep.events[1],
+        key: 'foo',
+        user,
+        value: 'a',
+        variation: 1,
+        version: 2000,
+        defaultVal: 'x',
+      });
       expect(ep.events[1].reason).toEqual({ kind: 'OFF' });
     });
   });
@@ -166,7 +356,15 @@ describe('LDClient events', () => {
 
       expect(ep.events.length).toEqual(2);
       expectIdentifyEvent(ep.events[0], user);
-      expectFeatureEvent(ep.events[1], 'foo', 'a', 1, 2000, 'x');
+      expectFeatureEvent({
+        e: ep.events[1],
+        key: 'foo',
+        user,
+        value: 'a',
+        variation: 1,
+        version: 2000,
+        defaultVal: 'x',
+      });
       expect(ep.events[1].reason).toBe(undefined);
     });
   });
@@ -181,7 +379,15 @@ describe('LDClient events', () => {
 
       expect(ep.events.length).toEqual(2);
       expectIdentifyEvent(ep.events[0], user);
-      expectFeatureEvent(ep.events[1], 'foo', 'a', 1, 2000, 'x');
+      expectFeatureEvent({
+        e: ep.events[1],
+        key: 'foo',
+        user,
+        value: 'a',
+        variation: 1,
+        version: 2000,
+        defaultVal: 'x',
+      });
       expect(ep.events[1].reason).toEqual({ kind: 'OFF' });
     });
   });
@@ -201,7 +407,7 @@ describe('LDClient events', () => {
         expect(ep.events.length).toEqual(3);
         expectIdentifyEvent(ep.events[0], user);
         expectIdentifyEvent(ep.events[1], user1);
-        expectFeatureEvent(ep.events[2], 'foo', 'b', 2, 2001);
+        expectFeatureEvent({ e: ep.events[2], key: 'foo', user: user1, value: 'b', variation: 2, version: 2001 });
       });
     });
   });
@@ -255,8 +461,8 @@ describe('LDClient events', () => {
 
       expect(ep.events.length).toEqual(3);
       expectIdentifyEvent(ep.events[0], user);
-      expectFeatureEvent(ep.events[1], 'foo', 'a', 1, 2, null);
-      expectFeatureEvent(ep.events[2], 'bar', 'b', 1, 3, null);
+      expectFeatureEvent({ e: ep.events[1], key: 'foo', user, value: 'a', variation: 1, version: 2, defaultVal: null });
+      expectFeatureEvent({ e: ep.events[2], key: 'bar', user, value: 'b', variation: 1, version: 3, defaultVal: null });
     });
   });
 
@@ -283,7 +489,7 @@ describe('LDClient events', () => {
 
       expect(ep.events.length).toEqual(2);
       expectIdentifyEvent(ep.events[0], user);
-      expectFeatureEvent(ep.events[1], 'foo', 'a', 1, 2, 'x');
+      expectFeatureEvent({ e: ep.events[1], key: 'foo', user, value: 'a', variation: 1, version: 2, defaultVal: 'x' });
     });
   });
 
@@ -294,7 +500,7 @@ describe('LDClient events', () => {
 
       expect(ep.events.length).toEqual(2);
       expectIdentifyEvent(ep.events[0], user);
-      expectFeatureEvent(ep.events[1], 'foo', 'x', null, undefined, 'x');
+      expectFeatureEvent({ e: ep.events[1], key: 'foo', user, value: 'x', variation: null, defaultVal: 'x' });
     });
   });
 
@@ -315,7 +521,17 @@ describe('LDClient events', () => {
 
         expect(ep.events.length).toEqual(2);
         expectIdentifyEvent(ep.events[0], user);
-        expectFeatureEvent(ep.events[1], 'foo', 'bar', 1, 2, 'x', true, 1000);
+        expectFeatureEvent({
+          e: ep.events[1],
+          key: 'foo',
+          value: 'bar',
+          variation: 1,
+          version: 2,
+          defaultVal: 'x',
+          trackEvents: true,
+          debugEventsUntilDate: 1000,
+          user,
+        });
       });
     });
   });
@@ -333,6 +549,27 @@ describe('LDClient events', () => {
       expect(trackEvent.user).toEqual(user);
       expect(trackEvent.data).toEqual(undefined);
       expect(trackEvent.url).toEqual(fakeUrl);
+      expectContextKindInEvent(trackEvent, user);
+    });
+  });
+
+  it('sends an event for track() when user is anonymous', async () => {
+    await withServer(async server => {
+      const anonUser = { key: 'anon-user', anonymous: true };
+      await withClientAndEventProcessor(anonUser, { baseUrl: server.url }, async (client, ep) => {
+        await client.waitForInitialization();
+        client.track('eventkey');
+
+        expect(ep.events.length).toEqual(2);
+        expectIdentifyEvent(ep.events[0], anonUser);
+        const trackEvent = ep.events[1];
+        expect(trackEvent.kind).toEqual('custom');
+        expect(trackEvent.key).toEqual('eventkey');
+        expect(trackEvent.user).toEqual(anonUser);
+        expect(trackEvent.data).toEqual(undefined);
+        expect(trackEvent.url).toEqual(fakeUrl);
+        expectContextKindInEvent(trackEvent, anonUser);
+      });
     });
   });
 
@@ -350,6 +587,7 @@ describe('LDClient events', () => {
       expect(trackEvent.user).toEqual(user);
       expect(trackEvent.data).toEqual(eventData);
       expect(trackEvent.url).toEqual(fakeUrl);
+      expectContextKindInEvent(trackEvent, user);
     });
   });
 
@@ -369,6 +607,7 @@ describe('LDClient events', () => {
       expect(trackEvent.data).toEqual(eventData);
       expect(trackEvent.metricValue).toEqual(metricValue);
       expect(trackEvent.url).toEqual(fakeUrl);
+      expectContextKindInEvent(trackEvent, user);
     });
   });
 
