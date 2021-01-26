@@ -2,6 +2,10 @@
 
 All notable changes to the `launchdarkly-js-sdk-common` package will be documented in this file. Changes that affect the dependent SDKs such as `launchdarkly-js-client-sdk` should also be logged in those projects, in the next release that uses the updated version of this package. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [3.2.12] - 2021-01-25
+### Changed:
+- When creating a stream connection, we now set a `streamReadTimeoutMillis` option which is hard-coded to the standard LaunchDarkly stream timeout of 5 minutes. This option is implemented by [`launchdarkly-eventsource`](https://github.com/launchdarkly/js-eventsource) 1.4.0 and higher, and should be ignored by SDKs that are not using that EventSource implementation.
+
 ## [3.2.11] - 2020-11-17
 ### Fixed:
 - Updated the `LDEvaluationDetail.reason` type definition to be nullable. This value will be `null` when `LDOptions.evaluationReasons` is `false`.
