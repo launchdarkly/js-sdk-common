@@ -194,6 +194,7 @@ function DiagnosticsManager(platform, accumulator, eventSender, environmentId, c
       fetchGoalsDisabled: !config.fetchGoals,
       allowFrequentDuplicateEvents: !!config.allowFrequentDuplicateEvents,
       sendEventsOnlyForVariation: !!config.sendEventsOnlyForVariation,
+      autoAliasingOptOut: !!config.autoAliasingOptOut,
     };
     // Client-side JS SDKs do not have the following properties which other SDKs have:
     // connectTimeoutMillis
