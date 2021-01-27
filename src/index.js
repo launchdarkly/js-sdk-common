@@ -74,7 +74,7 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
   //   be responsible for delivering it, or false if we still should deliver it ourselves.
   const stateProvider = options.stateProvider;
 
-  const ident = Identity(null, sendIdentifyEvent);
+  const ident = Identity(null, onIdentifyChange);
   const userValidator = UserValidator(platform.localStorage, logger);
   let store;
   if (platform.localStorage) {
@@ -129,17 +129,26 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
     if (stateProvider && stateProvider.enqueueEvent && stateProvider.enqueueEvent(event)) {
       return; // it'll be handled elsewhere
     }
-    if (!event.user) {
-      if (firstEvent) {
-        logger.warn(messages.eventWithoutUser());
-        firstEvent = false;
+    if (event.kind !== 'alias') {
+      if (!event.user) {
+        if (firstEvent) {
+          logger.warn(messages.eventWithoutUser());
+          firstEvent = false;
+        }
+        return;
       }
-      return;
+      firstEvent = false;
     }
-    firstEvent = false;
     if (shouldEnqueueEvent()) {
       logger.debug(messages.debugEnqueueingEvent(event.kind));
       events.enqueue(event);
+    }
+  }
+
+  function onIdentifyChange(user, previousUser) {
+    sendIdentifyEvent(user);
+    if (!options.autoAliasingOptOut && previousUser && previousUser.anonymous && user && !user.anonymous) {
+      alias(user, previousUser);
     }
   }
 
@@ -181,6 +190,9 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
       default: defaultValue,
       creationDate: now.getTime(),
     };
+    if (user && user.anonymous) {
+      event.contextKind = userContextKind(user);
+    }
     const flag = flags[key];
     if (flag) {
       event.version = flag.flagVersion ? flag.flagVersion : flag.version;
@@ -299,6 +311,30 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
     return results;
   }
 
+  function userContextKind(user) {
+    return user.anonymous ? 'anonymousUser' : 'user';
+  }
+
+  function alias(user, previousUser) {
+    if (stateProvider) {
+      // In paired mode, the other client is responsible for sending alias events
+      return;
+    }
+
+    if (!user || !previousUser) {
+      return;
+    }
+
+    enqueueEvent({
+      kind: 'alias',
+      key: user.key,
+      contextKind: userContextKind(user),
+      previousKey: previousUser.key,
+      previousContextKind: userContextKind(previousUser),
+      creationDate: new Date().getTime(),
+    });
+  }
+
   function track(key, data, metricValue) {
     if (typeof key !== 'string') {
       emitter.maybeReportError(new errors.LDInvalidEventKeyError(messages.unknownCustomEventKey(key)));
@@ -309,13 +345,17 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
       logger.warn(messages.unknownCustomEventKey(key));
     }
 
+    const user = ident.getUser();
     const e = {
       kind: 'custom',
       key: key,
-      user: ident.getUser(),
+      user: user,
       url: platform.getCurrentUrl(),
       creationDate: new Date().getTime(),
     };
+    if (user && user.anonymous) {
+      e.contextKind = userContextKind(user);
+    }
     // Note, check specifically for null/undefined because it is legal to set these fields to a falsey value.
     if (data !== null && data !== undefined) {
       e.data = data;
@@ -684,6 +724,7 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
     variation: variation,
     variationDetail: variationDetail,
     track: track,
+    alias: alias,
     on: on,
     off: off,
     setStreaming: setStreaming,

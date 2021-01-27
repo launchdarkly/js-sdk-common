@@ -5,9 +5,10 @@ export default function Identity(initialUser, onChange) {
   let user;
 
   ident.setUser = function(u) {
+    const previousUser = user && utils.clone(user);
     user = utils.sanitizeUser(u);
     if (user && onChange) {
-      onChange(utils.clone(user));
+      onChange(utils.clone(user), previousUser);
     }
   };
 

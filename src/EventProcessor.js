@@ -47,6 +47,10 @@ export default function EventProcessor(
   // Transform an event from its internal format to the format we use when sending a payload.
   function makeOutputEvent(e) {
     const ret = utils.extend({}, e);
+    if (e.kind === 'alias') {
+      // alias events do not require any transformation
+      return ret;
+    }
     if (inlineUsers || e.kind === 'identify') {
       // identify events always have an inline user
       ret.user = userFilter.filterUser(e.user);

@@ -102,6 +102,7 @@ describe('DiagnosticsManager', () => {
   const defaultConfigInEvent = {
     allAttributesPrivate: false,
     allowFrequentDuplicateEvents: false,
+    autoAliasingOptOut: false,
     bootstrapMode: false,
     customBaseURI: false,
     customEventsURI: false,
@@ -201,6 +202,7 @@ describe('DiagnosticsManager', () => {
         [{ sendEventsOnlyForVariation: true }, { sendEventsOnlyForVariation: true }],
         [{ streaming: true }, { streamingDisabled: false }],
         [{ hash: 'x' }, { usingSecureMode: true }],
+        [{ autoAliasingOptOut: true }, { autoAliasingOptOut: true }],
       ];
       for (const i in configAndResultValues) {
         const configOverrides = configAndResultValues[i][0];
