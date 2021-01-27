@@ -2,6 +2,14 @@
 
 All notable changes to the `launchdarkly-js-sdk-common` package will be documented in this file. Changes that affect the dependent SDKs such as `launchdarkly-js-client-sdk` should also be logged in those projects, in the next release that uses the updated version of this package. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [3.3.0] - 2021-01-26
+### Added:
+- Added the `alias` method. This method can be used to associate two user objects for analytics purposes. When invoked, this method will queue a new alias event to be sent to LaunchDarkly.
+- Added the `autoAliasingOptOut` configuration option. This can be used to control the new automatic aliasing behavior of the `identify` method; by passing `autoAliasingOptOut: true`, `identify` will not automatically generate alias events.
+
+### Changed:
+- The `identify` method will now automatically generate an alias event when switching from an anonymous to a known user. This event associates the two users for analytics purposes as they most likely represent a single person.
+
 ## [3.2.12] - 2021-01-25
 ### Changed:
 - When creating a stream connection, we now set a `streamReadTimeoutMillis` option which is hard-coded to the standard LaunchDarkly stream timeout of 5 minutes. This option is implemented by [`launchdarkly-eventsource`](https://github.com/launchdarkly/js-eventsource) 1.4.0 and higher, and should be ignored by SDKs that are not using that EventSource implementation.
