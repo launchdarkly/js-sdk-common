@@ -9,6 +9,7 @@ var ver: string = ld.version;
 var logger: ld.LDLogger = ld.createConsoleLogger("info");
 var userWithKeyOnly: ld.LDUser = { key: 'user' };
 var anonUserWithNoKey: ld.LDUser = { anonymous: true };
+var anonUserWithKey: ld.LDUser = { key: 'anon-user', anonymous: true };
 var user: ld.LDUser = {
   key: 'user',
   secondary: 'otherkey',
@@ -39,6 +40,8 @@ client.waitForInitialization().then(() => {});
 client.identify(user).then(() => {});
 client.identify(user, undefined, () => {});
 client.identify(user, 'hash').then(() => {});
+
+client.alias(user, anonUserWithKey);
 
 var user: ld.LDUser = client.getUser();
 
