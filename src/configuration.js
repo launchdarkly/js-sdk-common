@@ -35,6 +35,7 @@ export const baseOptionDefs = {
   wrapperName: { type: 'string' },
   wrapperVersion: { type: 'string' },
   stateProvider: { type: 'object' }, // not a public option, used internally
+  autoAliasingOptOut: { default: false },
 };
 
 export function validate(options, emitter, extraOptionDefs, logger) {

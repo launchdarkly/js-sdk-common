@@ -3,12 +3,18 @@ import { base64URLEncode, getLDHeaders, objectHasOwnProperty } from './utils';
 
 // The underlying event source implementation is abstracted via the platform object, which should
 // have these three properties:
-// eventSourceFactory(): a function that takes a URL and optional request body and returns an object
-//   with the same methods as the regular HTML5 EventSource object. Passing a body parameter means
-//   that the request should use REPORT instead of GET.
+// eventSourceFactory(): a function that takes a URL and optional config object and returns an object
+//   with the same methods as the regular HTML5 EventSource object. The properties in the config
+//   object are those supported by the launchdarkly-eventsource package; browser EventSource
+//   implementations don't have any config options.
 // eventSourceIsActive(): a function that takes an EventSource-compatible object and returns true if
 //   it is in an active state (connected or connecting).
 // eventSourceAllowsReport: true if REPORT is supported.
+
+// The read timeout for the stream is a fixed value that is set to be slightly longer than the expected
+// interval between heartbeats from the LaunchDarkly streaming server. If this amount of time elapses
+// with no new data, the connection will be cycled.
+const streamReadTimeoutMillis = 5 * 60 * 1000; // 5 minutes
 
 export default function Stream(platform, config, environment, diagnosticsAccumulator) {
   const baseUrl = config.streamUrl;
@@ -79,7 +85,7 @@ export default function Stream(platform, config, environment, diagnosticsAccumul
     reconnectTimeoutReference = null;
     let url;
     let query = '';
-    const options = { headers };
+    const options = { headers, readTimeoutMillis: streamReadTimeoutMillis };
     if (platform.eventSourceFactory) {
       if (hash !== null && hash !== undefined) {
         query = 'h=' + hash;

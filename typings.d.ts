@@ -259,6 +259,14 @@ declare module 'launchdarkly-js-sdk-common' {
      * If `wrapperName` is unset, this field will be ignored.
      */
     wrapperVersion?: string;
+
+    /**
+     * Whether to disable the automatic sending of an alias event when [[identify]] is
+     * called with a non-anonymous user when the previous user is anonymous.
+     * 
+     * The default value is `false`.
+     */
+    autoAliasingOptOut?: boolean;
   }
 
   /**
@@ -349,8 +357,12 @@ declare module 'launchdarkly-js-sdk-common' {
   /**
    * Describes the reason that a flag evaluation produced a particular value. This is
    * part of the [[LDEvaluationDetail]] object returned by [[LDClient.variationDetail]].
+   * 
+   * This type is separate from `[[LDEvaluationReason]]` for backwards compatibility. In 
+   * earlier versions of this SDK, `[[LDEvaluationReason]]` was incorrectly defined as 
+   * being non-nullable.
    */
-  export interface LDEvaluationReason {
+  interface NonNullableLDEvaluationReason {
     /**
      * The general category of the reason:
      *
@@ -385,6 +397,14 @@ declare module 'launchdarkly-js-sdk-common' {
      */
     prerequisiteKey?: string;
   }
+
+  /**
+   * Describes the reason that a flag evaluation produced a particular value. This is
+   * part of the [[LDEvaluationDetail]] object returned by [[LDClient.variationDetail]].
+   * 
+   * Will be null when `[[LDOptions.evaluationReasons]]` is `false`.
+   */
+  export type LDEvaluationReason = NonNullableLDEvaluationReason | null;
 
   /**
    * An object that combines the result of a feature flag evaluation with information about
@@ -658,6 +678,21 @@ declare module 'launchdarkly-js-sdk-common' {
      *   for Data Export.
      */
     track(key: string, data?: any, metricValue?: number): void;
+
+    /**
+     * Associates two users for analytics purposes. 
+     * 
+     * This can be helpful in the situation where a person is represented by multiple 
+     * LaunchDarkly users. This may happen, for example, when a person initially logs into 
+     * an application-- the person might be represented by an anonymous user prior to logging
+     * in and a different user after logging in, as denoted by a different user key.
+     * 
+     * @param user 
+     *   The newly identified user.
+     * @param previousUser 
+     *   The previously identified user.
+     */
+    alias(user: LDUser, previousUser: LDUser): void;
 
     /**
      * Returns a map of all available flags to the current user's values.
