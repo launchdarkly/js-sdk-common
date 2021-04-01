@@ -2,6 +2,12 @@
 
 All notable changes to the `launchdarkly-js-sdk-common` package will be documented in this file. Changes that affect the dependent SDKs such as `launchdarkly-js-client-sdk` should also be logged in those projects, in the next release that uses the updated version of this package. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [3.3.1] - 2021-04-01
+### Fixed:
+- The property `LDOptionsBase.inlineUsersInEvents` was not included in the TypeScript definitions.
+- Fixed an outdated documentation link (thanks, [sinchang](https://github.com/launchdarkly/js-sdk-common/pull/36)!)
+- Fixed a documentation typo (thanks, [Doesntmeananything](https://github.com/launchdarkly/js-sdk-common/pull/37)!)
+
 ## [3.3.0] - 2021-01-26
 ### Added:
 - Added the `alias` method. This method can be used to associate two user objects for analytics purposes. When invoked, this method will queue a new alias event to be sent to LaunchDarkly.
