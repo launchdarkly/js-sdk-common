@@ -9,6 +9,7 @@ var ver: string = ld.version;
 var logger: ld.LDLogger = ld.createConsoleLogger("info");
 var userWithKeyOnly: ld.LDUser = { key: 'user' };
 var anonUserWithNoKey: ld.LDUser = { anonymous: true };
+var anonUserWithKey: ld.LDUser = { key: 'anon-user', anonymous: true };
 var user: ld.LDUser = {
   key: 'user',
   secondary: 'otherkey',
@@ -30,6 +31,26 @@ var user: ld.LDUser = {
   },
   privateAttributeNames: [ 'name', 'email' ]
 };
+var allBaseOptions: ld.LDOptionsBase = {
+  bootstrap: { },
+  baseUrl: '',
+  eventsUrl: '',
+  streamUrl: '',
+  streaming: true,
+  useReport: true,
+  sendLDHeaders: true,
+  evaluationReasons: true,
+  sendEvents: true,
+  allAttributesPrivate: true,
+  privateAttributeNames: [ 'x' ],
+  inlineUsersInEvents: true,
+  allowFrequentDuplicateEvents: true,
+  sendEventsOnlyForVariation: true,
+  flushInterval: 1,
+  samplingInterval: 1,
+  streamReconnectDelay: 1,
+  logger: logger
+};
 
 var client: ld.LDClientBase = {} as ld.LDClientBase;  // wouldn't do this in real life, it's just so the following statements will compile
 
@@ -39,6 +60,8 @@ client.waitForInitialization().then(() => {});
 client.identify(user).then(() => {});
 client.identify(user, undefined, () => {});
 client.identify(user, 'hash').then(() => {});
+
+client.alias(user, anonUserWithKey);
 
 var user: ld.LDUser = client.getUser();
 

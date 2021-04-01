@@ -33,7 +33,8 @@
     "test:junit": "cross-env NODE_ENV=test jest --testResultsProcessor jest-junit",
     "check-typescript": "node_modules/typescript/bin/tsc",
     "clean": "rimraf dist/**",
-    "prepublishOnly": "npm run build:min"
+    "prepublishOnly": "npm run build:min",
+    "prepare": "npm run build"
   },
   "devDependencies": {
     "@babel/cli": "^7.8.4",
