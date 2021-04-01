@@ -31,6 +31,26 @@ var user: ld.LDUser = {
   },
   privateAttributeNames: [ 'name', 'email' ]
 };
+var allBaseOptions: ld.LDOptionsBase = {
+  bootstrap: { },
+  baseUrl: '',
+  eventsUrl: '',
+  streamUrl: '',
+  streaming: true,
+  useReport: true,
+  sendLDHeaders: true,
+  evaluationReasons: true,
+  sendEvents: true,
+  allAttributesPrivate: true,
+  privateAttributeNames: [ 'x' ],
+  inlineUsersInEvents: true,
+  allowFrequentDuplicateEvents: true,
+  sendEventsOnlyForVariation: true,
+  flushInterval: 1,
+  samplingInterval: 1,
+  streamReconnectDelay: 1,
+  logger: logger
+};
 
 var client: ld.LDClientBase = {} as ld.LDClientBase;  // wouldn't do this in real life, it's just so the following statements will compile
 
