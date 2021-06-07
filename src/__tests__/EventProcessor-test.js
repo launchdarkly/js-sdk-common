@@ -45,19 +45,26 @@ describe('EventProcessor', () => {
     }
   }
 
+  function checkUserInline(e, source, inlineUser) {
+    if (inlineUser) {
+      expect(e.user).toEqual(inlineUser);
+      expect(e.userKey).toBeUndefined();
+    } else {
+      expect(e.userKey).toEqual(source.user.key);
+      expect(e.user).toBeUndefined();
+    }
+  }
+
   function checkFeatureEvent(e, source, debug, inlineUser) {
     expect(e.kind).toEqual(debug ? 'debug' : 'feature');
     expect(e.creationDate).toEqual(source.creationDate);
     expect(e.key).toEqual(source.key);
     expect(e.version).toEqual(source.version);
+    expect(e.variation).toEqual(source.variation);
     expect(e.value).toEqual(source.value);
     expect(e.default).toEqual(source.default);
     expect(e.reason).toEqual(source.reason);
-    if (inlineUser) {
-      expect(e.user).toEqual(inlineUser);
-    } else {
-      expect(e.userKey).toEqual(source.user.key);
-    }
+    checkUserInline(e, source, inlineUser);
   }
 
   function checkCustomEvent(e, source, inlineUser) {
@@ -65,12 +72,8 @@ describe('EventProcessor', () => {
     expect(e.creationDate).toEqual(source.creationDate);
     expect(e.key).toEqual(source.key);
     expect(e.data).toEqual(source.data);
-    if (inlineUser) {
-      expect(e.user).toEqual(inlineUser);
-    } else {
-      expect(e.userKey).toEqual(source.user.key);
-    }
     expect(e.metricValue).toEqual(source.metricValue);
+    checkUserInline(e, source, inlineUser);
   }
 
   function checkSummaryEvent(e) {
@@ -213,6 +216,33 @@ describe('EventProcessor', () => {
       const output = (await mockEventSender.calls.take()).events;
       expect(output.length).toEqual(2);
       checkFeatureEvent(output[0], e, true, user);
+      checkSummaryEvent(output[1]);
+    });
+  });
+
+  it('filters user in debug event', async () => {
+    const config = { ...defaultConfig, allAttributesPrivate: true };
+    await withProcessorAndSender(config, async (ep, mockEventSender) => {
+      const futureTime = new Date().getTime() + 1000000;
+      const e = {
+        kind: 'feature',
+        creationDate: 1000,
+        user: user,
+        key: 'flagkey',
+        version: 11,
+        variation: 1,
+        value: 'value',
+        default: 'default',
+        trackEvents: false,
+        debugEventsUntilDate: futureTime,
+      };
+      ep.enqueue(e);
+      await ep.flush();
+
+      expect(mockEventSender.calls.length()).toEqual(1);
+      const output = (await mockEventSender.calls.take()).events;
+      expect(output.length).toEqual(2);
+      checkFeatureEvent(output[0], e, true, filteredUser);
       checkSummaryEvent(output[1]);
     });
   });
