@@ -107,9 +107,9 @@ export default function EventProcessor(
     }
     if (addDebugEvent) {
       const debugEvent = utils.extend({}, event, { kind: 'debug' });
+      debugEvent.user = userFilter.filterUser(debugEvent.user);
       delete debugEvent['trackEvents'];
       delete debugEvent['debugEventsUntilDate'];
-      delete debugEvent['variation'];
       addToOutbox(debugEvent);
     }
   };
