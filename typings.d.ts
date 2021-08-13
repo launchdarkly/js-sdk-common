@@ -80,7 +80,7 @@ declare module 'launchdarkly-js-sdk-common' {
      * immediately after calling `initialize()` (normally they would not be available until the
      * client signals that it is ready).
      *
-     * For more information, see the [SDK Reference Guide](https://docs.launchdarkly.com/docs/js-sdk-reference#section-bootstrapping).
+     * For more information, see the [SDK Reference Guide](https://docs.launchdarkly.com/sdk/features/bootstrapping#javascript).
      */
     bootstrap?: 'localStorage' | LDFlagSet;
 
@@ -153,7 +153,7 @@ declare module 'launchdarkly-js-sdk-common' {
      * Whether to send analytics events back to LaunchDarkly. By default, this is true.
      */
     sendEvents?: boolean;
-    
+
     /**
      * Whether all user attributes (except the user key) should be marked as private, and
      * not sent to LaunchDarkly in analytics events.
@@ -195,14 +195,14 @@ declare module 'launchdarkly-js-sdk-common' {
 
     /**
      * The capacity of the analytics events queue.
-     * 
+     *
      * The client buffers up to this many events in memory before flushing. If the capacity is exceeded
      * before the queue is flushed, events will be discarded. Increasing the capacity means that events
      * are less likely to be discarded, at the cost of consuming more memory. Note that in regular usage
      * flag evaluations do not produce individual events, only summary counts, so you only need a large
      * capacity if you are generating a large number of click, pageview, or identify events (or if you
      * are using the event debugger).
-     * 
+     *
      * The default value is 100.
      */
     eventCapacity?: number;
@@ -236,7 +236,7 @@ declare module 'launchdarkly-js-sdk-common' {
 
     /**
      * Set to true to opt out of sending diagnostics data.
-     * 
+     *
      * Unless `diagnosticOptOut` is set to true, the client will send some diagnostics data to the LaunchDarkly
      * servers in order to assist in the development of future SDK improvements. These diagnostics consist of
      * an initial payload containing some details of SDK in use, the SDK's configuration, and the platform the
@@ -244,10 +244,10 @@ declare module 'launchdarkly-js-sdk-common' {
      * as dropped events.
      */
     diagnosticOptOut?: boolean;
-    
+
     /**
      * The interval at which periodic diagnostic data is sent, in milliseconds.
-     * 
+     *
      * The default is 900000 (every 15 minutes) and the minimum value is 6000. See [[diagnosticOptOut]]
      * for more information on the diagnostics data being sent.
      */
@@ -271,7 +271,7 @@ declare module 'launchdarkly-js-sdk-common' {
     /**
      * Whether to disable the automatic sending of an alias event when [[identify]] is
      * called with a non-anonymous user when the previous user is anonymous.
-     * 
+     *
      * The default value is `false`.
      */
     autoAliasingOptOut?: boolean;
@@ -295,7 +295,7 @@ declare module 'launchdarkly-js-sdk-common' {
 
     /**
      * An optional secondary key for a user. This affects
-     * [feature flag targeting](https://docs.launchdarkly.com/docs/targeting-users#section-targeting-rules-based-on-user-attributes)
+     * [feature flag targeting](https://docs.launchdarkly.com/home/flags/targeting-users#targeting-rules-based-on-user-attributes)
      * as follows: if you have chosen to bucket users by a specific attribute, the secondary key (if set)
      * is used to further distinguish between users who are otherwise identical according to that attribute.
      */
@@ -365,9 +365,9 @@ declare module 'launchdarkly-js-sdk-common' {
   /**
    * Describes the reason that a flag evaluation produced a particular value. This is
    * part of the [[LDEvaluationDetail]] object returned by [[LDClient.variationDetail]].
-   * 
-   * This type is separate from `[[LDEvaluationReason]]` for backwards compatibility. In 
-   * earlier versions of this SDK, `[[LDEvaluationReason]]` was incorrectly defined as 
+   *
+   * This type is separate from `[[LDEvaluationReason]]` for backwards compatibility. In
+   * earlier versions of this SDK, `[[LDEvaluationReason]]` was incorrectly defined as
    * being non-nullable.
    */
   interface NonNullableLDEvaluationReason {
@@ -409,7 +409,7 @@ declare module 'launchdarkly-js-sdk-common' {
   /**
    * Describes the reason that a flag evaluation produced a particular value. This is
    * part of the [[LDEvaluationDetail]] object returned by [[LDClient.variationDetail]].
-   * 
+   *
    * Will be null when `[[LDOptions.evaluationReasons]]` is `false`.
    */
   export type LDEvaluationReason = NonNullableLDEvaluationReason | null;
@@ -420,7 +420,7 @@ declare module 'launchdarkly-js-sdk-common' {
    *
    * This is the result of calling [[LDClient.variationDetail]].
    *
-   * For more information, see the [SDK reference guide](https://docs.launchdarkly.com/docs/evaluation-reasons).
+   * For more information, see the [SDK reference guide](https://docs.launchdarkly.com/sdk/features/evaluation-reasons#javascript).
    */
   export interface LDEvaluationDetail {
     /**
@@ -445,7 +445,7 @@ declare module 'launchdarkly-js-sdk-common' {
    * The basic interface for the LaunchDarkly client. The browser SDK and the Electron SDK both
    * use this, but may add some methods of their own.
    *
-   * @see http://docs.launchdarkly.com/docs/js-sdk-reference
+   * @see https://docs.launchdarkly.com/sdk/client-side/javascript
    *
    * @ignore (don't need to show this separately in TypeDoc output; all methods will be shown in LDClient)
    */
@@ -470,10 +470,10 @@ declare module 'launchdarkly-js-sdk-common' {
      *
      * If you want to distinguish between these success and failure conditions, use
      * [[waitForInitialization]] instead.
-     * 
+     *
      * If you prefer to use event listeners ([[on]]) rather than Promises, you can listen on the
      * client for a `"ready"` event, which will be fired in either case.
-     * 
+     *
      * @returns
      *   A Promise that will be resolved once the client is no longer trying to initialize.
      */
@@ -498,7 +498,7 @@ declare module 'launchdarkly-js-sdk-common' {
      *         await client.waitForInitialization();
      *         doSomethingWithSuccessfullyInitializedClient();
      *     } catch (err) {
-     *         doSomethingForFailedStartup(err); 
+     *         doSomethingForFailedStartup(err);
      *     }
      * ```
      *
@@ -509,7 +509,7 @@ declare module 'launchdarkly-js-sdk-common' {
      *
      * Note that you can also use event listeners ([[on]]) for the same purpose: the event `"initialized"`
      * indicates success, and `"failed"` indicates failure.
-     * 
+     *
      * @returns
      *   A Promise that will be resolved if the client initializes successfully, or rejected if it
      *   fails.
@@ -530,7 +530,7 @@ declare module 'launchdarkly-js-sdk-common' {
      * @param user
      *   The user properties. Must contain at least the `key` property.
      * @param hash
-     *   The signed user key if you are using [Secure Mode](http://docs.launchdarkly.com/docs/js-sdk-reference#secure-mode).
+     *   The signed user key if you are using [Secure Mode](https://docs.launchdarkly.com/sdk/features/secure-mode#configuring-secure-mode-in-the-javascript-client-side-sdk).
      * @param onDone
      *   A function which will be called as soon as the flag values for the new user are available,
      *   with two parameters: an error value (if any), and an [[LDFlagSet]] containing the new values
@@ -593,7 +593,7 @@ declare module 'launchdarkly-js-sdk-common' {
      * The `reason` property of the result will also be included in analytics events, if you are
      * capturing detailed event data for this flag.
      *
-     * For more information, see the [SDK reference guide](https://docs.launchdarkly.com/docs/evaluation-reasons).
+     * For more information, see the [SDK reference guide](https://docs.launchdarkly.com/sdk/features/evaluation-reasons#javascript).
      *
      * @param key
      *   The unique key of the feature flag.
@@ -688,16 +688,16 @@ declare module 'launchdarkly-js-sdk-common' {
     track(key: string, data?: any, metricValue?: number): void;
 
     /**
-     * Associates two users for analytics purposes. 
-     * 
-     * This can be helpful in the situation where a person is represented by multiple 
-     * LaunchDarkly users. This may happen, for example, when a person initially logs into 
+     * Associates two users for analytics purposes.
+     *
+     * This can be helpful in the situation where a person is represented by multiple
+     * LaunchDarkly users. This may happen, for example, when a person initially logs into
      * an application-- the person might be represented by an anonymous user prior to logging
      * in and a different user after logging in, as denoted by a different user key.
-     * 
-     * @param user 
+     *
+     * @param user
      *   The newly identified user.
-     * @param previousUser 
+     * @param previousUser
      *   The previously identified user.
      */
     alias(user: LDUser, previousUser: LDUser): void;
