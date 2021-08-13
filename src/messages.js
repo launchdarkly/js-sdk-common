@@ -15,7 +15,7 @@ export const clientInitialized = function() {
 };
 
 const docLink =
-  ' Please see https://docs.launchdarkly.com/docs/js-sdk-reference#initializing-the-client for instructions on SDK initialization.';
+  ' Please see https://docs.launchdarkly.com/sdk/client-side/javascript#initializing-the-client for instructions on SDK initialization.';
 
 export const clientNotReady = function() {
   return 'LaunchDarkly client is not ready';
@@ -26,7 +26,7 @@ export const eventCapacityExceeded = function() {
 };
 
 export const eventWithoutUser = function() {
-  return 'Be sure to call `identify` in the LaunchDarkly client: https://docs.launchdarkly.com/docs/js-sdk-reference#section-analytics-events';
+  return 'Be sure to call `identify` in the LaunchDarkly client: https://docs.launchdarkly.com/sdk/features/identify#javascript';
 };
 
 export const invalidContentType = function(contentType) {
