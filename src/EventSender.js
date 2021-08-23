@@ -1,6 +1,6 @@
 import * as errors from './errors';
 import * as utils from './utils';
-import uuidv1 from 'uuid/v1';
+const { v1: uuidv1 } = require('uuid');
 
 const MAX_URL_LENGTH = 2000;
 
