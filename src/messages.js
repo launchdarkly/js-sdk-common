@@ -110,6 +110,10 @@ export const identifyDisabled = function() {
   return 'identify() has no effect here; it must be called on the main client instance';
 };
 
+export const doNotTrackEnabled = function() {
+  return 'Not sending events to LaunchDarkly because Do Not Track is enabled.';
+};
+
 export const streamClosing = function() {
   return 'Closing stream connection';
 };

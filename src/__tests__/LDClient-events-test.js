@@ -274,6 +274,7 @@ describe('LDClient events', () => {
         await client.identify(user1);
 
         expect(ep.events.length).toEqual(0);
+        expect(platform.testing.logger.output.warn).toEqual([messages.doNotTrackEnabled()])
       });
     });
   });
