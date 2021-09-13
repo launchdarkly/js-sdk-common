@@ -274,7 +274,13 @@ describe('LDClient events', () => {
         await client.identify(user1);
 
         expect(ep.events.length).toEqual(0);
-        expect(platform.testing.logger.output.warn).toEqual([messages.doNotTrackEnabled()])
+        expect(platform.testing.logger.output.warn).toEqual([messages.doNotTrackEnabled()]);
+
+        // Subsequent calls after the first shouldn't trigger additional
+        // warnings. One is enough; more is just noise.
+        await client.identify(user1);
+        expect(ep.events.length).toEqual(0);
+        expect(platform.testing.logger.output.warn).toEqual([messages.doNotTrackEnabled()]);
       });
     });
   });
