@@ -111,7 +111,7 @@ export const identifyDisabled = function() {
 };
 
 export const doNotTrackEnabled = function() {
-  return 'LaunchDarkly events will not be sent because this browser's Do Not Track setting is enabled.';
+  return "LaunchDarkly events will not be sent because this browser's Do Not Track setting is enabled.";
 };
 
 export const streamClosing = function() {
