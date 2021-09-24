@@ -39,6 +39,7 @@ var allBaseOptions: ld.LDOptionsBase = {
   streaming: true,
   useReport: true,
   sendLDHeaders: true,
+  requestHeaderTransform: (x) => x,
   evaluationReasons: true,
   sendEvents: true,
   allAttributesPrivate: true,
