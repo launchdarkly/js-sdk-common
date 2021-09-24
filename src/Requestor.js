@@ -45,7 +45,7 @@ export default function Requestor(platform, options, environment) {
       activeRequests[endpoint] = coalescer;
     }
 
-    const req = platform.httpRequest(method, endpoint, headers, body);
+    const req = platform.httpRequest(method, endpoint, utils.transformHeaders(headers, options), body);
     const p = req.promise.then(
       result => {
         if (result.status === 200) {

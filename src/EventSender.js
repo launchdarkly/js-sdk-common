@@ -34,7 +34,7 @@ export default function EventSender(platform, environmentId, options) {
             'X-LaunchDarkly-Payload-ID': payloadId,
           });
       return platform
-        .httpRequest('POST', url, headers, jsonBody)
+        .httpRequest('POST', url, utils.transformHeaders(headers, options), jsonBody)
         .promise.then(result => {
           if (!result) {
             // This was a response from a fire-and-forget request, so we won't have a status.

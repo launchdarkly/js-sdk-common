@@ -227,6 +227,24 @@ describe('Requestor', () => {
     });
   });
 
+  it('sends transformed headers if requestHeaderTransform function is provided', async () => {
+    await withServer(async (baseConfig, server) => {
+      const headerTransform = input => {
+        const output = { ...input };
+        output['b'] = '20';
+        return output;
+      };
+      const config = { ...baseConfig, requestHeaderTransform: headerTransform };
+      const requestor = Requestor(platform, config, env);
+
+      await requestor.fetchFlagSettings(user);
+
+      expect(server.requests.length()).toEqual(1);
+      const req = await server.requests.take();
+      expect(req.headers['b']).toEqual('20');
+    });
+  });
+
   it('returns parsed JSON response on success', async () => {
     const data = { foo: 'bar' };
     await withServer(async (baseConfig, server) => {

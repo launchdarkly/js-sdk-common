@@ -91,10 +91,7 @@ describe('utils', () => {
       const inputHeaders = { c: '3', d: '4' };
       const outputHeaders = { c: '9', d: '4', e: '5' };
       const headerTransform = input => {
-        const output = {};
-        for (const key in input) {
-          output[key] = input[key];
-        }
+        const output = { ...input };
         output['c'] = '9';
         output['e'] = '5';
         return output;
