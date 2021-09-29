@@ -169,7 +169,7 @@ export function transformHeaders(headers, options) {
   if (!options || !options.requestHeaderTransform) {
     return headers;
   }
-  return options.requestHeaderTransform(headers);
+  return options.requestHeaderTransform({ ...headers });
 }
 
 export function extend(...objects) {

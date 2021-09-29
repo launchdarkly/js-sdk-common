@@ -99,6 +99,17 @@ describe('utils', () => {
       const headers = transformHeaders(inputHeaders, { requestHeaderTransform: headerTransform });
       expect(headers).toEqual(outputHeaders);
     });
+
+    it('cannot mutate the input header object', () => {
+      const inputHeaders = { f: '6' };
+      const expectedInputHeaders = { f: '6' };
+      const headerMutate = input => {
+        input['f'] = '7'; // eslint-disable-line no-param-reassign
+        return input;
+      };
+      transformHeaders(inputHeaders, { requestHeaderTransform: headerMutate });
+      expect(inputHeaders).toEqual(expectedInputHeaders);
+    });
   });
 
   describe('getLDUserAgentString', () => {
