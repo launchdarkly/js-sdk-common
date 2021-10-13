@@ -341,6 +341,11 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
       return;
     }
 
+    // The following logic was used only for the JS browser SDK (js-client-sdk) and
+    // is no longer needed as of version 2.9.13 of that SDK. The other client-side
+    // JS-based SDKs did not define customEventFilter, and now none of them do. We
+    // can remove this in the next major version of the common code, when it's OK to
+    // make breaking changes to our internal API contracts.
     if (platform.customEventFilter && !platform.customEventFilter(key)) {
       logger.warn(messages.unknownCustomEventKey(key));
     }
