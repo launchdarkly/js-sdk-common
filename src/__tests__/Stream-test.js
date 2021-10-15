@@ -120,6 +120,20 @@ describe('Stream', () => {
     expect(created.options.headers).toEqual({});
   });
 
+  it('sends transformed headers if requestHeaderTransform function is provided', async () => {
+    const headerTransform = input => {
+      const output = { ...input };
+      output['a'] = '10';
+      return output;
+    };
+    const config = { ...defaultConfig, requestHeaderTransform: headerTransform };
+    const stream = new Stream(platform, config, envName);
+    stream.connect(user, null, {});
+
+    const created = await platform.testing.expectStream(makeExpectedStreamUrl(encodedUser));
+    expect(created.options.headers).toEqual({ ...baseHeaders, a: '10' });
+  });
+
   it('sets event listeners', async () => {
     const stream = new Stream(platform, defaultConfig, envName);
     const fn1 = jest.fn();

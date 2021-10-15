@@ -140,6 +140,14 @@ declare module 'launchdarkly-js-sdk-common' {
     sendLDHeaders?: boolean;
 
     /**
+     * A transform function for dynamic configuration of HTTP headers.
+     *
+     * This method will run last in the header generation sequence, so the function should have
+     * all system generated headers in case those also need to be modified.
+     */
+    requestHeaderTransform?: (headers: Map<string, string>) => Map<string, string>;
+
+    /**
      * Whether LaunchDarkly should provide additional information about how flag values were
      * calculated.
      *

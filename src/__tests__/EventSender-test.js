@@ -149,6 +149,23 @@ describe('EventSender', () => {
       expect(r.headers['x-launchdarkly-wrapper']).toEqual('FakeSDK');
     });
 
+    it('should send transformed headers if requestHeaderTransform function is provided', async () => {
+      const headerTransform = input => {
+        const output = { ...input };
+        output['c'] = '30';
+        return output;
+      };
+      const options = { requestHeaderTransform: headerTransform };
+      const server = platform.testing.http.newServer();
+      server.byDefault(respond(202));
+      const sender = EventSender(platform, envId, options);
+      const event = { kind: 'identify', key: 'userKey' };
+      await sender.sendEvents([event], server.url);
+
+      const r = await server.nextRequest();
+      expect(r.headers['c']).toEqual('30');
+    });
+
     describe('retry on recoverable HTTP error', () => {
       const retryableStatuses = [400, 408, 429, 500, 503];
       for (const i in retryableStatuses) {
