@@ -47,6 +47,7 @@ export const localStorageUnavailableForUserId = function() {
 
 export const networkError = e => 'network error' + (e ? ' (' + e + ')' : '');
 
+// We should remove unknownCustomEventKey in the future - see comments in track() in index.js
 export const unknownCustomEventKey = function(key) {
   return 'Custom event "' + key + '" does not exist';
 };
