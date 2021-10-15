@@ -18,6 +18,7 @@ export const baseOptionDefs = {
   sendEvents: { default: true },
   streaming: { type: 'boolean' }, // default for this is undefined, which is different from false
   sendLDHeaders: { default: true },
+  requestHeaderTransform: { type: 'function' },
   inlineUsersInEvents: { default: false },
   allowFrequentDuplicateEvents: { default: false },
   sendEventsOnlyForVariation: { default: false },

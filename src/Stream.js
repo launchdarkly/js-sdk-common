@@ -1,5 +1,5 @@
 import * as messages from './messages';
-import { base64URLEncode, getLDHeaders, objectHasOwnProperty } from './utils';
+import { base64URLEncode, getLDHeaders, transformHeaders, objectHasOwnProperty } from './utils';
 
 // The underlying event source implementation is abstracted via the platform object, which should
 // have these three properties:
@@ -104,6 +104,7 @@ export default function Stream(platform, config, environment, diagnosticsAccumul
       } else {
         url = evalUrlPrefix + '/' + base64URLEncode(JSON.stringify(user));
       }
+      options.headers = transformHeaders(options.headers, config);
       if (withReasons) {
         query = query + (query ? '&' : '') + 'withReasons=true';
       }

@@ -165,6 +165,13 @@ export function getLDHeaders(platform, options) {
   return h;
 }
 
+export function transformHeaders(headers, options) {
+  if (!options || !options.requestHeaderTransform) {
+    return headers;
+  }
+  return options.requestHeaderTransform({ ...headers });
+}
+
 export function extend(...objects) {
   return objects.reduce((acc, obj) => ({ ...acc, ...obj }), {});
 }
