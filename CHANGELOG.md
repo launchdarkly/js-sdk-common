@@ -2,6 +2,10 @@
 
 All notable changes to the `launchdarkly-js-sdk-common` package will be documented in this file. Changes that affect the dependent SDKs such as `launchdarkly-js-client-sdk` should also be logged in those projects, in the next release that uses the updated version of this package. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [3.4.0] - 2021-10-15
+### Added:
+- Added LDOptionsBase.requestHeaderTransform allowing custom headers to be added to all requests.
+
 ## [3.3.4] - 2021-10-15
 ### Fixed:
 - Reverted change to `uuid` dependency while working on some compatibility issues.
