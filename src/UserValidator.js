@@ -1,4 +1,4 @@
-const { v1: uuidv1 } = require('uuid');
+import uuidv1 from 'uuid/v1';
 
 import * as errors from './errors';
 import * as messages from './messages';
