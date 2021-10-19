@@ -61,6 +61,7 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
   let inited = false;
   let closed = false;
   let firstEvent = true;
+  let hasLoggedDntWarning = false;
 
   // The "stateProvider" object is used in the Electron SDK, to allow one client instance to take partial
   // control of another. If present, it has the following contract:
@@ -118,7 +119,17 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
   }
 
   function shouldEnqueueEvent() {
-    return sendEvents && !closed && !platform.isDoNotTrack();
+    if (!sendEvents || closed) {
+      return false;
+    }
+    if (platform.isDoNotTrack()) {
+      if (!hasLoggedDntWarning) {
+        logger.warn(messages.doNotTrackEnabled());
+        hasLoggedDntWarning = true;
+      }
+      return false;
+    }
+    return true;
   }
 
   function enqueueEvent(event) {

@@ -111,6 +111,10 @@ export const identifyDisabled = function() {
   return 'identify() has no effect here; it must be called on the main client instance';
 };
 
+export const doNotTrackEnabled = function() {
+  return "LaunchDarkly events will not be sent because this browser's Do Not Track setting is enabled.";
+};
+
 export const streamClosing = function() {
   return 'Closing stream connection';
 };
