@@ -1,6 +1,6 @@
 import { baseOptionDefs } from '../configuration';
 import { DiagnosticId, DiagnosticsAccumulator, DiagnosticsManager } from '../diagnosticEvents';
-
+import PersistentStorage from '../PersistentStorage';
 import { sleepAsync } from 'launchdarkly-js-test-helpers';
 
 import * as stubPlatform from './stubPlatform';
@@ -130,12 +130,13 @@ describe('DiagnosticsManager', () => {
 
   async function withManager(extraConfig, overridePlatform, asyncCallback) {
     const platform = overridePlatform || stubPlatform.defaults();
+    const storage = PersistentStorage(platform.localStorage, platform.testing.logger);
     platform.diagnosticSdkData = sdkData;
     platform.diagnosticPlatformData = platformData;
     const config = { ...defaultConfig, ...extraConfig };
     const acc = DiagnosticsAccumulator(defaultStartTime);
     const sender = MockEventSender();
-    const m = DiagnosticsManager(platform, acc, sender, envId, config, diagnosticId);
+    const m = DiagnosticsManager(platform, storage, acc, sender, envId, config, diagnosticId);
     try {
       return await asyncCallback(m, acc, sender);
     } finally {

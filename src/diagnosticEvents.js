@@ -69,7 +69,15 @@ function DiagnosticsAccumulator(startTime) {
 // both kinds of event is sent at intervals, relative to the last time this was done (if any) which
 // is cached in local storage.
 
-function DiagnosticsManager(platform, accumulator, eventSender, environmentId, config, diagnosticId) {
+function DiagnosticsManager(
+  platform,
+  persistentStorage,
+  accumulator,
+  eventSender,
+  environmentId,
+  config,
+  diagnosticId
+) {
   const combinedMode = !!platform.diagnosticUseCombinedEvent;
   const localStorageKey = 'ld:' + environmentId + ':$diagnostics';
   const diagnosticEventsUrl = config.eventsUrl + '/events/diagnostic/' + environmentId;
@@ -99,10 +107,10 @@ function DiagnosticsManager(platform, accumulator, eventSender, environmentId, c
   }
 
   function loadProperties(callback) {
-    if (!platform.localStorage) {
+    if (!persistentStorage.isEnabled()) {
       return callback(false); // false indicates that local storage is not available
     }
-    platform.localStorage
+    persistentStorage
       .get(localStorageKey)
       .then(data => {
         if (data) {
@@ -122,9 +130,9 @@ function DiagnosticsManager(platform, accumulator, eventSender, environmentId, c
   }
 
   function saveProperties() {
-    if (platform.localStorage) {
+    if (persistentStorage.isEnabled()) {
       const props = { ...acc.getProps() };
-      platform.localStorage.set(localStorageKey, JSON.stringify(props), () => {});
+      persistentStorage.set(localStorageKey, JSON.stringify(props));
     }
   }
 

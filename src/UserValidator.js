@@ -12,23 +12,13 @@ import * as utils from './utils';
 
 const ldUserIdKey = 'ld:$anonUserId';
 
-export default function UserValidator(localStorageProvider, logger) {
+export default function UserValidator(persistentStorage) {
   function getCachedUserId() {
-    if (localStorageProvider) {
-      return localStorageProvider.get(ldUserIdKey).catch(() => null);
-      // Not logging errors here, because if local storage fails for the get, it will presumably fail for the set,
-      // so we will end up logging an error in setCachedUserId anyway.
-    }
-    return Promise.resolve(null);
+    return persistentStorage.get(ldUserIdKey);
   }
 
   function setCachedUserId(id) {
-    if (localStorageProvider) {
-      return localStorageProvider.set(ldUserIdKey, id).catch(() => {
-        logger.warn(messages.localStorageUnavailableForUserId());
-      });
-    }
-    return Promise.resolve();
+    return persistentStorage.set(ldUserIdKey, id);
   }
 
   const ret = {};

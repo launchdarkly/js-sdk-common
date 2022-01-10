@@ -86,20 +86,22 @@ describe('LDClient local storage', () => {
     });
 
     it('should handle localStorage.get returning an error', async () => {
-      platform.localStorage.get = () => Promise.reject(new Error());
+      const myError = new Error('deliberate error');
+      platform.localStorage.get = () => Promise.reject(myError);
       const flags = { 'enable-foo': { value: true } };
 
       await withServer(async server => {
         server.byDefault(respondJson(flags));
         await withClient(user, { baseUrl: server.url }, async client => {
           await client.waitForInitialization();
-          expect(platform.testing.logger.output.warn).toEqual([messages.localStorageUnavailable()]);
+          expect(platform.testing.logger.output.warn).toEqual([messages.localStorageUnavailable(myError)]);
         });
       });
     });
 
     it('should handle localStorage.set returning an error', async () => {
-      platform.localStorage.set = () => Promise.reject(new Error());
+      const myError = new Error('deliberate error');
+      platform.localStorage.set = () => Promise.reject(myError);
       const flags = { 'enable-foo': { value: true } };
 
       await withServer(async server => {
@@ -109,7 +111,7 @@ describe('LDClient local storage', () => {
 
           await sleepAsync(0); // allow any pending async tasks to complete
 
-          expect(platform.testing.logger.output.warn).toEqual([messages.localStorageUnavailable()]);
+          expect(platform.testing.logger.output.warn).toEqual([messages.localStorageUnavailable(myError)]);
         });
       });
     });
