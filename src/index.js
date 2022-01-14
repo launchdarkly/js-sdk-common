@@ -2,14 +2,15 @@ import EventProcessor from './EventProcessor';
 import EventEmitter from './EventEmitter';
 import EventSender from './EventSender';
 import InitializationStateTracker from './InitializationState';
-import Store from './Store';
+import PersistentFlagStore from './PersistentFlagStore';
+import PersistentStorage from './PersistentStorage';
 import Stream from './Stream';
 import Requestor from './Requestor';
 import Identity from './Identity';
 import UserValidator from './UserValidator';
 import * as configuration from './configuration';
 import * as diagnostics from './diagnosticEvents';
-import createConsoleLogger from './consoleLogger';
+import { commonBasicLogger, createConsoleLogger } from './loggers';
 import * as utils from './utils';
 import * as errors from './errors';
 import * as messages from './messages';
@@ -35,13 +36,23 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
   let environment = env;
   let hash = options.hash;
 
+  const persistentStorage = PersistentStorage(platform.localStorage, logger);
+
   const eventSender = EventSender(platform, environment, options);
 
   const diagnosticsEnabled = options.sendEvents && !options.diagnosticOptOut;
   const diagnosticId = diagnosticsEnabled ? diagnostics.DiagnosticId(environment) : null;
   const diagnosticsAccumulator = diagnosticsEnabled ? diagnostics.DiagnosticsAccumulator(new Date().getTime()) : null;
   const diagnosticsManager = diagnosticsEnabled
-    ? diagnostics.DiagnosticsManager(platform, diagnosticsAccumulator, eventSender, environment, options, diagnosticId)
+    ? diagnostics.DiagnosticsManager(
+        platform,
+        persistentStorage,
+        diagnosticsAccumulator,
+        eventSender,
+        environment,
+        options,
+        diagnosticId
+      )
     : null;
 
   const stream = Stream(platform, options, environment, diagnosticsAccumulator);
@@ -75,11 +86,10 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
   const stateProvider = options.stateProvider;
 
   const ident = Identity(null, onIdentifyChange);
-  const userValidator = UserValidator(platform.localStorage, logger);
-  let store;
-  if (platform.localStorage) {
-    store = new Store(platform.localStorage, environment, hash, ident, logger);
-  }
+  const userValidator = UserValidator(persistentStorage);
+  const persistentFlagStore = persistentStorage.isEnabled()
+    ? new PersistentFlagStore(persistentStorage, environment, hash, ident, logger)
+    : null;
 
   function createLogger() {
     if (specifiedOptions && specifiedOptions.logger) {
@@ -215,7 +225,7 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
       logger.warn(messages.identifyDisabled());
       return utils.wrapPromiseCallback(Promise.resolve(utils.transformVersionedValuesToValues(flags)), onDone);
     }
-    const clearFirst = useLocalStorage && store ? store.clearFlags() : Promise.resolve();
+    const clearFirst = useLocalStorage && persistentFlagStore ? persistentFlagStore.clearFlags() : Promise.resolve();
     return utils.wrapPromiseCallback(
       clearFirst
         .then(() => userValidator.validateUser(user))
@@ -504,8 +514,8 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
       }
     }
 
-    if (useLocalStorage && store) {
-      return store.saveFlags(flags).catch(() => null); // disregard errors
+    if (useLocalStorage && persistentFlagStore) {
+      return persistentFlagStore.saveFlags(flags);
     } else {
       return Promise.resolve();
     }
@@ -566,7 +576,7 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
   }
 
   if (typeof options.bootstrap === 'string' && options.bootstrap.toUpperCase() === 'LOCALSTORAGE') {
-    if (store) {
+    if (persistentFlagStore) {
       useLocalStorage = true;
     } else {
       logger.warn(messages.localStorageUnavailable());
@@ -613,33 +623,30 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
   }
 
   function finishInitWithLocalStorage() {
-    return store
-      .loadFlags()
-      .catch(() => null) // treat an error the same as if no flags were available
-      .then(storedFlags => {
-        if (storedFlags === null || storedFlags === undefined) {
-          flags = {};
-          return requestor
-            .fetchFlagSettings(ident.getUser(), hash)
-            .then(requestedFlags => replaceAllFlags(requestedFlags || {}))
-            .then(signalSuccessfulInit)
-            .catch(err => {
-              const initErr = new errors.LDFlagFetchError(messages.errorFetchingFlags(err));
-              signalFailedInit(initErr);
-            });
-        } else {
-          // We're reading the flags from local storage. Signal that we're ready,
-          // then update localStorage for the next page load. We won't signal changes or update
-          // the in-memory flags unless you subscribe for changes
-          flags = storedFlags;
-          utils.onNextTick(signalSuccessfulInit);
+    return persistentFlagStore.loadFlags().then(storedFlags => {
+      if (storedFlags === null || storedFlags === undefined) {
+        flags = {};
+        return requestor
+          .fetchFlagSettings(ident.getUser(), hash)
+          .then(requestedFlags => replaceAllFlags(requestedFlags || {}))
+          .then(signalSuccessfulInit)
+          .catch(err => {
+            const initErr = new errors.LDFlagFetchError(messages.errorFetchingFlags(err));
+            signalFailedInit(initErr);
+          });
+      } else {
+        // We're reading the flags from local storage. Signal that we're ready,
+        // then update localStorage for the next page load. We won't signal changes or update
+        // the in-memory flags unless you subscribe for changes
+        flags = storedFlags;
+        utils.onNextTick(signalSuccessfulInit);
 
-          return requestor
-            .fetchFlagSettings(ident.getUser(), hash)
-            .then(requestedFlags => replaceAllFlags(requestedFlags))
-            .catch(err => emitter.maybeReportError(err));
-        }
-      });
+        return requestor
+          .fetchFlagSettings(ident.getUser(), hash)
+          .then(requestedFlags => replaceAllFlags(requestedFlags))
+          .catch(err => emitter.maybeReportError(err));
+      }
+    });
   }
 
   function finishInitWithPolling() {
@@ -754,6 +761,7 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
 }
 
 export const version = VERSION;
+export { commonBasicLogger };
 export { createConsoleLogger };
 export { errors };
 export { messages };

@@ -53,6 +53,8 @@ declare module 'launchdarkly-js-sdk-common' {
    * respectively.
    *
    * To make LDClient use this logger, put it in the `logger` property of [[LDOptions]].
+   * 
+   * @deprecated Please use `basicLogger` instead.
    */
   export function createConsoleLogger(minimumLevel: string): LDLogger;
 
@@ -66,8 +68,7 @@ declare module 'launchdarkly-js-sdk-common' {
     /**
      * An object that will perform logging for the client.
      *
-     * If not specified, the default is [[createConsoleLogger]] in the browser SDK, or a logger
-     * from the `winston` package in Electron.
+     * If not specified, the default is to use `basicLogger`.
      */
     logger?: LDLogger;
 
@@ -450,8 +451,7 @@ declare module 'launchdarkly-js-sdk-common' {
   }
 
   /**
-   * The basic interface for the LaunchDarkly client. The browser SDK and the Electron SDK both
-   * use this, but may add some methods of their own.
+   * The basic interface for the LaunchDarkly client. Platform-specific SDKs may add some methods of their own.
    *
    * @see https://docs.launchdarkly.com/sdk/client-side/javascript
    *
@@ -735,4 +735,96 @@ declare module 'launchdarkly-js-sdk-common' {
     */
    close(onDone?: () => void): Promise<void>;
   }
+
+  /**
+   * Provides a simple [[LDLogger]] implementation.
+   *
+   * This logging implementation uses a simple format that includes only the log level
+   * and the message text. Output is written to the console unless otherwise specified.
+   * You can filter by log level as described in [[BasicLoggerOptions.level]].
+   *
+   * To use the logger created by this function, put it into [[LDOptions.logger]]. If
+   * you do not set [[LDOptions.logger]] to anything, the SDK uses a default logger
+   * that is equivalent to `ld.basicLogger({ level: 'info' })`.
+   *
+   * @param options Configuration for the logger. If no options are specified, the
+   *   logger uses `{ level: 'info' }`.
+   *
+   * @param formatter An optional function equivalent to Node's util.format, allowing
+   *   for parameter substitution in log messages. If this is omitted, parameter
+   *   substitution is not available.
+   * 
+   * @example
+   * This example shows how to use `basicLogger` in your SDK options to enable console
+   * logging only at `warn` and `error` levels.
+   * ```javascript
+   *   const ldOptions = {
+   *     logger: ld.basicLogger({ level: 'warn' }),
+   *   };
+   * ```
+   *
+   * @example
+   * This example shows how to use `basicLogger` in your SDK options to cause log
+   * output to always go to `console.error` instead of `console.log`.
+   * ```javascript
+   *   const ldOptions = {
+   *     logger: ld.basicLogger({ destination: console.error }),
+   *   };
+   * ```
+   * 
+   * @ignore (don't need to show this separately in TypeDoc output; each SDK should provide its own
+   *   basicLogger function that delegates to this and sets the formatter parameter)
+   */
+   export function commonBasicLogger(
+    options?: BasicLoggerOptions,
+    formatter?: (format: string, ...args: any[]) => void
+  ): LDLogger;
+
+  /**
+   * Configuration for [[basicLogger]].
+   */
+  export interface BasicLoggerOptions {
+    /**
+     * The lowest level of log message to enable.
+     *
+     * See [[LDLogLevel]] for a list of possible levels. Setting a level here causes
+     * all lower-importance levels to be disabled: for instance, if you specify
+     * `'warn'`, then `'debug'` and `'info'` are disabled.
+     *
+     * If not specified, the default is `'info'` (meaning that `'debug'` is disabled).
+     */
+    level?: LDLogLevel;
+
+    /**
+     * A string to prepend to all log output. If not specified, the default is
+     * "[LaunchDarkly] ".
+     */
+    prefix?: string;
+
+    /**
+     * An optional function to use to print each log line.
+     *
+     * If this is specified, `basicLogger` calls it to write each line of output. The
+     * argument is a fully formatted log line, not including a linefeed. The function
+     * is only called for log levels that are enabled.
+     *
+     * If not specified, the default in browsers is to use `console.log`, `console.info`,
+     * `console.warn`, or `console.error` according to the level; the default in
+     * Node.js and Electron is to always use `console.log`.
+     *
+     * Setting this property to anything other than a function will cause SDK
+     * initialization to fail.
+     */
+    destination?: (line: string) => void,
+  }
+
+  /**
+   * Logging levels that can be used with [[basicLogger]].
+   *
+   * Set [[BasicLoggerOptions.level]] to one of these values to control what levels
+   * of log messages are enabled. Going from lowest importance (and most verbose)
+   * to most importance, the levels are `'debug'`, `'info'`, `'warn'`, and `'error'`.
+   * You can also specify `'none'` instead to disable all logging.
+   */
+  export type LDLogLevel = 'debug' | 'info' | 'warn' | 'error' | 'none';
 }

@@ -37,12 +37,8 @@ export const invalidKey = function() {
   return 'Event key must be a string';
 };
 
-export const localStorageUnavailable = function() {
-  return 'localStorage is unavailable';
-};
-
-export const localStorageUnavailableForUserId = function() {
-  return 'localStorage is unavailable, so anonymous user ID cannot be cached';
+export const localStorageUnavailable = function(err) {
+  return 'local storage is unavailable: ' + errorString(err);
 };
 
 export const networkError = e => 'network error' + (e ? ' (' + e + ')' : '');

@@ -2,10 +2,11 @@ import * as stubPlatform from './stubPlatform';
 
 import * as messages from '../messages';
 import Identity from '../Identity';
-import Store from '../Store';
+import PersistentFlagStore from '../PersistentFlagStore';
+import PersistentStorage from '../PersistentStorage';
 import * as utils from '../utils';
 
-describe('Store', () => {
+describe('PersistentFlagStore', () => {
   const user = { key: 'user' };
   const ident = Identity(user);
   const env = 'ENVIRONMENT';
@@ -13,7 +14,8 @@ describe('Store', () => {
 
   it('stores flags', async () => {
     const platform = stubPlatform.defaults();
-    const store = Store(platform.localStorage, env, '', ident, platform.testing.logger);
+    const storage = PersistentStorage(platform.localStorage, platform.testing.logger);
+    const store = PersistentFlagStore(storage, env, '', ident, platform.testing.logger);
 
     const flags = { flagKey: { value: 'x' } };
 
@@ -26,7 +28,8 @@ describe('Store', () => {
 
   it('retrieves and parses flags', async () => {
     const platform = stubPlatform.defaults();
-    const store = Store(platform.localStorage, env, '', ident, platform.testing.logger);
+    const storage = PersistentStorage(platform.localStorage, platform.testing.logger);
+    const store = PersistentFlagStore(storage, env, '', ident, platform.testing.logger);
 
     const expected = { flagKey: { value: 'x' } };
     const stored = { $schema: 1, ...expected };
@@ -38,7 +41,8 @@ describe('Store', () => {
 
   it('converts flags from old format if schema property is missing', async () => {
     const platform = stubPlatform.defaults();
-    const store = Store(platform.localStorage, env, '', ident, platform.testing.logger);
+    const storage = PersistentStorage(platform.localStorage, platform.testing.logger);
+    const store = PersistentFlagStore(storage, env, '', ident, platform.testing.logger);
 
     const oldFlags = { flagKey: 'x' };
     const newFlags = { flagKey: { value: 'x', version: 0 } };
@@ -50,7 +54,8 @@ describe('Store', () => {
 
   it('returns null if storage is empty', async () => {
     const platform = stubPlatform.defaults();
-    const store = Store(platform.localStorage, env, '', ident, platform.testing.logger);
+    const storage = PersistentStorage(platform.localStorage, platform.testing.logger);
+    const store = PersistentFlagStore(storage, env, '', ident, platform.testing.logger);
 
     const values = await store.loadFlags();
     expect(values).toBe(null);
@@ -58,20 +63,22 @@ describe('Store', () => {
 
   it('clears storage and returns null if value is not valid JSON', async () => {
     const platform = stubPlatform.defaults();
-    const store = Store(platform.localStorage, env, '', ident, platform.testing.logger);
+    const storage = PersistentStorage(platform.localStorage, platform.testing.logger);
+    const store = PersistentFlagStore(storage, env, '', ident, platform.testing.logger);
 
     platform.testing.setLocalStorageImmediately(lsKey, '{bad');
 
-    await expect(store.loadFlags()).rejects.toThrow();
+    expect(await store.loadFlags()).toBe(null);
 
     expect(platform.testing.getLocalStorageImmediately(lsKey)).toBe(undefined);
   });
 
   it('uses hash, if present, instead of user properties', async () => {
     const platform = stubPlatform.defaults();
+    const storage = PersistentStorage(platform.localStorage, platform.testing.logger);
     const hash = '12345';
     const keyWithHash = 'ld:' + env + ':' + hash;
-    const store = Store(platform.localStorage, env, hash, ident, platform.testing.logger);
+    const store = PersistentFlagStore(storage, env, hash, ident, platform.testing.logger);
 
     const flags = { flagKey: { value: 'x' } };
     await store.saveFlags(flags);
@@ -82,21 +89,23 @@ describe('Store', () => {
 
   it('should handle localStorage.get returning an error', async () => {
     const platform = stubPlatform.defaults();
-    const store = Store(platform.localStorage, env, '', ident, platform.testing.logger);
+    const storage = PersistentStorage(platform.localStorage, platform.testing.logger);
+    const store = PersistentFlagStore(storage, env, '', ident, platform.testing.logger);
     const myError = new Error('localstorage getitem error');
     jest.spyOn(platform.localStorage, 'get').mockImplementation(() => Promise.reject(myError));
 
-    await expect(store.loadFlags()).rejects.toThrow(myError);
-    expect(platform.testing.logger.output.warn).toEqual([messages.localStorageUnavailable()]);
+    expect(await store.loadFlags()).toBe(null);
+    expect(platform.testing.logger.output.warn).toEqual([messages.localStorageUnavailable(myError)]);
   });
 
   it('should handle localStorage.set returning an error', async () => {
     const platform = stubPlatform.defaults();
-    const store = Store(platform.localStorage, env, '', ident, platform.testing.logger);
+    const storage = PersistentStorage(platform.localStorage, platform.testing.logger);
+    const store = PersistentFlagStore(storage, env, '', ident, platform.testing.logger);
     const myError = new Error('localstorage setitem error');
     jest.spyOn(platform.localStorage, 'set').mockImplementation(() => Promise.reject(myError));
 
-    await expect(store.saveFlags({ foo: {} })).rejects.toThrow(myError);
-    expect(platform.testing.logger.output.warn).toEqual([messages.localStorageUnavailable()]);
+    await store.saveFlags({ foo: {} });
+    expect(platform.testing.logger.output.warn).toEqual([messages.localStorageUnavailable(myError)]);
   });
 });
