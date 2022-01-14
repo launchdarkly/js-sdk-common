@@ -167,6 +167,22 @@ describe('configuration', () => {
   checkValidValue('bootstrap', 'localstorage');
   checkValidValue('bootstrap', { flag: 'value' });
 
+  it('validates custom logger methods', () => {
+    const badLogger = { debug: () => {}, info: () => {}, warn: () => {}, error: 'not a function' };
+    const listener = errorListener();
+    const configIn = { logger: badLogger };
+    expect(() => configuration.validate(configIn, listener.emitter, null, listener.logger)).toThrow();
+  });
+
+  it('allows custom logger with valid methods', async () => {
+    const goodLogger = { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} };
+    const listener = errorListener();
+    const configIn = { logger: goodLogger };
+    const config = configuration.validate(configIn, listener.emitter, null, listener.logger);
+    await listener.expectNoErrors();
+    expect(config.logger).toBe(goodLogger);
+  });
+
   it('complains if you set an unknown property', async () => {
     const listener = errorListener();
     const configIn = { unsupportedThing: true };

@@ -1,4 +1,5 @@
 import * as errors from './errors';
+import { validateLogger } from './loggers';
 import * as messages from './messages';
 import * as utils from './utils';
 
@@ -141,6 +142,7 @@ export function validate(options, emitter, extraOptionDefs, logger) {
 
   config = applyDefaults(config);
   config = validateTypesAndNames(config);
+  validateLogger(config.logger);
 
   return config;
 }

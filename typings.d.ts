@@ -68,7 +68,7 @@ declare module 'launchdarkly-js-sdk-common' {
     /**
      * An object that will perform logging for the client.
      *
-     * If not specified, the default is to use `basicLogger`.`
+     * If not specified, the default is to use `basicLogger`.
      */
     logger?: LDLogger;
 
@@ -740,7 +740,7 @@ declare module 'launchdarkly-js-sdk-common' {
    * Provides a simple [[LDLogger]] implementation.
    *
    * This logging implementation uses a simple format that includes only the log level
-   * and the message text. Output is written to the standard error stream (`console.error`).
+   * and the message text. Output is written to the console unless otherwise specified.
    * You can filter by log level as described in [[BasicLoggerOptions.level]].
    *
    * To use the logger created by this function, put it into [[LDOptions.logger]]. If
@@ -765,10 +765,10 @@ declare module 'launchdarkly-js-sdk-common' {
    *
    * @example
    * This example shows how to use `basicLogger` in your SDK options to cause log
-   * output to go to `console.log` instead of `console.error`.
+   * output to always go to `console.error` instead of `console.log`.
    * ```javascript
    *   const ldOptions = {
-   *     logger: ld.basicLogger({ destination: console.log }),
+   *     logger: ld.basicLogger({ destination: console.error }),
    *   };
    * ```
    * 
@@ -810,7 +810,7 @@ declare module 'launchdarkly-js-sdk-common' {
      *
      * If not specified, the default in browsers is to use `console.log`, `console.info`,
      * `console.warn`, or `console.error` according to the level; the default in
-     * Node.js and Electron is to always use `console.error`.
+     * Node.js and Electron is to always use `console.log`.
      *
      * Setting this property to anything other than a function will cause SDK
      * initialization to fail.

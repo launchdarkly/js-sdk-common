@@ -10,7 +10,7 @@ import Identity from './Identity';
 import UserValidator from './UserValidator';
 import * as configuration from './configuration';
 import * as diagnostics from './diagnosticEvents';
-import { createConsoleLogger } from './loggers';
+import { commonBasicLogger, createConsoleLogger } from './loggers';
 import * as utils from './utils';
 import * as errors from './errors';
 import * as messages from './messages';
@@ -761,6 +761,7 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
 }
 
 export const version = VERSION;
+export { commonBasicLogger };
 export { createConsoleLogger };
 export { errors };
 export { messages };
