@@ -2,6 +2,13 @@
 
 All notable changes to the `launchdarkly-js-sdk-common` package will be documented in this file. Changes that affect the dependent SDKs such as `launchdarkly-js-client-sdk` should also be logged in those projects, in the next release that uses the updated version of this package. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [3.5.0] - 2022-01-14
+### Added:
+- New configurable logger factory `commonBasicLogger` and `BasicLoggerOptions`. The `commonBasicLogger` method is not intended to be exported directly in the SDKs, but wrapped to provide platform-specific behavior.
+
+### Fixed:
+- Any exceptions thrown by the platform-specific local storage implementation (for instance, if we are in a browser and `window.localstorage` is available but disabled) are now consistently caught, and will only be logged the first time to avoid repetitive logging.
+
 ## [3.4.0] - 2021-10-15
 ### Added:
 - Added LDOptionsBase.requestHeaderTransform allowing custom headers to be added to all requests.
