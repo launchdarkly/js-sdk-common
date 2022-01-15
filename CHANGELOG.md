@@ -2,6 +2,15 @@
 
 All notable changes to the `launchdarkly-js-sdk-common` package will be documented in this file. Changes that affect the dependent SDKs such as `launchdarkly-js-client-sdk` should also be logged in those projects, in the next release that uses the updated version of this package. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [4.0.0] - 2022-01-14
+### Changed:
+- Updated `uuid` package to 8.x.
+- In TypeScript, the property `LDEvaluationDetail.reason` is now nullable, which correctly reflects the fact that evaluation reasons may not always be available.
+
+### Removed:
+- Removed the type `NonNullableLDEvaluationReason`, which was a side effect of the `LDEvaluationDetail.reason` being incorrectly defined before.
+- Removed all types, properties, and functions that were deprecated as of the last 3.x release.
+
 ## [3.5.0] - 2022-01-14
 ### Added:
 - New configurable logger factory `commonBasicLogger` and `BasicLoggerOptions`. The `commonBasicLogger` method is not intended to be exported directly in the SDKs, but wrapped to provide platform-specific behavior.
