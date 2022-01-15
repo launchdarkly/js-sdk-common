@@ -76,7 +76,7 @@ var jsonFlagValue: ld.LDFlagValue = client.variation('key', [ 'a', 'b' ]);
 var detail: ld.LDEvaluationDetail = client.variationDetail('key', 'default');
 var detailValue: ld.LDFlagValue = detail.value;
 var detailIndex: number | undefined = detail.variationIndex;
-var detailReason: ld.LDEvaluationReason = detail.reason;
+var detailReason: ld.LDEvaluationReason | undefined = detail.reason;
 
 client.setStreaming(true);
 client.setStreaming();
