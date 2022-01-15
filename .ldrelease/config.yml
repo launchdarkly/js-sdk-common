@@ -4,6 +4,11 @@ repo:
   public: js-sdk-common
   private: js-sdk-common-private
 
+branches:
+  - name: master
+    description: 4.x
+  - name: 3.x
+
 publications:
   - url: https://www.npmjs.com/package/launchdarkly-js-sdk-common
     description: npm

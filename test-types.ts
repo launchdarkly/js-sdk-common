@@ -6,7 +6,6 @@ import * as ld from 'launchdarkly-js-sdk-common';
 
 var ver: string = ld.version;
 
-var logger: ld.LDLogger = ld.createConsoleLogger("info");
 var userWithKeyOnly: ld.LDUser = { key: 'user' };
 var anonUserWithNoKey: ld.LDUser = { anonymous: true };
 var anonUserWithKey: ld.LDUser = { key: 'anon-user', anonymous: true };
@@ -31,6 +30,7 @@ var user: ld.LDUser = {
   },
   privateAttributeNames: [ 'name', 'email' ]
 };
+var logger: ld.LDLogger = ld.commonBasicLogger({ level: 'info' });
 var allBaseOptions: ld.LDOptionsBase = {
   bootstrap: { },
   baseUrl: '',
@@ -48,7 +48,6 @@ var allBaseOptions: ld.LDOptionsBase = {
   allowFrequentDuplicateEvents: true,
   sendEventsOnlyForVariation: true,
   flushInterval: 1,
-  samplingInterval: 1,
   streamReconnectDelay: 1,
   logger: logger
 };
@@ -77,7 +76,7 @@ var jsonFlagValue: ld.LDFlagValue = client.variation('key', [ 'a', 'b' ]);
 var detail: ld.LDEvaluationDetail = client.variationDetail('key', 'default');
 var detailValue: ld.LDFlagValue = detail.value;
 var detailIndex: number | undefined = detail.variationIndex;
-var detailReason: ld.LDEvaluationReason = detail.reason;
+var detailReason: ld.LDEvaluationReason | undefined = detail.reason;
 
 client.setStreaming(true);
 client.setStreaming();

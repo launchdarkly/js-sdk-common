@@ -47,18 +47,6 @@ declare module 'launchdarkly-js-sdk-common' {
   }
 
   /**
-   * A basic implementation of logging that uses the global `console` object. This is used by
-   * default in the browser SDK. It sends messages of "debug", "info", "warn", or "error"
-   * level (if enable) to `console.log()`, `console.info()`, `console.warn()`, and `console.error()`
-   * respectively.
-   *
-   * To make LDClient use this logger, put it in the `logger` property of [[LDOptions]].
-   * 
-   * @deprecated Please use `basicLogger` instead.
-   */
-  export function createConsoleLogger(minimumLevel: string): LDLogger;
-
-  /**
    * LaunchDarkly initialization options that are supported by all variants of the JS client.
    * The browser SDK and Electron SDK may support additional options.
    *
@@ -224,17 +212,6 @@ declare module 'launchdarkly-js-sdk-common' {
     flushInterval?: number;
 
     /**
-     * If specified, enables event sampling so that only some fraction of analytics events will be
-     * sent pseudo-randomly.
-     *
-     * When set to greater than zero, there is a 1 in `samplingInterval` chance that events will be
-     * sent: for example, a value of 20 means that on average 1 in 20, or 5%, of all events will be sent.
-     *
-     * @deprecated This feature will be removed in a future version.
-     */
-    samplingInterval?: number;
-
-    /**
      * How long (in milliseconds) to wait after a failure of the stream connection before trying to
      * reconnect.
      *
@@ -374,12 +351,8 @@ declare module 'launchdarkly-js-sdk-common' {
   /**
    * Describes the reason that a flag evaluation produced a particular value. This is
    * part of the [[LDEvaluationDetail]] object returned by [[LDClient.variationDetail]].
-   *
-   * This type is separate from `[[LDEvaluationReason]]` for backwards compatibility. In
-   * earlier versions of this SDK, `[[LDEvaluationReason]]` was incorrectly defined as
-   * being non-nullable.
    */
-  interface NonNullableLDEvaluationReason {
+  interface LDEvaluationReason {
     /**
      * The general category of the reason:
      *
@@ -416,14 +389,6 @@ declare module 'launchdarkly-js-sdk-common' {
   }
 
   /**
-   * Describes the reason that a flag evaluation produced a particular value. This is
-   * part of the [[LDEvaluationDetail]] object returned by [[LDClient.variationDetail]].
-   *
-   * Will be null when `[[LDOptions.evaluationReasons]]` is `false`.
-   */
-  export type LDEvaluationReason = NonNullableLDEvaluationReason | null;
-
-  /**
    * An object that combines the result of a feature flag evaluation with information about
    * how it was calculated.
    *
@@ -446,8 +411,10 @@ declare module 'launchdarkly-js-sdk-common' {
 
     /**
      * An object describing the main factor that influenced the flag evaluation value.
+     * This will be `null`/`undefined` if the SDK was not configured to get evaluation
+     * reasons.
      */
-    reason: LDEvaluationReason;
+    reason?: LDEvaluationReason;
   }
 
   /**
