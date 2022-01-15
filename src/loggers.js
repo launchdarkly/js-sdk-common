@@ -86,8 +86,3 @@ export function validateLogger(logger) {
     }
   });
 }
-
-// Deprecated equivalent to commonBasicLogger
-export function createConsoleLogger(level, maybePrefix) {
-  return commonBasicLogger({ level, prefix: maybePrefix });
-}

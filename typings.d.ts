@@ -47,18 +47,6 @@ declare module 'launchdarkly-js-sdk-common' {
   }
 
   /**
-   * A basic implementation of logging that uses the global `console` object. This is used by
-   * default in the browser SDK. It sends messages of "debug", "info", "warn", or "error"
-   * level (if enable) to `console.log()`, `console.info()`, `console.warn()`, and `console.error()`
-   * respectively.
-   *
-   * To make LDClient use this logger, put it in the `logger` property of [[LDOptions]].
-   * 
-   * @deprecated Please use `basicLogger` instead.
-   */
-  export function createConsoleLogger(minimumLevel: string): LDLogger;
-
-  /**
    * LaunchDarkly initialization options that are supported by all variants of the JS client.
    * The browser SDK and Electron SDK may support additional options.
    *
@@ -222,17 +210,6 @@ declare module 'launchdarkly-js-sdk-common' {
      * The default value is 2000ms.
      */
     flushInterval?: number;
-
-    /**
-     * If specified, enables event sampling so that only some fraction of analytics events will be
-     * sent pseudo-randomly.
-     *
-     * When set to greater than zero, there is a 1 in `samplingInterval` chance that events will be
-     * sent: for example, a value of 20 means that on average 1 in 20, or 5%, of all events will be sent.
-     *
-     * @deprecated This feature will be removed in a future version.
-     */
-    samplingInterval?: number;
 
     /**
      * How long (in milliseconds) to wait after a failure of the stream connection before trying to

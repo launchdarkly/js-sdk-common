@@ -10,7 +10,7 @@ import Identity from './Identity';
 import UserValidator from './UserValidator';
 import * as configuration from './configuration';
 import * as diagnostics from './diagnosticEvents';
-import { commonBasicLogger, createConsoleLogger } from './loggers';
+import { commonBasicLogger } from './loggers';
 import * as utils from './utils';
 import * as errors from './errors';
 import * as messages from './messages';
@@ -95,7 +95,7 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
     if (specifiedOptions && specifiedOptions.logger) {
       return specifiedOptions.logger;
     }
-    return (extraOptionDefs && extraOptionDefs.logger && extraOptionDefs.logger.default) || createConsoleLogger('warn');
+    return (extraOptionDefs && extraOptionDefs.logger && extraOptionDefs.logger.default) || commonBasicLogger('warn');
   }
 
   function readFlagsFromBootstrap(data) {
@@ -762,7 +762,6 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
 
 export const version = VERSION;
 export { commonBasicLogger };
-export { createConsoleLogger };
 export { errors };
 export { messages };
 export { utils };
