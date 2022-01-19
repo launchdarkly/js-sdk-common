@@ -114,7 +114,7 @@ describe('EventSender', () => {
       await sender.sendEvents([event], server.url);
 
       const r = await server.nextRequest();
-      expect(r.headers['x-launchdarkly-user-agent']).toEqual(utils.getLDUserAgentString(platform));
+      expect(r.headers['user-agent']).toEqual(utils.getLDUserAgentString(platform));
       expect(r.headers['x-launchdarkly-wrapper']).toBeUndefined();
     });
 
@@ -145,7 +145,7 @@ describe('EventSender', () => {
       await sender.sendEvents([event], server.url);
 
       const r = await server.nextRequest();
-      expect(r.headers['x-launchdarkly-user-agent']).toEqual(utils.getLDUserAgentString(platform));
+      expect(r.headers['user-agent']).toEqual(utils.getLDUserAgentString(platform));
       expect(r.headers['x-launchdarkly-wrapper']).toEqual('FakeSDK');
     });
 

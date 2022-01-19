@@ -154,9 +154,8 @@ export function getLDHeaders(platform, options) {
   if (options && !options.sendLDHeaders) {
     return {};
   }
-  const h = {
-    'X-LaunchDarkly-User-Agent': getLDUserAgentString(platform),
-  };
+  const h = {};
+  h[platform.userAgentHeaderName || 'User-Agent'] = getLDUserAgentString(platform);
   if (options && options.wrapperName) {
     h['X-LaunchDarkly-Wrapper'] = options.wrapperVersion
       ? options.wrapperName + '/' + options.wrapperVersion
