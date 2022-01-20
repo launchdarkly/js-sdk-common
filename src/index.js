@@ -1,19 +1,19 @@
-import EventProcessor from './EventProcessor';
-import EventEmitter from './EventEmitter';
-import EventSender from './EventSender';
-import InitializationStateTracker from './InitializationState';
-import PersistentFlagStore from './PersistentFlagStore';
-import PersistentStorage from './PersistentStorage';
-import Stream from './Stream';
-import Requestor from './Requestor';
-import Identity from './Identity';
-import UserValidator from './UserValidator';
-import * as configuration from './configuration';
-import * as diagnostics from './diagnosticEvents';
-import { commonBasicLogger } from './loggers';
-import * as utils from './utils';
-import * as errors from './errors';
-import * as messages from './messages';
+const EventProcessor = require('./EventProcessor');
+const EventEmitter = require('./EventEmitter');
+const EventSender = require('./EventSender');
+const InitializationStateTracker = require('./InitializationState');
+const PersistentFlagStore = require('./PersistentFlagStore');
+const PersistentStorage = require('./PersistentStorage');
+const Stream = require('./Stream');
+const Requestor = require('./Requestor');
+const Identity = require('./Identity');
+const UserValidator = require('./UserValidator');
+const configuration = require('./configuration');
+const diagnostics = require('./diagnosticEvents');
+const { commonBasicLogger } = require('./loggers');
+const utils = require('./utils');
+const errors = require('./errors');
+const messages = require('./messages');
 
 const changeEvent = 'change';
 const internalChangeEvent = 'internal-change';
@@ -27,7 +27,7 @@ const internalChangeEvent = 'internal-change';
 //
 // For definitions of the API in the platform object, see stubPlatform.js in the test code.
 
-export function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
+function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
   const logger = createLogger();
   const emitter = EventEmitter(logger);
   const initializationStateTracker = InitializationStateTracker(emitter);
@@ -760,8 +760,13 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
   };
 }
 
-export const version = VERSION;
-export { commonBasicLogger };
-export { errors };
-export { messages };
-export { utils };
+const version = VERSION;
+
+module.exports = {
+  initialize,
+  commonBasicLogger,
+  errors,
+  messages,
+  utils,
+  version,
+};

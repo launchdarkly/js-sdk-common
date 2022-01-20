@@ -12,7 +12,7 @@
 // different from calling coalescer.resultPromise.finally() because it is executed before any
 // other handlers. Its purpose is to tell the caller that this coalescer should no longer be used.
 
-export default function promiseCoalescer(finallyFn) {
+function promiseCoalescer(finallyFn) {
   let currentPromise;
   let currentCancelFn;
   let finalResolve;
@@ -48,3 +48,5 @@ export default function promiseCoalescer(finallyFn) {
 
   return coalescer;
 }
+
+module.exports = promiseCoalescer;

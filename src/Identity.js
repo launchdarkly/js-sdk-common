@@ -1,6 +1,6 @@
-import * as utils from './utils';
+const utils = require('./utils');
 
-export default function Identity(initialUser, onChange) {
+function Identity(initialUser, onChange) {
   const ident = {};
   let user;
 
@@ -22,3 +22,5 @@ export default function Identity(initialUser, onChange) {
 
   return ident;
 }
+
+module.exports = Identity;

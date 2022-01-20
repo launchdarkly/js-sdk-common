@@ -37,3 +37,9 @@ To verify that the TypeScript declarations compile correctly (this involves comp
 ```
 npm run check-typescript
 ```
+
+### Coding guidelines
+
+This code is shared between several SDK projects: `js-client-sdk` which runs in browsers, `node-client-sdk` which runs in Node.js, and `electron-client-sdk` which uses it both in a Node environment and in a browser environment.
+
+Therefore, it should not have any JavaScript usages that work _only_ in a browser or _only_ in Node.js. All such things, if they depend on the runtime environment, must be accessed indirectly via the "platform" abstraction, where each SDK provides its own platform-specific callbacks for the `js-sdk-common` code to use. Or, if it's just a question of JavaScript syntax usages, use whatever will work in both browsers and Node (for instance, use only `require` and `module.exports`, not ES6 imports).

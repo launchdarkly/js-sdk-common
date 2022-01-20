@@ -1,10 +1,10 @@
-import * as base64 from 'base64-js';
-import fastDeepEqual from 'fast-deep-equal';
+const base64 = require('base64-js');
+const fastDeepEqual = require('fast-deep-equal');
 
 const userAttrsToStringify = ['key', 'secondary', 'ip', 'country', 'email', 'firstName', 'lastName', 'avatar', 'name'];
 
 // See http://ecmanaut.blogspot.com/2006/07/encoding-decoding-utf8-in-javascript.html
-export function btoa(s) {
+function btoa(s) {
   const escaped = unescape(encodeURIComponent(s));
   return base64.fromByteArray(stringToBytes(escaped));
 }
@@ -17,7 +17,7 @@ function stringToBytes(s) {
   return b;
 }
 
-export function base64URLEncode(s) {
+function base64URLEncode(s) {
   return (
     btoa(s)
       // eslint-disable-next-line
@@ -27,17 +27,17 @@ export function base64URLEncode(s) {
   );
 }
 
-export function clone(obj) {
+function clone(obj) {
   return JSON.parse(JSON.stringify(obj));
 }
 
-export function deepEquals(a, b) {
+function deepEquals(a, b) {
   return fastDeepEqual(a, b);
 }
 
 // Events emitted in LDClient's initialize method will happen before the consumer
 // can register a listener, so defer them to next tick.
-export function onNextTick(cb) {
+function onNextTick(cb) {
   setTimeout(cb, 0);
 }
 
@@ -54,7 +54,7 @@ export function onNextTick(cb) {
  * @param {Function} callback
  * @returns Promise<any> | undefined
  */
-export function wrapPromiseCallback(promise, callback) {
+function wrapPromiseCallback(promise, callback) {
   const ret = promise.then(
     value => {
       if (callback) {
@@ -82,7 +82,7 @@ export function wrapPromiseCallback(promise, callback) {
  * Takes a map of flag keys to values, and returns the more verbose structure used by the
  * client stream.
  */
-export function transformValuesToVersionedValues(flags) {
+function transformValuesToVersionedValues(flags) {
   const ret = {};
   for (const key in flags) {
     if (objectHasOwnProperty(flags, key)) {
@@ -95,7 +95,7 @@ export function transformValuesToVersionedValues(flags) {
 /**
  * Converts the internal flag state map to a simple map of flag keys to values.
  */
-export function transformVersionedValuesToValues(flagsState) {
+function transformVersionedValuesToValues(flagsState) {
   const ret = {};
   for (const key in flagsState) {
     if (objectHasOwnProperty(flagsState, key)) {
@@ -113,7 +113,7 @@ export function transformVersionedValuesToValues(flagsState) {
  * @param {Array[Object}]} events queue of events to divide
  * @returns Array[Array[Object]]
  */
-export function chunkUserEventsForUrl(maxLength, events) {
+function chunkUserEventsForUrl(maxLength, events) {
   const allEvents = events.slice(0);
   const allChunks = [];
   let remainingSpace = maxLength;
@@ -145,12 +145,12 @@ export function chunkUserEventsForUrl(maxLength, events) {
   return allChunks;
 }
 
-export function getLDUserAgentString(platform) {
+function getLDUserAgentString(platform) {
   const version = platform.version || VERSION;
   return platform.userAgent + '/' + version;
 }
 
-export function getLDHeaders(platform, options) {
+function getLDHeaders(platform, options) {
   if (options && !options.sendLDHeaders) {
     return {};
   }
@@ -164,22 +164,22 @@ export function getLDHeaders(platform, options) {
   return h;
 }
 
-export function transformHeaders(headers, options) {
+function transformHeaders(headers, options) {
   if (!options || !options.requestHeaderTransform) {
     return headers;
   }
   return options.requestHeaderTransform({ ...headers });
 }
 
-export function extend(...objects) {
+function extend(...objects) {
   return objects.reduce((acc, obj) => ({ ...acc, ...obj }), {});
 }
 
-export function objectHasOwnProperty(object, name) {
+function objectHasOwnProperty(object, name) {
   return Object.prototype.hasOwnProperty.call(object, name);
 }
 
-export function sanitizeUser(user) {
+function sanitizeUser(user) {
   if (!user) {
     return user;
   }
@@ -194,3 +194,21 @@ export function sanitizeUser(user) {
   }
   return newUser || user;
 }
+
+module.exports = {
+  base64URLEncode,
+  btoa,
+  chunkUserEventsForUrl,
+  clone,
+  deepEquals,
+  extend,
+  getLDHeaders,
+  getLDUserAgentString,
+  objectHasOwnProperty,
+  onNextTick,
+  sanitizeUser,
+  transformHeaders,
+  transformValuesToVersionedValues,
+  transformVersionedValuesToValues,
+  wrapPromiseCallback,
+};

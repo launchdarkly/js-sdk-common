@@ -1,6 +1,6 @@
-import * as utils from './utils';
+const utils = require('./utils');
 
-export default function PersistentFlagStore(storage, environment, hash, ident) {
+function PersistentFlagStore(storage, environment, hash, ident) {
   const store = {};
 
   function getFlagsKey() {
@@ -46,3 +46,5 @@ export default function PersistentFlagStore(storage, environment, hash, ident) {
 
   return store;
 }
+
+module.exports = PersistentFlagStore;
