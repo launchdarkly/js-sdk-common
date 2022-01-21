@@ -1,4 +1,4 @@
-export default function EventSummarizer() {
+function EventSummarizer() {
   const es = {};
 
   let startDate = 0,
@@ -80,3 +80,5 @@ export default function EventSummarizer() {
 
   return es;
 }
+
+module.exports = EventSummarizer;

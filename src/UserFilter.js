@@ -1,4 +1,4 @@
-import * as utils from './utils';
+const utils = require('./utils');
 
 /**
  * The UserFilter object transforms user objects into objects suitable to be sent as JSON to
@@ -6,7 +6,7 @@ import * as utils from './utils';
  *
  * @param {Object} the LaunchDarkly client configuration object
  **/
-export default function UserFilter(config) {
+function UserFilter(config) {
   const filter = {};
   const allAttributesPrivate = config.allAttributesPrivate;
   const privateAttributeNames = config.privateAttributeNames || [];
@@ -71,3 +71,5 @@ export default function UserFilter(config) {
   };
   return filter;
 }
+
+module.exports = UserFilter;

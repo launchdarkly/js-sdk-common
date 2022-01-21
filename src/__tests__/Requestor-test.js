@@ -166,7 +166,7 @@ describe('Requestor', () => {
 
       expect(server.requests.length()).toEqual(1);
       const req = await server.requests.take();
-      expect(req.headers['x-launchdarkly-user-agent']).toEqual(utils.getLDUserAgentString(platform));
+      expect(req.headers['user-agent']).toEqual(utils.getLDUserAgentString(platform));
       expect(req.headers['x-launchdarkly-wrapper']).toBeUndefined();
     });
   });
@@ -180,7 +180,7 @@ describe('Requestor', () => {
 
       expect(server.requests.length()).toEqual(1);
       const req = await server.requests.take();
-      expect(req.headers['x-launchdarkly-user-agent']).toEqual(utils.getLDUserAgentString(platform));
+      expect(req.headers['user-agent']).toEqual(utils.getLDUserAgentString(platform));
       expect(req.headers['x-launchdarkly-wrapper']).toEqual('FakeSDK');
     });
   });
@@ -194,7 +194,7 @@ describe('Requestor', () => {
 
       expect(server.requests.length()).toEqual(1);
       const req = await server.requests.take();
-      expect(req.headers['x-launchdarkly-user-agent']).toEqual(utils.getLDUserAgentString(platform));
+      expect(req.headers['user-agent']).toEqual(utils.getLDUserAgentString(platform));
       expect(req.headers['x-launchdarkly-wrapper']).toBeUndefined();
     });
   });
@@ -208,7 +208,7 @@ describe('Requestor', () => {
 
       expect(server.requests.length()).toEqual(1);
       const req = await server.requests.take();
-      expect(req.headers['x-launchdarkly-user-agent']).toEqual(utils.getLDUserAgentString(platform));
+      expect(req.headers['user-agent']).toEqual(utils.getLDUserAgentString(platform));
       expect(req.headers['x-launchdarkly-wrapper']).toEqual('FakeSDK');
     });
   });
@@ -222,7 +222,7 @@ describe('Requestor', () => {
 
       expect(server.requests.length()).toEqual(1);
       const req = await server.requests.take();
-      expect(req.headers['x-launchdarkly-user-agent']).toBeUndefined();
+      expect(req.headers['user-agent']).toBeUndefined();
       expect(req.headers['x-launchdarkly-wrapper']).toBeUndefined();
     });
   });

@@ -1,4 +1,4 @@
-import * as messages from './messages';
+const messages = require('./messages');
 
 // The localStorageProvider is provided by the platform object. It should have the following
 // methods, each of which should return a Promise:
@@ -14,7 +14,7 @@ import * as messages from './messages';
 // It is always possible that the underlying platform storage mechanism might fail or be
 // disabled. If so, it's likely that it will keep failing, so we will only log one warning
 // instead of repetitive warnings.
-export default function PersistentStorage(localStorageProvider, logger) {
+function PersistentStorage(localStorageProvider, logger) {
   const storage = {};
   let loggedError = false;
 
@@ -77,3 +77,5 @@ export default function PersistentStorage(localStorageProvider, logger) {
 
   return storage;
 }
+
+module.exports = PersistentStorage;

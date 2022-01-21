@@ -1,8 +1,8 @@
 const { v1: uuidv1 } = require('uuid');
 
-import * as errors from './errors';
-import * as messages from './messages';
-import * as utils from './utils';
+const errors = require('./errors');
+const messages = require('./messages');
+const utils = require('./utils');
 
 // Transforms the user object if necessary to make sure it has a valid key.
 // 1. If a key is present, but is not a string, change it to a string.
@@ -12,7 +12,7 @@ import * as utils from './utils';
 
 const ldUserIdKey = 'ld:$anonUserId';
 
-export default function UserValidator(persistentStorage) {
+function UserValidator(persistentStorage) {
   function getCachedUserId() {
     return persistentStorage.get(ldUserIdKey);
   }
@@ -52,3 +52,5 @@ export default function UserValidator(persistentStorage) {
 
   return ret;
 }
+
+module.exports = UserValidator;

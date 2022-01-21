@@ -1,7 +1,7 @@
-import * as errors from './errors';
-import { validateLogger } from './loggers';
-import * as messages from './messages';
-import * as utils from './utils';
+const errors = require('./errors');
+const { validateLogger } = require('./loggers');
+const messages = require('./messages');
+const utils = require('./utils');
 
 // baseOptionDefs should contain an entry for each supported configuration option in the common package.
 // Each entry can have three properties:
@@ -12,7 +12,7 @@ import * as utils from './utils';
 // - "minimum": minimum value if any for numeric properties
 //
 // The extraOptionDefs parameter to validate() uses the same format.
-export const baseOptionDefs = {
+const baseOptionDefs = {
   baseUrl: { default: 'https://app.launchdarkly.com' },
   streamUrl: { default: 'https://clientstream.launchdarkly.com' },
   eventsUrl: { default: 'https://events.launchdarkly.com' },
@@ -40,7 +40,7 @@ export const baseOptionDefs = {
   autoAliasingOptOut: { default: false },
 };
 
-export function validate(options, emitter, extraOptionDefs, logger) {
+function validate(options, emitter, extraOptionDefs, logger) {
   const optionDefs = utils.extend({ logger: { default: logger } }, baseOptionDefs, extraOptionDefs);
 
   const deprecatedOptions = {
@@ -144,3 +144,8 @@ export function validate(options, emitter, extraOptionDefs, logger) {
 
   return config;
 }
+
+module.exports = {
+  baseOptionDefs,
+  validate,
+};

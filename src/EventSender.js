@@ -1,10 +1,10 @@
-import * as errors from './errors';
-import * as utils from './utils';
+const errors = require('./errors');
+const utils = require('./utils');
 const { v1: uuidv1 } = require('uuid');
 
 const MAX_URL_LENGTH = 2000;
 
-export default function EventSender(platform, environmentId, options) {
+function EventSender(platform, environmentId, options) {
   const imageUrlPath = '/a/' + environmentId + '.gif';
   const baseHeaders = utils.extend({ 'Content-Type': 'application/json' }, utils.getLDHeaders(platform, options));
   const httpFallbackPing = platform.httpFallbackPing; // this will be set for us if we're in the browser SDK
@@ -83,3 +83,5 @@ export default function EventSender(platform, environmentId, options) {
 
   return sender;
 }
+
+module.exports = EventSender;

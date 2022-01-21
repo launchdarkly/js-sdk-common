@@ -55,17 +55,24 @@ describe('utils', () => {
       expect(headers).toEqual({});
     });
 
-    it('adds custom user-agent header', () => {
+    it('adds user-agent header', () => {
       const platform = stubPlatform.defaults();
       const headers = getLDHeaders(platform, { sendLDHeaders: true });
-      expect(headers).toMatchObject({ 'X-LaunchDarkly-User-Agent': getLDUserAgentString(platform) });
+      expect(headers).toMatchObject({ 'User-Agent': getLDUserAgentString(platform) });
+    });
+
+    it('adds user-agent header with custom name', () => {
+      const platform = stubPlatform.defaults();
+      platform.userAgentHeaderName = 'X-Fake-User-Agent';
+      const headers = getLDHeaders(platform, { sendLDHeaders: true });
+      expect(headers).toMatchObject({ 'X-Fake-User-Agent': getLDUserAgentString(platform) });
     });
 
     it('adds wrapper info if specified, without version', () => {
       const platform = stubPlatform.defaults();
       const headers = getLDHeaders(platform, { sendLDHeaders: true, wrapperName: 'FakeSDK' });
       expect(headers).toMatchObject({
-        'X-LaunchDarkly-User-Agent': getLDUserAgentString(platform),
+        'User-Agent': getLDUserAgentString(platform),
         'X-LaunchDarkly-Wrapper': 'FakeSDK',
       });
     });
@@ -74,7 +81,7 @@ describe('utils', () => {
       const platform = stubPlatform.defaults();
       const headers = getLDHeaders(platform, { sendLDHeaders: true, wrapperName: 'FakeSDK', wrapperVersion: '9.9' });
       expect(headers).toMatchObject({
-        'X-LaunchDarkly-User-Agent': getLDUserAgentString(platform),
+        'User-Agent': getLDUserAgentString(platform),
         'X-LaunchDarkly-Wrapper': 'FakeSDK/9.9',
       });
     });

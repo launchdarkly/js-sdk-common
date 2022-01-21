@@ -118,7 +118,7 @@ describe('LDClient', () => {
         await withClient(user, { ...baseConfig, sendLDHeaders }, async client => {
           await client.waitForInitialization();
           const request = await pollServer.nextRequest();
-          expect(request.headers['x-launchdarkly-user-agent']).toEqual(
+          expect(request.headers['user-agent']).toEqual(
             shouldGetHeaders ? utils.getLDUserAgentString(platform) : undefined
           );
         });

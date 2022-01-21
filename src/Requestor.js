@@ -1,7 +1,7 @@
-import * as utils from './utils';
-import * as errors from './errors';
-import * as messages from './messages';
-import promiseCoalescer from './promiseCoalescer';
+const utils = require('./utils');
+const errors = require('./errors');
+const messages = require('./messages');
+const promiseCoalescer = require('./promiseCoalescer');
 
 const jsonContentType = 'application/json';
 
@@ -13,7 +13,7 @@ function getResponseError(result) {
   }
 }
 
-export default function Requestor(platform, options, environment) {
+function Requestor(platform, options, environment) {
   const baseUrl = options.baseUrl;
   const useReport = options.useReport;
   const withReasons = options.evaluationReasons;
@@ -107,3 +107,5 @@ export default function Requestor(platform, options, environment) {
 
   return requestor;
 }
+
+module.exports = Requestor;

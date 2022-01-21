@@ -1,11 +1,11 @@
-import EventSender from './EventSender';
-import EventSummarizer from './EventSummarizer';
-import UserFilter from './UserFilter';
-import * as errors from './errors';
-import * as messages from './messages';
-import * as utils from './utils';
+const EventSender = require('./EventSender');
+const EventSummarizer = require('./EventSummarizer');
+const UserFilter = require('./UserFilter');
+const errors = require('./errors');
+const messages = require('./messages');
+const utils = require('./utils');
 
-export default function EventProcessor(
+function EventProcessor(
   platform,
   options,
   environmentId,
@@ -171,3 +171,5 @@ export default function EventProcessor(
 
   return processor;
 }
+
+module.exports = EventProcessor;

@@ -1,4 +1,4 @@
-export default function EventEmitter(logger) {
+function EventEmitter(logger) {
   const emitter = {};
   const events = {};
 
@@ -56,3 +56,5 @@ export default function EventEmitter(logger) {
   };
   return emitter;
 }
+
+module.exports = EventEmitter;

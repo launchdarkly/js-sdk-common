@@ -29,7 +29,9 @@ import { MockHttpState } from './mockHttp';
 // diagnosticSdkData: object  // provides the "sdk" property in diagnostic events
 // diagnosticPlatformData: object  // provides the "platform" property in diagnostic events
 // diagnosticUseCombinedEvent: boolean  // true if diagnostic events should use the combined model (browser SDK)
+// uuid: () => string   // function to generate a UUID (this is done differently in browsers vs. Node)
 // userAgent: string
+// userAgentHeaderName?: string  // custom header name to use instead of User-Agent
 // version?: string  // the SDK version for the User-Agent header, if that is *not* the same as the version of launchdarkly-js-sdk-common
 
 export function defaults() {

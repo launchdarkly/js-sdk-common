@@ -1,5 +1,5 @@
-import * as messages from './messages';
-import { base64URLEncode, getLDHeaders, transformHeaders, objectHasOwnProperty } from './utils';
+const messages = require('./messages');
+const { base64URLEncode, getLDHeaders, transformHeaders, objectHasOwnProperty } = require('./utils');
 
 // The underlying event source implementation is abstracted via the platform object, which should
 // have these three properties:
@@ -16,7 +16,7 @@ import { base64URLEncode, getLDHeaders, transformHeaders, objectHasOwnProperty }
 // with no new data, the connection will be cycled.
 const streamReadTimeoutMillis = 5 * 60 * 1000; // 5 minutes
 
-export default function Stream(platform, config, environment, diagnosticsAccumulator) {
+function Stream(platform, config, environment, diagnosticsAccumulator) {
   const baseUrl = config.streamUrl;
   const logger = config.logger;
   const stream = {};
@@ -150,3 +150,5 @@ export default function Stream(platform, config, environment, diagnosticsAccumul
 
   return stream;
 }
+
+module.exports = Stream;

@@ -3,7 +3,7 @@ const logLevels = ['debug', 'info', 'warn', 'error', 'none'];
 /**
  * A simple logger that writes to stderr.
  */
-export function commonBasicLogger(options, formatFn) {
+function commonBasicLogger(options, formatFn) {
   if (options && options.destination && typeof options.destination !== 'function') {
     throw new Error('destination for basicLogger was set to a non-function');
   }
@@ -75,7 +75,7 @@ export function commonBasicLogger(options, formatFn) {
   return logger;
 }
 
-export function validateLogger(logger) {
+function validateLogger(logger) {
   logLevels.forEach(level => {
     if (level !== 'none' && (!logger[level] || typeof logger[level] !== 'function')) {
       throw new Error('Provided logger instance must support logger.' + level + '(...) method');
@@ -86,3 +86,8 @@ export function validateLogger(logger) {
     }
   });
 }
+
+module.exports = {
+  commonBasicLogger,
+  validateLogger,
+};
