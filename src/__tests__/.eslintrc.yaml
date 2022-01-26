@@ -1,6 +1,5 @@
 ---
 globals:
-  VERSION: true
   sinon: true
   expect: true
   requestor: true

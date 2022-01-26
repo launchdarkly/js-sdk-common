@@ -9,7 +9,4 @@ module.exports = {
   transform: {
     '^.+\\.js$': 'babel-jest',
   },
-  globals: {
-    VERSION: version,
-  },
 };

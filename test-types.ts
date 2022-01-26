@@ -4,8 +4,6 @@
 
 import * as ld from 'launchdarkly-js-sdk-common';
 
-var ver: string = ld.version;
-
 var userWithKeyOnly: ld.LDUser = { key: 'user' };
 var anonUserWithNoKey: ld.LDUser = { anonymous: true };
 var anonUserWithKey: ld.LDUser = { key: 'anon-user', anonymous: true };
