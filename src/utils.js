@@ -146,7 +146,7 @@ function chunkUserEventsForUrl(maxLength, events) {
 }
 
 function getLDUserAgentString(platform) {
-  const version = platform.version || VERSION;
+  const version = platform.version || '?';
   return platform.userAgent + '/' + version;
 }
 

@@ -120,11 +120,11 @@ describe('utils', () => {
   });
 
   describe('getLDUserAgentString', () => {
-    it('uses platform user-agent and package version by default', () => {
+    it('uses platform user-agent and unknown version by default', () => {
       const platform = stubPlatform.defaults();
       platform.version = undefined;
       const ua = getLDUserAgentString(platform);
-      expect(ua).toEqual('stubClient/' + VERSION);
+      expect(ua).toEqual('stubClient/?');
     });
 
     it('uses platform user-agent and platform version if provided', () => {

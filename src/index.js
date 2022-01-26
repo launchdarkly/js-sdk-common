@@ -760,13 +760,10 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
   };
 }
 
-const version = VERSION;
-
 module.exports = {
   initialize,
   commonBasicLogger,
   errors,
   messages,
   utils,
-  version,
 };

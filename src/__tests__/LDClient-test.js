@@ -2,7 +2,6 @@ import * as LDClient from '../index';
 import * as messages from '../messages';
 import * as utils from '../utils';
 
-import semverCompare from 'semver-compare';
 import { eventSink, promisifySingle, sleepAsync, withCloseable, AsyncQueue } from 'launchdarkly-js-test-helpers';
 
 import { respond, respondJson } from './mockHttp';
@@ -104,13 +103,6 @@ describe('LDClient', () => {
           expect(req.path).toMatch(/withReasons=true/);
         });
       });
-    });
-
-    it('should contain package version', () => {
-      const version = LDClient.version;
-      // All client bundles above 1.0.7 should contain package version
-      const result = semverCompare(version, '1.0.6');
-      expect(result).toEqual(1);
     });
 
     async function verifyCustomHeader(sendLDHeaders, shouldGetHeaders) {

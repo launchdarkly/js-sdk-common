@@ -2,12 +2,6 @@
  * Basic LaunchDarkly JavaScript client interfaces, shared between the browser SDK and the Electron SDK.
  */
 declare module 'launchdarkly-js-sdk-common' {
-
-  /**
-   * The current version string of the SDK.
-   */
-  export const version: string;
-
   /**
    * The types of values a feature flag can have.
    *

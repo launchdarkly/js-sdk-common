@@ -40,8 +40,6 @@
     "launchdarkly-js-test-helpers": "1.1.0",
     "prettier": "1.11.1",
     "readline-sync": "^1.4.9",
-    "semver": "^5.5.0",
-    "semver-compare": "^1.0.0",
     "typescript": "~4.4.4"
   },
   "dependencies": {
