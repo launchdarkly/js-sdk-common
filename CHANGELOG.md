@@ -2,6 +2,10 @@
 
 All notable changes to the `launchdarkly-js-sdk-common` package will be documented in this file. Changes that affect the dependent SDKs such as `launchdarkly-js-client-sdk` should also be logged in those projects, in the next release that uses the updated version of this package. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [4.0.2] - 2022-01-25
+### Removed:
+- Removed the `version` export which was originally a constant inserted by the Rollup build, but was no longer usable since Rollup is no longer being used. The SDKs never used this export, since they have `version` properties of their own; the version string of `launchdarkly-js-sdk-common` was never meant to be exposed to applications.
+
 ## [4.0.1] - 2022-01-21
 ### Changed:
 - This package is now published as a regular Node module. Previously, it was published as minified bundles created by Rollup. There was no need for this since Rollup is only needed for web code, and the `js-client-sdk` build already runs Rollup to embed the `js-sdk-common` code. Using Rollup caused the platform-dependent behavior of `uuid` to fail because the code for only one platform (browser or Node) was embedded.
