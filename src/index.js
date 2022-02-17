@@ -386,6 +386,14 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
     if (!ident.getUser()) {
       return;
     }
+    const tryParseData = jsonData => {
+      try {
+        return JSON.parse(jsonData);
+      } catch (err) {
+        emitter.maybeReportError(new errors.LDInvalidDataError(messages.invalidData()));
+        return undefined;
+      }
+    };
     stream.connect(ident.getUser(), hash, {
       ping: function() {
         logger.debug(messages.debugStreamPing());
@@ -404,12 +412,20 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
           });
       },
       put: function(e) {
-        const data = JSON.parse(e.data);
+        const data = tryParseData(e.data);
+        if (!data) {
+          return;
+        }
         logger.debug(messages.debugStreamPut());
-        replaceAllFlags(data); // don't wait for this Promise to be resolved
+        replaceAllFlags(data);
+        // Don't wait for this Promise to be resolved; note that replaceAllFlags is guaranteed
+        // never to have an unhandled rejection
       },
       patch: function(e) {
-        const data = JSON.parse(e.data);
+        const data = tryParseData(e.data);
+        if (!data) {
+          return;
+        }
         // If both the flag and the patch have a version property, then the patch version must be
         // greater than the flag version for us to accept the patch.  If either one has no version
         // then the patch always succeeds.
@@ -432,7 +448,10 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
         }
       },
       delete: function(e) {
-        const data = JSON.parse(e.data);
+        const data = tryParseData(e.data);
+        if (!data) {
+          return;
+        }
         if (!flags[data.key] || flags[data.key].version < data.version) {
           logger.debug(messages.debugStreamDelete(data.key));
           const mods = {};

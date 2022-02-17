@@ -1,3 +1,4 @@
+import * as messages from '../messages';
 import * as utils from '../utils';
 
 import { AsyncQueue, eventSink, sleepAsync, withCloseable } from 'launchdarkly-js-test-helpers';
@@ -648,6 +649,38 @@ describe('LDClient streaming', () => {
         const storageData = JSON.parse(platform.testing.getLocalStorageImmediately(lsKey));
         expect(storageData).toMatchObject({ flagKey: { version: 1, deleted: true } });
       });
+    });
+
+    describe('emits error if malformed JSON is received', () => {
+      const doMalformedJsonEventTest = async (eventName, eventData) => {
+        // First, verify that there isn't an unhandled rejection if we're not listening for an error
+        await withClientAndServer({}, async client => {
+          await client.waitForInitialization();
+          client.setStreaming(true);
+
+          const stream = await expectStreamConnecting(fullStreamUrlWithUser);
+          stream.eventSource.mockEmit(eventName, { data: eventData });
+        });
+
+        // Then, repeat the test using a listener to observe the error event
+        await withClientAndServer({}, async client => {
+          const errorEvents = new AsyncQueue();
+          client.on('error', e => errorEvents.add(e));
+
+          await client.waitForInitialization();
+          client.setStreaming(true);
+
+          const stream = await expectStreamConnecting(fullStreamUrlWithUser);
+          stream.eventSource.mockEmit(eventName, { data: eventData });
+
+          const e = await errorEvents.take();
+          expect(e.message).toEqual(messages.invalidData());
+        });
+      };
+
+      it('in put event', async () => doMalformedJsonEventTest('put', '{no'));
+      it('in patch event', async () => doMalformedJsonEventTest('patch', '{no'));
+      it('in delete event', async () => doMalformedJsonEventTest('delete', '{no'));
     });
 
     it('reconnects to stream if the user changes', async () => {
