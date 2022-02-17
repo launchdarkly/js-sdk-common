@@ -68,6 +68,10 @@ const invalidUser = function() {
   return 'Invalid user specified.' + docLink;
 };
 
+const invalidData = function() {
+  return 'Invalid data received from LaunchDarkly; connection may have been interrupted';
+};
+
 const bootstrapOldFormat = function() {
   return (
     'LaunchDarkly client was initialized with bootstrap data that did not include flag metadata. ' +
@@ -201,6 +205,7 @@ module.exports = {
   httpUnavailable,
   identifyDisabled,
   invalidContentType,
+  invalidData,
   invalidKey,
   invalidUser,
   localStorageUnavailable,
