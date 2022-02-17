@@ -2,6 +2,10 @@
 
 All notable changes to the `launchdarkly-js-sdk-common` package will be documented in this file. Changes that affect the dependent SDKs such as `launchdarkly-js-client-sdk` should also be logged in those projects, in the next release that uses the updated version of this package. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [4.0.3] - 2022-02-16
+### Fixed:
+- If the SDK receives invalid JSON data from a streaming connection (possibly as a result of the connection being cut off), it now uses its regular error-handling logic: the error is emitted as an `error` event or, if there are no `error` event listeners, it is logged. Previously, it would be thrown as an unhandled exception.
+
 ## [4.0.2] - 2022-01-25
 ### Removed:
 - Removed the `version` export which was originally a constant inserted by the Rollup build, but was no longer usable since Rollup is no longer being used. The SDKs never used this export, since they have `version` properties of their own; the version string of `launchdarkly-js-sdk-common` was never meant to be exposed to applications.
