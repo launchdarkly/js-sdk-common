@@ -2,6 +2,10 @@
 
 All notable changes to the `launchdarkly-js-sdk-common` package will be documented in this file. Changes that affect the dependent SDKs such as `launchdarkly-js-client-sdk` should also be logged in those projects, in the next release that uses the updated version of this package. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [3.5.1] - 2022-02-17
+### Fixed:
+- If the SDK receives invalid JSON data from a streaming connection (possibly as a result of the connection being cut off), it now uses its regular error-handling logic: the error is emitted as an `error` event or, if there are no `error` event listeners, it is logged. Previously, it would be thrown as an unhandled exception.
+
 ## [3.5.0] - 2022-01-14
 ### Added:
 - New configurable logger factory `commonBasicLogger` and `BasicLoggerOptions`. The `commonBasicLogger` method is not intended to be exported directly in the SDKs, but wrapped to provide platform-specific behavior.
