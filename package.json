@@ -9,6 +9,7 @@
   "scripts": {
     "lint": "eslint --format 'node_modules/eslint-formatter-pretty' --ignore-path .eslintignore",
     "lint:all": "eslint --format 'node_modules/eslint-formatter-pretty' --ignore-path .eslintignore src",
+    "lint-fix:all": "eslint --fix --format 'node_modules/eslint-formatter-pretty' --ignore-path .eslintignore src",
     "format": "npm run format:md && npm run format:js",
     "format:md": "prettier --parser markdown --ignore-path .prettierignore --write '*.md'",
     "format:js": "prettier --ignore-path .prettierignore --write 'src/**/*.js'",
