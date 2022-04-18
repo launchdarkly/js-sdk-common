@@ -67,7 +67,7 @@ describe('UserFilter', () => {
   });
 
   it('hides some attributes if privateAttributeNames is set', () => {
-    const uf = UserFilter({ privateAttributeNames: ['firstName', 'bizzle'] });
+    const uf = UserFilter({ privateAttributes: ['firstName', 'bizzle'] });
     expect(uf.filterUser(user)).toEqual(userWithSomeAttrsHidden);
   });
 
@@ -77,7 +77,7 @@ describe('UserFilter', () => {
   });
 
   it('looks at both per-user privateAttrs and global config', () => {
-    const uf = UserFilter({ privateAttributeNames: ['firstName', 'bizzle'] });
+    const uf = UserFilter({ privateAttributes: ['firstName', 'bizzle'] });
     expect(uf.filterUser(userSpecifyingOwnPrivateAttr)).toEqual(userWithAllAttrsHidden);
   });
 

@@ -178,7 +178,7 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
   }
 
   function sendFlagEvent(key, detail, defaultValue, includeReason) {
-    const user = ident.getUser();
+    const user = ident.getContext();
     const now = new Date();
     const value = detail ? detail.value : null;
     if (!options.allowFrequentDuplicateEvents) {
@@ -258,8 +258,8 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
     );
   }
 
-  function getUser() {
-    return ident.getUser();
+  function getContext() {
+    return ident.getContext();
   }
 
   function flush(onDone) {
@@ -360,7 +360,7 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
       logger.warn(messages.unknownCustomEventKey(key));
     }
 
-    const user = ident.getUser();
+    const user = ident.getContext();
     const e = {
       kind: 'custom',
       key: key,
@@ -383,7 +383,7 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
 
   function connectStream() {
     streamActive = true;
-    if (!ident.getUser()) {
+    if (!ident.getContext()) {
       return;
     }
     const tryParseData = jsonData => {
@@ -394,16 +394,16 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
         return undefined;
       }
     };
-    stream.connect(ident.getUser(), hash, {
+    stream.connect(ident.getContext(), hash, {
       ping: function() {
         logger.debug(messages.debugStreamPing());
-        const userAtTimeOfPingEvent = ident.getUser();
+        const userAtTimeOfPingEvent = ident.getContext();
         requestor
           .fetchFlagSettings(userAtTimeOfPingEvent, hash)
           .then(requestedFlags => {
             // Check whether the current user is still the same - we don't want to overwrite the flags if
             // the application has called identify() while this request was in progress
-            if (utils.deepEquals(userAtTimeOfPingEvent, ident.getUser())) {
+            if (utils.deepEquals(userAtTimeOfPingEvent, ident.getContext())) {
               replaceAllFlags(requestedFlags || {});
             }
           })
@@ -646,7 +646,7 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
       if (storedFlags === null || storedFlags === undefined) {
         flags = {};
         return requestor
-          .fetchFlagSettings(ident.getUser(), hash)
+          .fetchFlagSettings(ident.getContext(), hash)
           .then(requestedFlags => replaceAllFlags(requestedFlags || {}))
           .then(signalSuccessfulInit)
           .catch(err => {
@@ -661,7 +661,7 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
         utils.onNextTick(signalSuccessfulInit);
 
         return requestor
-          .fetchFlagSettings(ident.getUser(), hash)
+          .fetchFlagSettings(ident.getContext(), hash)
           .then(requestedFlags => replaceAllFlags(requestedFlags))
           .catch(err => emitter.maybeReportError(err));
       }
@@ -670,7 +670,7 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
 
   function finishInitWithPolling() {
     return requestor
-      .fetchFlagSettings(ident.getUser(), hash)
+      .fetchFlagSettings(ident.getContext(), hash)
       .then(requestedFlags => {
         flags = requestedFlags || {};
         // Note, we don't need to call updateSettings here because local storage and change events are not relevant
@@ -751,7 +751,7 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
     waitForInitialization: () => initializationStateTracker.getInitializationPromise(),
     waitUntilReady: () => initializationStateTracker.getReadyPromise(),
     identify: identify,
-    getUser: getUser,
+    getContext: getContext,
     variation: variation,
     variationDetail: variationDetail,
     track: track,

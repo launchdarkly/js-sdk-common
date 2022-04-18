@@ -7,7 +7,7 @@ import * as ld from 'launchdarkly-js-sdk-common';
 var userWithKeyOnly: ld.LDUser = { key: 'user' };
 var anonUserWithNoKey: ld.LDUser = { anonymous: true };
 var anonUserWithKey: ld.LDUser = { key: 'anon-user', anonymous: true };
-var user: ld.LDUser = {
+var user: ld.LDContext = {
   key: 'user',
   secondary: 'otherkey',
   name: 'name',
@@ -41,8 +41,7 @@ var allBaseOptions: ld.LDOptionsBase = {
   evaluationReasons: true,
   sendEvents: true,
   allAttributesPrivate: true,
-  privateAttributeNames: [ 'x' ],
-  inlineUsersInEvents: true,
+  privateAttributes: [ 'x' ],
   allowFrequentDuplicateEvents: true,
   sendEventsOnlyForVariation: true,
   flushInterval: 1,
@@ -59,9 +58,7 @@ client.identify(user).then(() => {});
 client.identify(user, undefined, () => {});
 client.identify(user, 'hash').then(() => {});
 
-client.alias(user, anonUserWithKey);
-
-var user: ld.LDUser = client.getUser();
+var user: ld.LDContext = client.getContext();
 
 client.flush(() => {});
 client.flush().then(() => {});

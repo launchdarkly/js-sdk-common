@@ -30,7 +30,7 @@ const baseOptionDefs = {
   samplingInterval: { default: 0, minimum: 0 },
   streamReconnectDelay: { default: 1000, minimum: 0 },
   allAttributesPrivate: { default: false },
-  privateAttributeNames: { default: [] },
+  privateAttributes: { default: [] },
   bootstrap: { type: 'string|object' },
   diagnosticRecordingInterval: { default: 900000, minimum: 2000 },
   diagnosticOptOut: { default: false },

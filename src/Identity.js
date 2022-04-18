@@ -12,7 +12,7 @@ function Identity(initialUser, onChange) {
     }
   };
 
-  ident.getUser = function() {
+  ident.getContext = function() {
     return user ? utils.clone(user) : null;
   };
 

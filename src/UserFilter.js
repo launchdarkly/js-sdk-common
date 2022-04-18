@@ -9,7 +9,7 @@ const utils = require('./utils');
 function UserFilter(config) {
   const filter = {};
   const allAttributesPrivate = config.allAttributesPrivate;
-  const privateAttributeNames = config.privateAttributeNames || [];
+  const privateAttributeNames = config.privateAttributes || [];
   const ignoreAttrs = { key: true, custom: true, anonymous: true };
   const allowedTopLevelAttrs = {
     key: true,

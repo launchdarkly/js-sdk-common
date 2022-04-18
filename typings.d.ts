@@ -103,9 +103,9 @@ declare module 'launchdarkly-js-sdk-common' {
      * Whether or not to use the REPORT verb to fetch flag settings.
      *
      * If this is true, flag settings will be fetched with a REPORT request
-     * including a JSON entity body with the user object.
+     * including a JSON entity body with the context object.
      *
-     * Otherwise (by default) a GET request will be issued with the user passed as
+     * Otherwise (by default) a GET request will be issued with the context passed as
      * a base64 URL-encoded path parameter.
      *
      * Do not use unless advised by LaunchDarkly.
@@ -146,7 +146,7 @@ declare module 'launchdarkly-js-sdk-common' {
     sendEvents?: boolean;
 
     /**
-     * Whether all user attributes (except the user key) should be marked as private, and
+     * Whether all context attributes (except the context key) should be marked as private, and
      * not sent to LaunchDarkly in analytics events.
      *
      * By default, this is false.
@@ -154,19 +154,11 @@ declare module 'launchdarkly-js-sdk-common' {
     allAttributesPrivate?: boolean;
 
     /**
-     * The names of user attributes that should be marked as private, and not sent
-     * to LaunchDarkly in analytics events. You can also specify this on a per-user basis
-     * with [[LDUser.privateAttributeNames]].
+     * The names of context attributes that should be marked as private, and not sent
+     * to LaunchDarkly in analytics events. You can also specify this on a per-context basis
+     * with [[LDContextMeta.privateAttributes]].
      */
-    privateAttributeNames?: Array<string>;
-
-    /**
-     * Whether to include full user details in every analytics event.
-     *
-     * The default is `false`: events will only include the user key, except for one "index" event
-     * that provides the full details for the user.
-     */
-    inlineUsersInEvents?: boolean;
+    privateAttributes?: Array<string>;
 
     /**
      * Whether or not to send an analytics event for a flag evaluation even if the same flag was
@@ -247,15 +239,114 @@ declare module 'launchdarkly-js-sdk-common' {
      * If `wrapperName` is unset, this field will be ignored.
      */
     wrapperVersion?: string;
+  }
+
+  /**
+   * 
+   * TKTK
+   * 
+   * Meta attributes are used to control behavioral aspects of the Context.
+   * They cannot be addressed in targetting rules.
+   */
+   export interface LDContextMeta {
+    /**
+     * If true, the context will _not_ appear on the Contexts page in the LaunchDarkly dashboard.
+     */
+    transient?: boolean;
 
     /**
-     * Whether to disable the automatic sending of an alias event when [[identify]] is
-     * called with a non-anonymous user when the previous user is anonymous.
+     * An optional secondary key for a context.
      *
-     * The default value is `false`.
+     * TKTK
+     * 
+     * This affects [feature flag targeting](https://docs.launchdarkly.com/home/flags/targeting-users#targeting-rules-based-on-user-attributes) 
+     * as follows: if you have chosen to bucket context by a specific attribute, the secondary key (if set)
+     * is used to further distinguish between contexts which are otherwise identical according to that attribute.
      */
-    autoAliasingOptOut?: boolean;
+    secondary?: string;
+
+    /**
+     * 
+     * TKTK
+     * 
+     * Specifies a list of attribute names (either built-in or custom) which should be
+     * marked as private, and not sent to LaunchDarkly in analytics events. This is in
+     * addition to any private attributes designated in the global configuration
+     * with [[LDOptions.privateAttributes]] or [[LDOptions.allAttributesPrivate]].
+     */
+    privateAttributes?: string[];
   }
+
+  /**
+   * TKTK
+   */
+  interface LDContextCommon {
+      /**
+       * A unique string identifying a context.
+       */
+      key: string;
+
+      /**
+       * The context's name.
+       *
+       * You can search for contexts on the Contexts page by name.
+       */
+      name?: string;
+
+      /**
+       * 
+       * TODO: U2C We will need some uniform description for this.
+       * 
+       * Meta attributes are used to control behavioral aspects of the Context.
+       * They cannot be addressed in targetting rules.
+       */
+      _meta?: LDContextMeta;
+
+      /**
+       * Any additional attributes associated with the context.
+       */
+      [attribute: string]: any;
+  }
+
+
+  /**
+   * 
+   * TTKTK
+   * 
+   * A single-kind context.
+   */
+  interface LDSingleKindContext extends LDContextCommon {
+      /**
+       * The kind of the context.
+       */
+      kind: string;
+  }
+
+  /**
+   * 
+   * TKTK
+   * 
+   * A multi-kind context.
+   */
+  interface LDMultiKindContext {
+      /**
+       * The kind of the context.
+       */
+      kind: "multi",
+
+      /**
+       * The contexts which compose this multi-kind context.
+       * 
+       * These should be of type LDContextCommon. "multi" is to allow
+       * for the top level "kind" attribute.
+       */
+      [kind: string]: "multi" | LDContextCommon;
+  }
+
+  /**
+   * A LaunchDarkly context object.
+   */
+  export type LDContext = LDUser | LDSingleKindContext | LDMultiKindContext;
 
   /**
    * A LaunchDarkly user object.
@@ -351,9 +442,9 @@ declare module 'launchdarkly-js-sdk-common' {
      * The general category of the reason:
      *
      * - `'OFF'`: The flag was off and therefore returned its configured off value.
-     * - `'FALLTHROUGH'`: The flag was on but the user did not match any targets or rules.
-     * - `'TARGET_MATCH'`: The user key was specifically targeted for this flag.
-     * - `'RULE_MATCH'`: the user matched one of the flag's rules.
+     * - `'FALLTHROUGH'`: The flag was on but the context did not match any targets or rules.
+     * - `'TARGET_MATCH'`: The context key was specifically targeted for this flag.
+     * - `'RULE_MATCH'`: the context matched one of the flag's rules.
      * - `'PREREQUISITE_FAILED'`: The flag was considered off because it had at least one
      *   prerequisite flag that either was off or did not return the desired variation.
      * - `'ERROR'`: The flag could not be evaluated, e.g. because it does not exist or due
@@ -486,39 +577,39 @@ declare module 'launchdarkly-js-sdk-common' {
     waitForInitialization(): Promise<void>;
 
     /**
-     * Identifies a user to LaunchDarkly.
+     * Identifies a context to LaunchDarkly.
      *
-     * Unlike the server-side SDKs, the client-side JavaScript SDKs maintain a current user state,
-     * which is set at initialization time. You only need to call `identify()` if the user has changed
+     * Unlike the server-side SDKs, the client-side JavaScript SDKs maintain a current context state,
+     * which is set at initialization time. You only need to call `identify()` if the context has changed
      * since then.
      *
-     * Changing the current user also causes all feature flag values to be reloaded. Until that has
-     * finished, calls to [[variation]] will still return flag values for the previous user. You can
+     * Changing the current context also causes all feature flag values to be reloaded. Until that has
+     * finished, calls to [[variation]] will still return flag values for the previous context. You can
      * use a callback or a Promise to determine when the new flag values are available.
      *
-     * @param user
-     *   The user properties. Must contain at least the `key` property.
+     * @param context
+     *   The context properties. Must contain at least the `key` property.
      * @param hash
-     *   The signed user key if you are using [Secure Mode](https://docs.launchdarkly.com/sdk/features/secure-mode#configuring-secure-mode-in-the-javascript-client-side-sdk).
+     *   The signed context key if you are using [Secure Mode](https://docs.launchdarkly.com/sdk/features/secure-mode#configuring-secure-mode-in-the-javascript-client-side-sdk).
      * @param onDone
-     *   A function which will be called as soon as the flag values for the new user are available,
+     *   A function which will be called as soon as the flag values for the new context are available,
      *   with two parameters: an error value (if any), and an [[LDFlagSet]] containing the new values
      *   (which can also be obtained by calling [[variation]]). If the callback is omitted, you will
      *   receive a Promise instead.
      * @returns
      *   If you provided a callback, then nothing. Otherwise, a Promise which resolve once the flag
-     *   values for the new user are available, providing an [[LDFlagSet]] containing the new values
+     *   values for the new context are available, providing an [[LDFlagSet]] containing the new values
      *   (which can also be obtained by calling [[variation]]).
      */
-    identify(user: LDUser, hash?: string, onDone?: (err: Error | null, flags: LDFlagSet | null) => void): Promise<LDFlagSet>;
+    identify(context: LDContext, hash?: string, onDone?: (err: Error | null, flags: LDFlagSet | null) => void): Promise<LDFlagSet>;
 
     /**
-     * Returns the client's current user.
+     * Returns the client's current context.
      *
-     * This is the user that was most recently passed to [[identify]], or, if [[identify]] has never
-     * been called, the initial user specified when the client was created.
+     * This is the context that was most recently passed to [[identify]], or, if [[identify]] has never
+     * been called, the initial context specified when the client was created.
      */
-    getUser(): LDUser;
+    getContext(): LDContext;
 
     /**
      * Flushes all pending analytics events.
@@ -538,10 +629,10 @@ declare module 'launchdarkly-js-sdk-common' {
     flush(onDone?: () => void): Promise<void>;
 
     /**
-     * Determines the variation of a feature flag for the current user.
+     * Determines the variation of a feature flag for the current context.
      *
      * In the client-side JavaScript SDKs, this is always a fast synchronous operation because all of
-     * the feature flag values for the current user have already been loaded into memory.
+     * the feature flag values for the current context have already been loaded into memory.
      *
      * @param key
      *   The unique key of the feature flag.
@@ -553,7 +644,7 @@ declare module 'launchdarkly-js-sdk-common' {
     variation(key: string, defaultValue?: LDFlagValue): LDFlagValue;
 
     /**
-     * Determines the variation of a feature flag for a user, along with information about how it was
+     * Determines the variation of a feature flag for a context, along with information about how it was
      * calculated.
      *
      * Note that this will only work if you have set `evaluationExplanations` to true in [[LDOptions]].
@@ -602,7 +693,7 @@ declare module 'launchdarkly-js-sdk-common' {
      *   The callback parameter is an Error object. If you do not listen for "error"
      *   events, then the errors will be logged with `console.log()`.
      * - `"change"`: The client has received new feature flag data. This can happen either
-     *   because you have switched users with [[identify]], or because the client has a
+     *   because you have switched contexts with [[identify]], or because the client has a
      *   stream connection and has received a live change to a flag value (see below).
      *   The callback parameter is an [[LDFlagChangeset]].
      * - `"change:FLAG-KEY"`: The client has received a new value for a specific flag
@@ -657,22 +748,7 @@ declare module 'launchdarkly-js-sdk-common' {
     track(key: string, data?: any, metricValue?: number): void;
 
     /**
-     * Associates two users for analytics purposes.
-     *
-     * This can be helpful in the situation where a person is represented by multiple
-     * LaunchDarkly users. This may happen, for example, when a person initially logs into
-     * an application-- the person might be represented by an anonymous user prior to logging
-     * in and a different user after logging in, as denoted by a different user key.
-     *
-     * @param user
-     *   The newly identified user.
-     * @param previousUser
-     *   The previously identified user.
-     */
-    alias(user: LDUser, previousUser: LDUser): void;
-
-    /**
-     * Returns a map of all available flags to the current user's values.
+     * Returns a map of all available flags to the current context's values.
      *
      * @returns
      *   An object in which each key is a feature flag key and each value is the flag value.

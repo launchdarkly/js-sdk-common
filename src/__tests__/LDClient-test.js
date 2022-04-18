@@ -127,7 +127,7 @@ describe('LDClient', () => {
       await withServers(async baseConfig => {
         await withClient(numericUser, baseConfig, async client => {
           await client.waitForInitialization();
-          expect(client.getUser()).toEqual(stringifiedNumericUser);
+          expect(client.getContext()).toEqual(stringifiedNumericUser);
         });
       });
     });
@@ -139,14 +139,14 @@ describe('LDClient', () => {
         await withClient(anonUser, baseConfig, async client0 => {
           await client0.waitForInitialization();
 
-          generatedUser = client0.getUser();
+          generatedUser = client0.getContext();
           expect(generatedUser.key).toEqual(expect.anything());
           expect(generatedUser).toMatchObject(anonUser);
         });
         await withClient(anonUser, baseConfig, async client1 => {
           await client1.waitForInitialization();
 
-          const newUser1 = client1.getUser();
+          const newUser1 = client1.getContext();
           expect(newUser1).toEqual(generatedUser);
         });
       });
@@ -161,7 +161,7 @@ describe('LDClient', () => {
         await withClient(anonUser, baseConfig, async client0 => {
           await client0.waitForInitialization();
 
-          generatedUser = client0.getUser();
+          generatedUser = client0.getContext();
           expect(generatedUser.key).toEqual(expect.anything());
           expect(generatedUser).toMatchObject(anonUser);
         });
@@ -169,7 +169,7 @@ describe('LDClient', () => {
         await withClient(anonUser, baseConfig, async client1 => {
           await client1.waitForInitialization();
 
-          const newUser1 = client1.getUser();
+          const newUser1 = client1.getContext();
           expect(newUser1.key).toEqual(expect.anything());
           expect(newUser1.key).not.toEqual(generatedUser.key);
           expect(newUser1).toMatchObject(anonUser);
@@ -466,12 +466,12 @@ describe('LDClient', () => {
 
           const identifyPromise = client.identify(user2);
           await sleepAsync(100); // sleep to jump some async ticks
-          expect(client.getUser()).toEqual(user);
+          expect(client.getContext()).toEqual(user);
 
           signal.add();
           await identifyPromise;
 
-          expect(client.getUser()).toEqual(user2);
+          expect(client.getContext()).toEqual(user2);
         });
       });
     });
@@ -533,7 +533,7 @@ describe('LDClient', () => {
           const anonUser = { anonymous: true, country: 'US' };
           await client.identify(anonUser);
 
-          const newUser = client.getUser();
+          const newUser = client.getContext();
           expect(newUser.key).toEqual(expect.anything());
           expect(newUser).toMatchObject(anonUser);
         });
