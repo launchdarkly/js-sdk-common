@@ -75,7 +75,7 @@ export default function Requestor(platform, options, environment) {
   // Performs a GET request to an arbitrary path under baseUrl. Returns a Promise which will resolve
   // with the parsed JSON response, or will be rejected if the request failed.
   requestor.fetchJSON = function(path) {
-    return fetchJSON(baseUrl + path, null);
+    return fetchJSON(utils.appendUrlPath(baseUrl, path), null);
   };
 
   // Requests the current state of all flags for the given user from LaunchDarkly. Returns a Promise
