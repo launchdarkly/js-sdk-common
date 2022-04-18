@@ -179,20 +179,23 @@ function objectHasOwnProperty(object, name) {
   return Object.prototype.hasOwnProperty.call(object, name);
 }
 
-function sanitizeUser(user) {
-  if (!user) {
-    return user;
+function sanitizeContext(context) {
+  if (!context) {
+    return context;
   }
-  let newUser;
-  for (const i in userAttrsToStringify) {
-    const attr = userAttrsToStringify[i];
-    const value = user[attr];
-    if (value !== undefined && typeof value !== 'string') {
-      newUser = newUser || { ...user };
-      newUser[attr] = String(value);
-    }
+  let newContext;
+  // Only stringify user attributes for legacy users.
+  if (context.kind === null || context.kind === undefined) {
+    userAttrsToStringify.forEach(attr => {
+      const value = context[attr];
+      if (value !== undefined && typeof value !== 'string') {
+        newContext = newContext || { ...context };
+        newContext[attr] = String(value);
+      }
+    });
   }
-  return newUser || user;
+
+  return newContext || context;
 }
 
 module.exports = {
@@ -206,7 +209,7 @@ module.exports = {
   getLDUserAgentString,
   objectHasOwnProperty,
   onNextTick,
-  sanitizeUser,
+  sanitizeContext,
   transformHeaders,
   transformValuesToVersionedValues,
   transformVersionedValuesToValues,

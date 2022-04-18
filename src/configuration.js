@@ -20,7 +20,6 @@ const baseOptionDefs = {
   streaming: { type: 'boolean' }, // default for this is undefined, which is different from false
   sendLDHeaders: { default: true },
   requestHeaderTransform: { type: 'function' },
-  inlineUsersInEvents: { default: false },
   allowFrequentDuplicateEvents: { default: false },
   sendEventsOnlyForVariation: { default: false },
   useReport: { default: false },
@@ -37,7 +36,6 @@ const baseOptionDefs = {
   wrapperName: { type: 'string' },
   wrapperVersion: { type: 'string' },
   stateProvider: { type: 'object' }, // not a public option, used internally
-  autoAliasingOptOut: { default: false },
 };
 
 function validate(options, emitter, extraOptionDefs, logger) {

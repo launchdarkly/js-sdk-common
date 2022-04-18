@@ -14,6 +14,7 @@ const { commonBasicLogger } = require('./loggers');
 const utils = require('./utils');
 const errors = require('./errors');
 const messages = require('./messages');
+const { getCanonicalKey } = require('./context');
 
 const changeEvent = 'change';
 const internalChangeEvent = 'internal-change';
@@ -27,7 +28,7 @@ const internalChangeEvent = 'internal-change';
 //
 // For definitions of the API in the platform object, see stubPlatform.js in the test code.
 
-function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
+function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
   const logger = createLogger();
   const emitter = EventEmitter(logger);
   const initializationStateTracker = InitializationStateTracker(emitter);
@@ -88,7 +89,7 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
   const ident = Identity(null, onIdentifyChange);
   const userValidator = UserValidator(persistentStorage);
   const persistentFlagStore = persistentStorage.isEnabled()
-    ? new PersistentFlagStore(persistentStorage, environment, hash, ident, logger)
+    ? PersistentFlagStore(persistentStorage, environment, hash, ident, logger)
     : null;
 
   function createLogger() {
@@ -133,56 +134,52 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
 
   function enqueueEvent(event) {
     if (!environment) {
-      // We're in paired mode and haven't been initialized with an environment or user yet
+      // We're in paired mode and haven't been initialized with an environment or context yet
       return;
     }
     if (stateProvider && stateProvider.enqueueEvent && stateProvider.enqueueEvent(event)) {
       return; // it'll be handled elsewhere
     }
-    if (event.kind !== 'alias') {
-      if (!event.user) {
-        if (firstEvent) {
-          logger.warn(messages.eventWithoutUser());
-          firstEvent = false;
-        }
-        return;
+
+    if (!event.context) {
+      if (firstEvent) {
+        logger.warn(messages.eventWithoutUser());
+        firstEvent = false;
       }
-      firstEvent = false;
+      return;
     }
+    firstEvent = false;
+
     if (shouldEnqueueEvent()) {
       logger.debug(messages.debugEnqueueingEvent(event.kind));
       events.enqueue(event);
     }
   }
 
-  function onIdentifyChange(user, previousUser) {
-    sendIdentifyEvent(user);
-    if (!options.autoAliasingOptOut && previousUser && previousUser.anonymous && user && !user.anonymous) {
-      alias(user, previousUser);
-    }
+  function onIdentifyChange(context) {
+    sendIdentifyEvent(context);
   }
 
-  function sendIdentifyEvent(user) {
+  function sendIdentifyEvent(context) {
     if (stateProvider) {
       // In paired mode, the other client is responsible for sending identify events
       return;
     }
-    if (user) {
+    if (context) {
       enqueueEvent({
         kind: 'identify',
-        key: user.key,
-        user: user,
+        context,
         creationDate: new Date().getTime(),
       });
     }
   }
 
   function sendFlagEvent(key, detail, defaultValue, includeReason) {
-    const user = ident.getContext();
+    const context = ident.getContext();
     const now = new Date();
     const value = detail ? detail.value : null;
     if (!options.allowFrequentDuplicateEvents) {
-      const cacheKey = JSON.stringify(value) + (user && user.key ? user.key : '') + key; // see below
+      const cacheKey = JSON.stringify(value) + (getCanonicalKey(context) || '') + key;
       const cached = seenRequests[cacheKey];
       // cache TTL is five minutes
       if (cached && now - cached < 300000) {
@@ -194,15 +191,12 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
     const event = {
       kind: 'feature',
       key: key,
-      user: user,
+      context,
       value: value,
       variation: detail ? detail.variationIndex : null,
       default: defaultValue,
       creationDate: now.getTime(),
     };
-    if (user && user.anonymous) {
-      event.contextKind = userContextKind(user);
-    }
     const flag = flags[key];
     if (flag) {
       event.version = flag.flagVersion ? flag.flagVersion : flag.version;
@@ -325,26 +319,6 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
     return user.anonymous ? 'anonymousUser' : 'user';
   }
 
-  function alias(user, previousUser) {
-    if (stateProvider) {
-      // In paired mode, the other client is responsible for sending alias events
-      return;
-    }
-
-    if (!user || !previousUser) {
-      return;
-    }
-
-    enqueueEvent({
-      kind: 'alias',
-      key: user.key,
-      contextKind: userContextKind(user),
-      previousKey: previousUser.key,
-      previousContextKind: userContextKind(previousUser),
-      creationDate: new Date().getTime(),
-    });
-  }
-
   function track(key, data, metricValue) {
     if (typeof key !== 'string') {
       emitter.maybeReportError(new errors.LDInvalidEventKeyError(messages.unknownCustomEventKey(key)));
@@ -360,16 +334,16 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
       logger.warn(messages.unknownCustomEventKey(key));
     }
 
-    const user = ident.getContext();
+    const context = ident.getContext();
     const e = {
       kind: 'custom',
       key: key,
-      user: user,
+      context,
       url: platform.getCurrentUrl(),
       creationDate: new Date().getTime(),
     };
-    if (user && user.anonymous) {
-      e.contextKind = userContextKind(user);
+    if (context && context.anonymous) {
+      e.contextKind = userContextKind(context);
     }
     // Note, check specifically for null/undefined because it is legal to set these fields to a falsey value.
     if (data !== null && data !== undefined) {
@@ -628,7 +602,7 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
     if (!env) {
       return Promise.reject(new errors.LDInvalidEnvironmentIdError(messages.environmentNotSpecified()));
     }
-    return userValidator.validateUser(user).then(realUser => {
+    return userValidator.validateUser(context).then(realUser => {
       ident.setUser(realUser);
       if (typeof options.bootstrap === 'object') {
         // flags have already been set earlier
@@ -755,7 +729,6 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
     variation: variation,
     variationDetail: variationDetail,
     track: track,
-    alias: alias,
     on: on,
     off: off,
     setStreaming: setStreaming,

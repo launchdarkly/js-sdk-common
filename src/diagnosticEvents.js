@@ -194,7 +194,6 @@ function DiagnosticsManager(
       reconnectTimeMillis: config.streamReconnectDelay,
       streamingDisabled: !streamingEnabled,
       allAttributesPrivate: !!config.allAttributesPrivate,
-      inlineUsersInEvents: !!config.inlineUsersInEvents,
       diagnosticRecordingIntervalMillis: config.diagnosticRecordingInterval,
       // The following extra properties are only provided by client-side JS SDKs:
       usingSecureMode: !!config.hash,
@@ -202,7 +201,6 @@ function DiagnosticsManager(
       fetchGoalsDisabled: !config.fetchGoals,
       allowFrequentDuplicateEvents: !!config.allowFrequentDuplicateEvents,
       sendEventsOnlyForVariation: !!config.sendEventsOnlyForVariation,
-      autoAliasingOptOut: !!config.autoAliasingOptOut,
     };
     // Client-side JS SDKs do not have the following properties which other SDKs have:
     // connectTimeoutMillis

@@ -102,7 +102,6 @@ describe('configuration', () => {
   checkBooleanProperty('sendEvents');
   checkBooleanProperty('allAttributesPrivate');
   checkBooleanProperty('sendLDHeaders');
-  checkBooleanProperty('inlineUsersInEvents');
   checkBooleanProperty('allowFrequentDuplicateEvents');
   checkBooleanProperty('sendEventsOnlyForVariation');
   checkBooleanProperty('useReport');
