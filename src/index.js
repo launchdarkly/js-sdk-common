@@ -7,14 +7,14 @@ const PersistentStorage = require('./PersistentStorage');
 const Stream = require('./Stream');
 const Requestor = require('./Requestor');
 const Identity = require('./Identity');
-const UserValidator = require('./UserValidator');
+const TransientContextProcessor = require('./TransientContextProcessor');
 const configuration = require('./configuration');
 const diagnostics = require('./diagnosticEvents');
 const { commonBasicLogger } = require('./loggers');
 const utils = require('./utils');
 const errors = require('./errors');
 const messages = require('./messages');
-const { getCanonicalKey } = require('./context');
+const { getCanonicalKey, checkContext } = require('./context');
 
 const changeEvent = 'change';
 const internalChangeEvent = 'internal-change';
@@ -87,7 +87,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
   const stateProvider = options.stateProvider;
 
   const ident = Identity(null, onIdentifyChange);
-  const userValidator = UserValidator(persistentStorage);
+  const transientContextProcessor = new TransientContextProcessor(persistentStorage);
   const persistentFlagStore = persistentStorage.isEnabled()
     ? PersistentFlagStore(persistentStorage, environment, hash, ident, logger)
     : null;
@@ -210,6 +210,16 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
     enqueueEvent(event);
   }
 
+  function verifyContext(context) {
+    // The context will already have been processed to have a string key, so we
+    // do not need to allow for legacy keys in the check.
+    if (checkContext(context, false)) {
+      return Promise.resolve(context);
+    } else {
+      return Promise.reject(new errors.LDInvalidUserError(messages.invalidUser()));
+    }
+  }
+
   function identify(user, newHash, onDone) {
     if (closed) {
       return utils.wrapPromiseCallback(Promise.resolve({}), onDone);
@@ -222,14 +232,15 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
     const clearFirst = useLocalStorage && persistentFlagStore ? persistentFlagStore.clearFlags() : Promise.resolve();
     return utils.wrapPromiseCallback(
       clearFirst
-        .then(() => userValidator.validateUser(user))
-        .then(realUser =>
+        .then(() => transientContextProcessor.processContext(user))
+        .then(verifyContext)
+        .then(validatedContext =>
           requestor
-            .fetchFlagSettings(realUser, newHash)
+            .fetchFlagSettings(validatedContext, newHash)
             // the following then() is nested within this one so we can use realUser from the previous closure
             .then(requestedFlags => {
               const flagValueMap = utils.transformVersionedValuesToValues(requestedFlags);
-              ident.setUser(realUser);
+              ident.setUser(validatedContext);
               hash = newHash;
               if (requestedFlags) {
                 return replaceAllFlags(requestedFlags).then(() => flagValueMap);
@@ -602,17 +613,20 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
     if (!env) {
       return Promise.reject(new errors.LDInvalidEnvironmentIdError(messages.environmentNotSpecified()));
     }
-    return userValidator.validateUser(context).then(realUser => {
-      ident.setUser(realUser);
-      if (typeof options.bootstrap === 'object') {
-        // flags have already been set earlier
-        return signalSuccessfulInit();
-      } else if (useLocalStorage) {
-        return finishInitWithLocalStorage();
-      } else {
-        return finishInitWithPolling();
-      }
-    });
+    return transientContextProcessor
+      .processContext(context)
+      .then(verifyContext)
+      .then(validatedContext => {
+        ident.setUser(validatedContext);
+        if (typeof options.bootstrap === 'object') {
+          // flags have already been set earlier
+          return signalSuccessfulInit();
+        } else if (useLocalStorage) {
+          return finishInitWithLocalStorage();
+        } else {
+          return finishInitWithPolling();
+        }
+      });
   }
 
   function finishInitWithLocalStorage() {
