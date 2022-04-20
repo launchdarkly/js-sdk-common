@@ -1,5 +1,6 @@
 const messages = require('./messages');
-const { base64URLEncode, getLDHeaders, transformHeaders, objectHasOwnProperty } = require('./utils');
+const { base64URLEncode, objectHasOwnProperty } = require('./utils');
+const { getLDHeaders, transformHeaders } = require('./headers');
 
 // The underlying event source implementation is abstracted via the platform object, which should
 // have these three properties:

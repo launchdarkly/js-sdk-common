@@ -150,27 +150,6 @@ function getLDUserAgentString(platform) {
   return platform.userAgent + '/' + version;
 }
 
-function getLDHeaders(platform, options) {
-  if (options && !options.sendLDHeaders) {
-    return {};
-  }
-  const h = {};
-  h[platform.userAgentHeaderName || 'User-Agent'] = getLDUserAgentString(platform);
-  if (options && options.wrapperName) {
-    h['X-LaunchDarkly-Wrapper'] = options.wrapperVersion
-      ? options.wrapperName + '/' + options.wrapperVersion
-      : options.wrapperName;
-  }
-  return h;
-}
-
-function transformHeaders(headers, options) {
-  if (!options || !options.requestHeaderTransform) {
-    return headers;
-  }
-  return options.requestHeaderTransform({ ...headers });
-}
-
 function extend(...objects) {
   return objects.reduce((acc, obj) => ({ ...acc, ...obj }), {});
 }
@@ -202,12 +181,10 @@ module.exports = {
   clone,
   deepEquals,
   extend,
-  getLDHeaders,
   getLDUserAgentString,
   objectHasOwnProperty,
   onNextTick,
   sanitizeUser,
-  transformHeaders,
   transformValuesToVersionedValues,
   transformVersionedValuesToValues,
   wrapPromiseCallback,
