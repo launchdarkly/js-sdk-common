@@ -180,6 +180,8 @@ const debugPostingDiagnosticEvent = function(event) {
   return 'sending diagnostic event (' + event.kind + ')';
 };
 
+const invalidTagValue = name => `Config option "${name}" must only contain letters, numbers, ., _ or -.`;
+
 module.exports = {
   bootstrapInvalid,
   bootstrapOldFormat,
@@ -207,6 +209,7 @@ module.exports = {
   invalidContentType,
   invalidData,
   invalidKey,
+  invalidTagValue,
   invalidUser,
   localStorageUnavailable,
   networkError,

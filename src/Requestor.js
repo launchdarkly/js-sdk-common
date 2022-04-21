@@ -2,6 +2,7 @@ const utils = require('./utils');
 const errors = require('./errors');
 const messages = require('./messages');
 const promiseCoalescer = require('./promiseCoalescer');
+const { transformHeaders, getLDHeaders } = require('./headers');
 
 const jsonContentType = 'application/json';
 
@@ -31,7 +32,7 @@ function Requestor(platform, options, environment) {
     }
 
     const method = body ? 'REPORT' : 'GET';
-    const headers = utils.getLDHeaders(platform, options);
+    const headers = getLDHeaders(platform, options);
     if (body) {
       headers['Content-Type'] = jsonContentType;
     }
@@ -45,7 +46,7 @@ function Requestor(platform, options, environment) {
       activeRequests[endpoint] = coalescer;
     }
 
-    const req = platform.httpRequest(method, endpoint, utils.transformHeaders(headers, options), body);
+    const req = platform.httpRequest(method, endpoint, transformHeaders(headers, options), body);
     const p = req.promise.then(
       result => {
         if (result.status === 200) {
@@ -75,7 +76,7 @@ function Requestor(platform, options, environment) {
   // Performs a GET request to an arbitrary path under baseUrl. Returns a Promise which will resolve
   // with the parsed JSON response, or will be rejected if the request failed.
   requestor.fetchJSON = function(path) {
-    return fetchJSON(baseUrl + path, null);
+    return fetchJSON(utils.appendUrlPath(baseUrl, path), null);
   };
 
   // Requests the current state of all flags for the given user from LaunchDarkly. Returns a Promise

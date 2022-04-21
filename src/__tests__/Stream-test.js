@@ -1,7 +1,7 @@
 import { DiagnosticsAccumulator } from '../diagnosticEvents';
 import * as messages from '../messages';
 import Stream from '../Stream';
-import { getLDHeaders } from '../utils';
+import { getLDHeaders } from '../headers';
 
 import { sleepAsync } from 'launchdarkly-js-test-helpers';
 import EventSource from './EventSource-mock';
