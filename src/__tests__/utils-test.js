@@ -1,4 +1,10 @@
-import { appendUrlPath, base64URLEncode, getLDUserAgentString, wrapPromiseCallback, chunkUserEventsForUrl } from '../utils';
+import {
+  appendUrlPath,
+  base64URLEncode,
+  getLDUserAgentString,
+  wrapPromiseCallback,
+  chunkUserEventsForUrl,
+} from '../utils';
 
 import * as stubPlatform from './stubPlatform';
 
