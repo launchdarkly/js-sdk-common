@@ -2,6 +2,7 @@ import * as utils from './utils';
 import * as errors from './errors';
 import * as messages from './messages';
 import promiseCoalescer from './promiseCoalescer';
+import { transformHeaders, getLDHeaders } from './headers';
 
 const jsonContentType = 'application/json';
 
@@ -31,7 +32,7 @@ export default function Requestor(platform, options, environment) {
     }
 
     const method = body ? 'REPORT' : 'GET';
-    const headers = utils.getLDHeaders(platform, options);
+    const headers = getLDHeaders(platform, options);
     if (body) {
       headers['Content-Type'] = jsonContentType;
     }
@@ -45,7 +46,7 @@ export default function Requestor(platform, options, environment) {
       activeRequests[endpoint] = coalescer;
     }
 
-    const req = platform.httpRequest(method, endpoint, utils.transformHeaders(headers, options), body);
+    const req = platform.httpRequest(method, endpoint, transformHeaders(headers, options), body);
     const p = req.promise.then(
       result => {
         if (result.status === 200) {

@@ -179,3 +179,5 @@ export const debugPostingEvents = function(count) {
 export const debugPostingDiagnosticEvent = function(event) {
   return 'sending diagnostic event (' + event.kind + ')';
 };
+
+export const invalidTagValue = name => `Config option "${name}" must only contain letters, numbers, ., _ or -.`;

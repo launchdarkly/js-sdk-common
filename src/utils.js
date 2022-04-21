@@ -157,28 +157,6 @@ export function getLDUserAgentString(platform) {
   return platform.userAgent + '/' + version;
 }
 
-export function getLDHeaders(platform, options) {
-  if (options && !options.sendLDHeaders) {
-    return {};
-  }
-  const h = {
-    'X-LaunchDarkly-User-Agent': getLDUserAgentString(platform),
-  };
-  if (options && options.wrapperName) {
-    h['X-LaunchDarkly-Wrapper'] = options.wrapperVersion
-      ? options.wrapperName + '/' + options.wrapperVersion
-      : options.wrapperName;
-  }
-  return h;
-}
-
-export function transformHeaders(headers, options) {
-  if (!options || !options.requestHeaderTransform) {
-    return headers;
-  }
-  return options.requestHeaderTransform({ ...headers });
-}
-
 export function extend(...objects) {
   return objects.reduce((acc, obj) => ({ ...acc, ...obj }), {});
 }

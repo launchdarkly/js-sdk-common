@@ -1,5 +1,6 @@
 import * as messages from './messages';
-import { appendUrlPath, base64URLEncode, getLDHeaders, transformHeaders, objectHasOwnProperty } from './utils';
+import { appendUrlPath, base64URLEncode, objectHasOwnProperty } from './utils';
+import { getLDHeaders, transformHeaders } from './headers';
 
 // The underlying event source implementation is abstracted via the platform object, which should
 // have these three properties:
