@@ -259,6 +259,31 @@ declare module 'launchdarkly-js-sdk-common' {
      * The default value is `false`.
      */
     autoAliasingOptOut?: boolean;
+
+    /**
+     * Information about the application where the LaunchDarkly SDK is running.
+     */
+    application?: {
+      /**
+       * A unique identifier representing the application where the LaunchDarkly SDK is running.
+       * 
+       * This can be specified as any string value as long as it only uses the following characters: ASCII letters,
+       * ASCII digits, period, hyphen, underscore. A string containing any other characters will be ignored.
+       * 
+       * Example: `authentication-service`
+       */
+      id?: string;
+
+      /**
+       * A unique identifier representing the version of the application where the LaunchDarkly SDK is running.
+       * 
+       * This can be specified as any string value as long as it only uses the following characters: ASCII letters,
+       * ASCII digits, period, hyphen, underscore. A string containing any other characters will be ignored.
+       * 
+       * Example: `1.0.0` (standard version string) or `abcdef` (sha prefix)
+       */
+      version?: string;
+    }
   }
 
   /**
@@ -344,31 +369,6 @@ declare module 'launchdarkly-js-sdk-common' {
      * with [[LDOptions.privateAttributeNames]] or [[LDOptions.allAttributesPrivate]].
      */
     privateAttributeNames?: Array<string>;
-
-    /**
-     * Information about the application where the LaunchDarkly SDK is running.
-     */
-    application?: {
-      /**
-       * A unique identifier representing the application where the LaunchDarkly SDK is running.
-       * 
-       * This can be specified as any string value as long as it only uses the following characters: ASCII letters,
-       * ASCII digits, period, hyphen, underscore. A string containing any other characters will be ignored.
-       * 
-       * Example: `authentication-service`
-       */
-      id?: string;
-
-      /**
-       * A unique identifier representing the version of the application where the LaunchDarkly SDK is running.
-       * 
-       * This can be specified as any string value as long as it only uses the following characters: ASCII letters,
-       * ASCII digits, period, hyphen, underscore. A string containing any other characters will be ignored.
-       * 
-       * Example: `1.0.0` (standard version string) or `abcdef` (sha prefix)
-       */
-      version?: string;
-    }
   }
 
   /**
