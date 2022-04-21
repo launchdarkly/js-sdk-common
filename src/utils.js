@@ -3,6 +3,13 @@ const fastDeepEqual = require('fast-deep-equal');
 
 const userAttrsToStringify = ['key', 'secondary', 'ip', 'country', 'email', 'firstName', 'lastName', 'avatar', 'name'];
 
+function appendUrlPath(baseUrl, path) {
+  // Ensure that URL concatenation is done correctly regardless of whether the
+  // base URL has a trailing slash or not.
+  const trimBaseUrl = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
+  return trimBaseUrl + (path.startsWith('/') ? '' : '/') + path;
+}
+
 // See http://ecmanaut.blogspot.com/2006/07/encoding-decoding-utf8-in-javascript.html
 function btoa(s) {
   const escaped = unescape(encodeURIComponent(s));
@@ -175,6 +182,7 @@ function sanitizeUser(user) {
 }
 
 module.exports = {
+  appendUrlPath,
   base64URLEncode,
   btoa,
   chunkUserEventsForUrl,

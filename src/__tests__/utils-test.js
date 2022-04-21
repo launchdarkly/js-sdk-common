@@ -1,8 +1,15 @@
-import { base64URLEncode, getLDUserAgentString, wrapPromiseCallback, chunkUserEventsForUrl } from '../utils';
+import { appendUrlPath, base64URLEncode, getLDUserAgentString, wrapPromiseCallback, chunkUserEventsForUrl } from '../utils';
 
 import * as stubPlatform from './stubPlatform';
 
 describe('utils', () => {
+  it('appendUrlPath', () => {
+    expect(appendUrlPath('http://base', '/path')).toEqual('http://base/path');
+    expect(appendUrlPath('http://base', 'path')).toEqual('http://base/path');
+    expect(appendUrlPath('http://base/', '/path')).toEqual('http://base/path');
+    expect(appendUrlPath('http://base/', '/path')).toEqual('http://base/path');
+  });
+
   describe('wrapPromiseCallback', () => {
     it('should resolve to the value', done => {
       const promise = wrapPromiseCallback(Promise.resolve('woohoo'));

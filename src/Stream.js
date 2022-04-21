@@ -1,5 +1,5 @@
 const messages = require('./messages');
-const { base64URLEncode, objectHasOwnProperty } = require('./utils');
+const { appendUrlPath, base64URLEncode, objectHasOwnProperty } = require('./utils');
 const { getLDHeaders, transformHeaders } = require('./headers');
 
 // The underlying event source implementation is abstracted via the platform object, which should
@@ -21,7 +21,7 @@ function Stream(platform, config, environment, diagnosticsAccumulator) {
   const baseUrl = config.streamUrl;
   const logger = config.logger;
   const stream = {};
-  const evalUrlPrefix = baseUrl + '/eval/' + environment;
+  const evalUrlPrefix = appendUrlPath(baseUrl, '/eval/' + environment);
   const useReport = config.useReport;
   const withReasons = config.evaluationReasons;
   const streamReconnectDelay = config.streamReconnectDelay;
@@ -99,7 +99,7 @@ function Stream(platform, config, environment, diagnosticsAccumulator) {
           options.body = JSON.stringify(user);
         } else {
           // if we can't do REPORT, fall back to the old ping-based stream
-          url = baseUrl + '/ping/' + environment;
+          url = appendUrlPath(baseUrl, '/ping/' + environment);
           query = '';
         }
       } else {
