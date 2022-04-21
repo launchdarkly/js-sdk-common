@@ -5,6 +5,7 @@ const uuidv1 = require('uuid/v1');
 
 const { baseOptionDefs } = require('./configuration');
 const messages = require('./messages');
+const { appendUrlPath } = require('./utils');
 
 function DiagnosticId(sdkKey) {
   const ret = {
@@ -80,7 +81,7 @@ function DiagnosticsManager(
 ) {
   const combinedMode = !!platform.diagnosticUseCombinedEvent;
   const localStorageKey = 'ld:' + environmentId + ':$diagnostics';
-  const diagnosticEventsUrl = config.eventsUrl + '/events/diagnostic/' + environmentId;
+  const diagnosticEventsUrl = appendUrlPath(config.eventsUrl, '/events/diagnostic/' + environmentId);
   const periodicInterval = config.diagnosticRecordingInterval;
   const acc = accumulator;
   const initialEventSamplingInterval = 4; // used only in combined mode - see start()

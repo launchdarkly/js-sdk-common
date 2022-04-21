@@ -50,7 +50,11 @@ var allBaseOptions: ld.LDOptionsBase = {
   flushInterval: 1,
   samplingInterval: 1,
   streamReconnectDelay: 1,
-  logger: logger
+  logger: logger,
+  application: {
+    version: 'version',
+    id: 'id'
+  }
 };
 
 var client: ld.LDClientBase = {} as ld.LDClientBase;  // wouldn't do this in real life, it's just so the following statements will compile

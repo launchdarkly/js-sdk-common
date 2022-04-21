@@ -3,6 +3,13 @@ import fastDeepEqual from 'fast-deep-equal';
 
 const userAttrsToStringify = ['key', 'secondary', 'ip', 'country', 'email', 'firstName', 'lastName', 'avatar', 'name'];
 
+export function appendUrlPath(baseUrl, path) {
+  // Ensure that URL concatenation is done correctly regardless of whether the
+  // base URL has a trailing slash or not.
+  const trimBaseUrl = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
+  return trimBaseUrl + (path.startsWith('/') ? '' : '/') + path;
+}
+
 // See http://ecmanaut.blogspot.com/2006/07/encoding-decoding-utf8-in-javascript.html
 export function btoa(s) {
   const escaped = unescape(encodeURIComponent(s));
@@ -148,28 +155,6 @@ export function chunkUserEventsForUrl(maxLength, events) {
 export function getLDUserAgentString(platform) {
   const version = platform.version || VERSION;
   return platform.userAgent + '/' + version;
-}
-
-export function getLDHeaders(platform, options) {
-  if (options && !options.sendLDHeaders) {
-    return {};
-  }
-  const h = {
-    'X-LaunchDarkly-User-Agent': getLDUserAgentString(platform),
-  };
-  if (options && options.wrapperName) {
-    h['X-LaunchDarkly-Wrapper'] = options.wrapperVersion
-      ? options.wrapperName + '/' + options.wrapperVersion
-      : options.wrapperName;
-  }
-  return h;
-}
-
-export function transformHeaders(headers, options) {
-  if (!options || !options.requestHeaderTransform) {
-    return headers;
-  }
-  return options.requestHeaderTransform({ ...headers });
 }
 
 export function extend(...objects) {

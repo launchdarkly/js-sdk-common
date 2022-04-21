@@ -1,5 +1,6 @@
 import * as messages from './messages';
-import { base64URLEncode, getLDHeaders, transformHeaders, objectHasOwnProperty } from './utils';
+import { appendUrlPath, base64URLEncode, objectHasOwnProperty } from './utils';
+import { getLDHeaders, transformHeaders } from './headers';
 
 // The underlying event source implementation is abstracted via the platform object, which should
 // have these three properties:
@@ -20,7 +21,7 @@ export default function Stream(platform, config, environment, diagnosticsAccumul
   const baseUrl = config.streamUrl;
   const logger = config.logger;
   const stream = {};
-  const evalUrlPrefix = baseUrl + '/eval/' + environment;
+  const evalUrlPrefix = appendUrlPath(baseUrl, '/eval/' + environment);
   const useReport = config.useReport;
   const withReasons = config.evaluationReasons;
   const streamReconnectDelay = config.streamReconnectDelay;
@@ -98,7 +99,7 @@ export default function Stream(platform, config, environment, diagnosticsAccumul
           options.body = JSON.stringify(user);
         } else {
           // if we can't do REPORT, fall back to the old ping-based stream
-          url = baseUrl + '/ping/' + environment;
+          url = appendUrlPath(baseUrl, '/ping/' + environment);
           query = '';
         }
       } else {

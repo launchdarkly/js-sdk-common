@@ -1,7 +1,6 @@
 import {
+  appendUrlPath,
   base64URLEncode,
-  getLDHeaders,
-  transformHeaders,
   getLDUserAgentString,
   wrapPromiseCallback,
   chunkUserEventsForUrl,
@@ -10,6 +9,13 @@ import {
 import * as stubPlatform from './stubPlatform';
 
 describe('utils', () => {
+  it('appendUrlPath', () => {
+    expect(appendUrlPath('http://base', '/path')).toEqual('http://base/path');
+    expect(appendUrlPath('http://base', 'path')).toEqual('http://base/path');
+    expect(appendUrlPath('http://base/', '/path')).toEqual('http://base/path');
+    expect(appendUrlPath('http://base/', '/path')).toEqual('http://base/path');
+  });
+
   describe('wrapPromiseCallback', () => {
     it('should resolve to the value', done => {
       const promise = wrapPromiseCallback(Promise.resolve('woohoo'));
@@ -45,70 +51,6 @@ describe('utils', () => {
         expect(value).toBeNull();
         done();
       });
-    });
-  });
-
-  describe('getLDHeaders', () => {
-    it('sends no headers unless sendLDHeaders is true', () => {
-      const platform = stubPlatform.defaults();
-      const headers = getLDHeaders(platform, {});
-      expect(headers).toEqual({});
-    });
-
-    it('adds custom user-agent header', () => {
-      const platform = stubPlatform.defaults();
-      const headers = getLDHeaders(platform, { sendLDHeaders: true });
-      expect(headers).toMatchObject({ 'X-LaunchDarkly-User-Agent': getLDUserAgentString(platform) });
-    });
-
-    it('adds wrapper info if specified, without version', () => {
-      const platform = stubPlatform.defaults();
-      const headers = getLDHeaders(platform, { sendLDHeaders: true, wrapperName: 'FakeSDK' });
-      expect(headers).toMatchObject({
-        'X-LaunchDarkly-User-Agent': getLDUserAgentString(platform),
-        'X-LaunchDarkly-Wrapper': 'FakeSDK',
-      });
-    });
-
-    it('adds wrapper info if specified, with version', () => {
-      const platform = stubPlatform.defaults();
-      const headers = getLDHeaders(platform, { sendLDHeaders: true, wrapperName: 'FakeSDK', wrapperVersion: '9.9' });
-      expect(headers).toMatchObject({
-        'X-LaunchDarkly-User-Agent': getLDUserAgentString(platform),
-        'X-LaunchDarkly-Wrapper': 'FakeSDK/9.9',
-      });
-    });
-  });
-
-  describe('transformHeaders', () => {
-    it('does not modify the headers if the option is not available', () => {
-      const inputHeaders = { a: '1', b: '2' };
-      const headers = transformHeaders(inputHeaders, {});
-      expect(headers).toEqual(inputHeaders);
-    });
-
-    it('modifies the headers if the option has a transform', () => {
-      const inputHeaders = { c: '3', d: '4' };
-      const outputHeaders = { c: '9', d: '4', e: '5' };
-      const headerTransform = input => {
-        const output = { ...input };
-        output['c'] = '9';
-        output['e'] = '5';
-        return output;
-      };
-      const headers = transformHeaders(inputHeaders, { requestHeaderTransform: headerTransform });
-      expect(headers).toEqual(outputHeaders);
-    });
-
-    it('cannot mutate the input header object', () => {
-      const inputHeaders = { f: '6' };
-      const expectedInputHeaders = { f: '6' };
-      const headerMutate = input => {
-        input['f'] = '7'; // eslint-disable-line no-param-reassign
-        return input;
-      };
-      transformHeaders(inputHeaders, { requestHeaderTransform: headerMutate });
-      expect(inputHeaders).toEqual(expectedInputHeaders);
     });
   });
 
