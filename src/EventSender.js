@@ -72,7 +72,7 @@ function EventSender(platform, environmentId, options) {
       // no need to break up events into chunks if we can send a POST
       chunks = [events];
     } else {
-      chunks = utils.chunkUserEventsForUrl(MAX_URL_LENGTH - url.length, events);
+      chunks = utils.chunkEventsForUrl(MAX_URL_LENGTH - url.length, events);
     }
     const results = [];
     for (let i = 0; i < chunks.length; i++) {

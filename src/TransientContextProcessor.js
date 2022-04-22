@@ -69,7 +69,7 @@ function TransientContextProcessor(persistentStorage) {
         }
       });
     } else {
-      return Promise.reject(new errors.LDInvalidUserError(messages.invalidUser()));
+      return Promise.reject(new errors.LDInvalidUserError(messages.invalidContext()));
     }
     /* eslint-enable no-param-reassign */
   }
@@ -82,7 +82,7 @@ function TransientContextProcessor(persistentStorage) {
    */
   this.processContext = context => {
     if (!context) {
-      return Promise.reject(new errors.LDInvalidUserError(messages.userNotSpecified()));
+      return Promise.reject(new errors.LDInvalidUserError(messages.contextNotSpecified()));
     }
 
     const processedContext = utils.clone(context);

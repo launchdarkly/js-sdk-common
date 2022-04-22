@@ -296,7 +296,7 @@ describe('LDClient events', () => {
   it('does not send a feature event for a new flag value if there is a state provider', async () => {
     const oldFlags = { foo: { value: 'a', variation: 1, version: 2, flagVersion: 2000 } };
     const newFlags = { foo: { value: 'b', variation: 2, version: 3, flagVersion: 2001 } };
-    const sp = stubPlatform.mockStateProvider({ environment: envName, user: user, flags: oldFlags });
+    const sp = stubPlatform.mockStateProvider({ environment: envName, context: user, flags: oldFlags });
     await withServer(async server => {
       server.byDefault(respondJson(newFlags));
       const extraConfig = { stateProvider: sp, baseUrl: server.url };
@@ -503,12 +503,12 @@ describe('LDClient events', () => {
   it('should warn about missing user on first event', async () => {
     await withClientAndEventProcessor(null, {}, async client => {
       client.track('eventkey', null);
-      expect(platform.testing.logger.output.warn).toEqual([messages.eventWithoutUser()]);
+      expect(platform.testing.logger.output.warn).toEqual([messages.eventWithoutContext()]);
     });
   });
 
   it('allows stateProvider to take over sending an event', async () => {
-    const sp = stubPlatform.mockStateProvider({ environment: envName, user: user, flags: {} });
+    const sp = stubPlatform.mockStateProvider({ environment: envName, context: user, flags: {} });
     const divertedEvents = [];
     sp.enqueueEvent = event => divertedEvents.push(event);
 

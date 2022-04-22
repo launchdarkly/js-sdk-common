@@ -77,11 +77,11 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
   // The "stateProvider" object is used in the Electron SDK, to allow one client instance to take partial
   // control of another. If present, it has the following contract:
   // - getInitialState() returns the initial client state if it is already available. The state is an
-  //   object whose properties are "environment", "user", and "flags".
+  //   object whose properties are "environment", "context", and "flags".
   // - on("init", listener) triggers an event when the initial client state becomes available, passing
   //   the state object to the listener.
-  // - on("update", listener) triggers an event when flag values change and/or the current user changes.
-  //   The parameter is an object that *may* contain "user" and/or "flags".
+  // - on("update", listener) triggers an event when flag values change and/or the current context changes.
+  //   The parameter is an object that *may* contain "context" and/or "flags".
   // - enqueueEvent(event) accepts an analytics event object and returns true if the stateProvider will
   //   be responsible for delivering it, or false if we still should deliver it ourselves.
   const stateProvider = options.stateProvider;
@@ -143,7 +143,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
 
     if (!event.context) {
       if (firstEvent) {
-        logger.warn(messages.eventWithoutUser());
+        logger.warn(messages.eventWithoutContext());
         firstEvent = false;
       }
       return;
@@ -216,23 +216,23 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
     if (checkContext(context, false)) {
       return Promise.resolve(context);
     } else {
-      return Promise.reject(new errors.LDInvalidUserError(messages.invalidUser()));
+      return Promise.reject(new errors.LDInvalidUserError(messages.invalidContext()));
     }
   }
 
-  function identify(user, newHash, onDone) {
+  function identify(context, newHash, onDone) {
     if (closed) {
       return utils.wrapPromiseCallback(Promise.resolve({}), onDone);
     }
     if (stateProvider) {
-      // We're being controlled by another client instance, so only that instance is allowed to change the user
+      // We're being controlled by another client instance, so only that instance is allowed to change the context
       logger.warn(messages.identifyDisabled());
       return utils.wrapPromiseCallback(Promise.resolve(utils.transformVersionedValuesToValues(flags)), onDone);
     }
     const clearFirst = useLocalStorage && persistentFlagStore ? persistentFlagStore.clearFlags() : Promise.resolve();
     return utils.wrapPromiseCallback(
       clearFirst
-        .then(() => transientContextProcessor.processContext(user))
+        .then(() => transientContextProcessor.processContext(context))
         .then(verifyContext)
         .then(validatedContext =>
           requestor
@@ -240,7 +240,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
             // the following then() is nested within this one so we can use realUser from the previous closure
             .then(requestedFlags => {
               const flagValueMap = utils.transformVersionedValuesToValues(requestedFlags);
-              ident.setUser(validatedContext);
+              ident.setContext(validatedContext);
               hash = newHash;
               if (requestedFlags) {
                 return replaceAllFlags(requestedFlags).then(() => flagValueMap);
@@ -382,13 +382,13 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
     stream.connect(ident.getContext(), hash, {
       ping: function() {
         logger.debug(messages.debugStreamPing());
-        const userAtTimeOfPingEvent = ident.getContext();
+        const contextAtTimeOfPingEvent = ident.getContext();
         requestor
-          .fetchFlagSettings(userAtTimeOfPingEvent, hash)
+          .fetchFlagSettings(contextAtTimeOfPingEvent, hash)
           .then(requestedFlags => {
-            // Check whether the current user is still the same - we don't want to overwrite the flags if
+            // Check whether the current context is still the same - we don't want to overwrite the flags if
             // the application has called identify() while this request was in progress
-            if (utils.deepEquals(userAtTimeOfPingEvent, ident.getContext())) {
+            if (utils.deepEquals(contextAtTimeOfPingEvent, ident.getContext())) {
               replaceAllFlags(requestedFlags || {});
             }
           })
@@ -617,7 +617,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
       .processContext(context)
       .then(verifyContext)
       .then(validatedContext => {
-        ident.setUser(validatedContext);
+        ident.setContext(validatedContext);
         if (typeof options.bootstrap === 'object') {
           // flags have already been set earlier
           return signalSuccessfulInit();
@@ -672,14 +672,14 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
 
   function initFromStateProvider(state) {
     environment = state.environment;
-    ident.setUser(state.user);
+    ident.setContext(state.context);
     flags = { ...state.flags };
     utils.onNextTick(signalSuccessfulInit);
   }
 
   function updateFromStateProvider(state) {
-    if (state.user) {
-      ident.setUser(state.user);
+    if (state.context) {
+      ident.setContext(state.context);
     }
     if (state.flags) {
       replaceAllFlags(state.flags); // don't wait for this Promise to be resolved
@@ -755,7 +755,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
     client: client, // The client object containing all public methods.
     options: options, // The validated configuration object, including all defaults.
     emitter: emitter, // The event emitter which can be used to log errors or trigger events.
-    ident: ident, // The Identity object that manages the current user.
+    ident: ident, // The Identity object that manages the current context.
     logger: logger, // The logging abstraction.
     requestor: requestor, // The Requestor object.
     start: start, // Starts the client once the environment is ready.

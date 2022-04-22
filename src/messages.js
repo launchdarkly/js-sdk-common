@@ -25,7 +25,7 @@ const eventCapacityExceeded = function() {
   return 'Exceeded event queue capacity. Increase capacity to avoid dropping events.';
 };
 
-const eventWithoutUser = function() {
+const eventWithoutContext = function() {
   return 'Be sure to call `identify` in the LaunchDarkly client: https://docs.launchdarkly.com/sdk/features/identify#javascript';
 };
 
@@ -60,12 +60,12 @@ const errorFetchingFlags = function(err) {
   return 'Error fetching flag settings: ' + errorString(err);
 };
 
-const userNotSpecified = function() {
-  return 'No user specified.' + docLink;
+const contextNotSpecified = function() {
+  return 'No context specified.' + docLink;
 };
 
-const invalidUser = function() {
-  return 'Invalid user specified.' + docLink;
+const invalidContext = function() {
+  return 'Invalid context specified.' + docLink;
 };
 
 const invalidData = function() {
@@ -200,14 +200,14 @@ module.exports = {
   environmentNotSpecified,
   errorFetchingFlags,
   eventCapacityExceeded,
-  eventWithoutUser,
+  eventWithoutContext,
   httpErrorMessage,
   httpUnavailable,
   identifyDisabled,
   invalidContentType,
   invalidData,
   invalidKey,
-  invalidUser,
+  invalidContext,
   localStorageUnavailable,
   networkError,
   optionBelowMinimum,
@@ -216,7 +216,7 @@ module.exports = {
   streamError,
   unknownCustomEventKey,
   unknownOption,
-  userNotSpecified,
+  contextNotSpecified,
   wrongOptionType,
   wrongOptionTypeBoolean,
 };

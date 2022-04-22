@@ -78,9 +78,9 @@ function Requestor(platform, options, environment) {
     return fetchJSON(baseUrl + path, null);
   };
 
-  // Requests the current state of all flags for the given user from LaunchDarkly. Returns a Promise
+  // Requests the current state of all flags for the given context from LaunchDarkly. Returns a Promise
   // which will resolve with the parsed JSON response, or will be rejected if the request failed.
-  requestor.fetchFlagSettings = function(user, hash) {
+  requestor.fetchFlagSettings = function(context, hash) {
     let data;
     let endpoint;
     let query = '';
@@ -88,9 +88,9 @@ function Requestor(platform, options, environment) {
 
     if (useReport) {
       endpoint = [baseUrl, '/sdk/evalx/', environment, '/user'].join('');
-      body = JSON.stringify(user);
+      body = JSON.stringify(context);
     } else {
-      data = utils.base64URLEncode(JSON.stringify(user));
+      data = utils.base64URLEncode(JSON.stringify(context));
       endpoint = [baseUrl, '/sdk/evalx/', environment, '/users/', data].join('');
     }
     if (hash) {

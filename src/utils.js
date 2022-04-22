@@ -113,7 +113,7 @@ function transformVersionedValuesToValues(flagsState) {
  * @param {Array[Object}]} events queue of events to divide
  * @returns Array[Array[Object]]
  */
-function chunkUserEventsForUrl(maxLength, events) {
+function chunkEventsForUrl(maxLength, events) {
   const allEvents = events.slice(0);
   const allChunks = [];
   let remainingSpace = maxLength;
@@ -201,7 +201,7 @@ function sanitizeContext(context) {
 module.exports = {
   base64URLEncode,
   btoa,
-  chunkUserEventsForUrl,
+  chunkEventsForUrl,
   clone,
   deepEquals,
   extend,

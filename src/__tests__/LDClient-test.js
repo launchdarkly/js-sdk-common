@@ -549,7 +549,7 @@ describe('LDClient', () => {
       const user = { key: 'user' };
       const state = {
         environment: 'env',
-        user: user,
+        context: user,
         flags: { flagkey: { value: 'value' } },
       };
       const sp = stubPlatform.mockStateProvider(state);
@@ -578,7 +578,7 @@ describe('LDClient', () => {
       const user = { key: 'user' };
       const state = {
         environment: 'env',
-        user: user,
+        context: user,
         flags: { flagkey: { value: 'value' } },
       };
       const sp = stubPlatform.mockStateProvider(null);
@@ -595,7 +595,7 @@ describe('LDClient', () => {
       const user = { key: 'user' };
       const state0 = {
         environment: 'env',
-        user: user,
+        context: user,
         flags: { flagkey: { value: 'value0' } },
       };
       const sp = stubPlatform.mockStateProvider(state0);
@@ -621,7 +621,7 @@ describe('LDClient', () => {
     it('disables identify()', async () => {
       const user = { key: 'user' };
       const user1 = { key: 'user1' };
-      const state = { environment: 'env', user: user, flags: { flagkey: { value: 'value' } } };
+      const state = { environment: 'env', context: user, flags: { flagkey: { value: 'value' } } };
       const sp = stubPlatform.mockStateProvider(state);
 
       await withServers(async (baseConfig, pollServer) => {
