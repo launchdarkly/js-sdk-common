@@ -313,7 +313,7 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
     }
 
     for (const key in flags) {
-      if (utils.objectHasOwnProperty(flags, key)) {
+      if (utils.objectHasOwnProperty(flags, key) && !flags[key].deleted) {
         results[key] = variationDetailInternal(key, null, !options.sendEventsOnlyForVariation).value;
       }
     }
