@@ -14,7 +14,7 @@ const { commonBasicLogger } = require('./loggers');
 const utils = require('./utils');
 const errors = require('./errors');
 const messages = require('./messages');
-const { getCanonicalKey, checkContext } = require('./context');
+const { checkContext } = require('./context');
 
 const changeEvent = 'change';
 const internalChangeEvent = 'internal-change';
@@ -64,7 +64,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
 
   const requestor = Requestor(platform, options, environment);
 
-  const seenRequests = {};
+  let seenRequests = {};
   let flags = {};
   let useLocalStorage;
   let streamActive;
@@ -157,6 +157,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
   }
 
   function onIdentifyChange(context) {
+    seenRequests = {};
     sendIdentifyEvent(context);
   }
 
@@ -179,7 +180,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
     const now = new Date();
     const value = detail ? detail.value : null;
     if (!options.allowFrequentDuplicateEvents) {
-      const cacheKey = JSON.stringify(value) + (getCanonicalKey(context) || '') + key;
+      const cacheKey = JSON.stringify(value) + key;
       const cached = seenRequests[cacheKey];
       // cache TTL is five minutes
       if (cached && now - cached < 300000) {
