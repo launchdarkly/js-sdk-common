@@ -701,7 +701,8 @@ declare module 'launchdarkly-js-sdk-common' {
     alias(user: LDUser, previousUser: LDUser): void;
 
     /**
-     * Returns a map of all available flags to the current user's values.
+     * Returns a map of all available flags to the current user's values. This will send analytics
+     * events unless [[LDOptions.sendEventsOnlyForVariation]] is true.
      *
      * @returns
      *   An object in which each key is a feature flag key and each value is the flag value.

@@ -230,6 +230,13 @@ describe('configuration', () => {
     await listener.expectWarningOnly(messages.invalidTagValue('application.id'));
   });
 
+  it('logs a warning when a tag value is too long', async () => {
+    const listener = errorListener();
+    const configIn = { application: { id: 'a'.repeat(65), version: 'b'.repeat(64) } };
+    expect(configuration.validate(configIn, listener.emitter, null, listener.logger).application.id).toBeUndefined();
+    await listener.expectWarningOnly(messages.tagValueTooLong('application.id'));
+  });
+
   it('handles a valid application version', async () => {
     const listener = errorListener();
     const configIn = { application: { version: 'test-version' } };

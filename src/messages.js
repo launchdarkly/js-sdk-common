@@ -182,6 +182,8 @@ const debugPostingDiagnosticEvent = function(event) {
 
 const invalidTagValue = name => `Config option "${name}" must only contain letters, numbers, ., _ or -.`;
 
+const tagValueTooLong = name => `Value of "${name}" was longer than 64 characters and was discarded.`;
+
 module.exports = {
   bootstrapInvalid,
   bootstrapOldFormat,
@@ -217,6 +219,7 @@ module.exports = {
   streamClosing,
   streamConnecting,
   streamError,
+  tagValueTooLong,
   unknownCustomEventKey,
   unknownOption,
   userNotSpecified,
