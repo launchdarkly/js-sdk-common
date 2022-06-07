@@ -2,6 +2,13 @@
 
 All notable changes to the `launchdarkly-js-sdk-common` package will be documented in this file. Changes that affect the dependent SDKs such as `launchdarkly-js-client-sdk` should also be logged in those projects, in the next release that uses the updated version of this package. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [4.1.1] - 2022-06-07
+### Changed:
+- Enforce a 64 character limit for `application.id` and `application.version` configuration options.
+
+### Fixed:
+- Do not include deleted flags in `allFlags`.
+
 ## [4.1.0] - 2022-04-21
 ### Added:
 - `LDOptionsBase.application`, for configuration of application metadata that may be used in LaunchDarkly analytics or other product features. This does not affect feature flag evaluations.
