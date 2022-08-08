@@ -7,7 +7,7 @@ const PersistentStorage = require('./PersistentStorage');
 const Stream = require('./Stream');
 const Requestor = require('./Requestor');
 const Identity = require('./Identity');
-const TransientContextProcessor = require('./TransientContextProcessor');
+const AnonymousContextProcessor = require('./AnonymousContextProcessor');
 const configuration = require('./configuration');
 const diagnostics = require('./diagnosticEvents');
 const { commonBasicLogger } = require('./loggers');
@@ -87,7 +87,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
   const stateProvider = options.stateProvider;
 
   const ident = Identity(null, onIdentifyChange);
-  const transientContextProcessor = new TransientContextProcessor(persistentStorage);
+  const anonymousContextProcessor = new AnonymousContextProcessor(persistentStorage);
   const persistentFlagStore = persistentStorage.isEnabled()
     ? PersistentFlagStore(persistentStorage, environment, hash, ident, logger)
     : null;
@@ -233,7 +233,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
     const clearFirst = useLocalStorage && persistentFlagStore ? persistentFlagStore.clearFlags() : Promise.resolve();
     return utils.wrapPromiseCallback(
       clearFirst
-        .then(() => transientContextProcessor.processContext(context))
+        .then(() => anonymousContextProcessor.processContext(context))
         .then(verifyContext)
         .then(validatedContext =>
           requestor
@@ -614,7 +614,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
     if (!env) {
       return Promise.reject(new errors.LDInvalidEnvironmentIdError(messages.environmentNotSpecified()));
     }
-    return transientContextProcessor
+    return anonymousContextProcessor
       .processContext(context)
       .then(verifyContext)
       .then(validatedContext => {

@@ -1,6 +1,6 @@
-import TransientContextProcessor from '../TransientContextProcessor';
+import AnonymousContextProcessor from '../AnonymousContextProcessor';
 
-describe('TransientContextProcessor', () => {
+describe('AnonymousContextProcessor', () => {
   let localStorage;
   let logger;
   let uv;
@@ -10,7 +10,7 @@ describe('TransientContextProcessor', () => {
     logger = {
       warn: jest.fn(),
     };
-    uv = new TransientContextProcessor(localStorage, logger);
+    uv = new AnonymousContextProcessor(localStorage, logger);
   });
 
   it('rejects null user', async () => {
@@ -55,11 +55,11 @@ describe('TransientContextProcessor', () => {
     expect(storageKey).toEqual('ld:$anonUserId');
   });
 
-  it('generates and stores a key for each transient context in a multi-kind context', async () => {
+  it('generates and stores a key for each anonymous context in a multi-kind context', async () => {
     const context = {
       kind: 'multi',
-      user: { transient: true },
-      org: { transient: true },
+      user: { anonymous: true },
+      org: { anonymous: true },
       app: { key: 'app' },
     };
 
@@ -79,9 +79,9 @@ describe('TransientContextProcessor', () => {
   it('uses cached keys for context kinds that have already been generated', async () => {
     const context = {
       kind: 'multi',
-      user: { transient: true },
-      org: { transient: true },
-      another: { transient: true },
+      user: { anonymous: true },
+      org: { anonymous: true },
+      another: { anonymous: true },
       app: { key: 'app' },
     };
 
@@ -101,7 +101,7 @@ describe('TransientContextProcessor', () => {
     expect(processed.app.key).toEqual('app');
   });
 
-  it.each([{ anonymous: true }, { kind: 'user', transient: true }, { kind: 'multi', user: { transient: true } }])(
+  it.each([{ anonymous: true }, { kind: 'user', anonymous: true }, { kind: 'multi', user: { anonymous: true } }])(
     'uses the same key to store any user context (legacy, single, multi)',
     async context => {
       const storage = {};

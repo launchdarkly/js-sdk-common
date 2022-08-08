@@ -250,11 +250,6 @@ declare module 'launchdarkly-js-sdk-common' {
    */
    export interface LDContextMeta {
     /**
-     * If true, the context will _not_ appear on the Contexts page in the LaunchDarkly dashboard.
-     */
-    transient?: boolean;
-
-    /**
      * An optional secondary key for a context.
      *
      * TKTK
@@ -281,6 +276,11 @@ declare module 'launchdarkly-js-sdk-common' {
    * TKTK
    */
   interface LDContextCommon {
+      /**
+       * If true, the context will _not_ appear on the Contexts page in the LaunchDarkly dashboard.
+       */
+      anonymous?: boolean;
+
       /**
        * A unique string identifying a context.
        */

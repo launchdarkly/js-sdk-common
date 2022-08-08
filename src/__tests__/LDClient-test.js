@@ -500,8 +500,8 @@ describe('LDClient', () => {
 
     it.each([
       { country: 'US' }, // Legacy user with no key, and not anonymous.
-      { kind: 'user' }, // A single kind that is not transient and has no key.
-      { kind: 'multi', app: { transient: true }, org: {}, user: { key: 'yes' } }, // Multi kind with 1 non-transient context without a key.
+      { kind: 'user' }, // A single kind that is not anonymous and has no key.
+      { kind: 'multi', app: { anonymous: true }, org: {}, user: { key: 'yes' } }, // Multi kind with 1 non-anonymous context without a key.
     ])('returns an error and does not update flags when identify is called with invalid contexts', async badContext => {
       const flags0 = { 'enable-foo': { value: false } };
       const flags1 = { 'enable-foo': { value: true } };

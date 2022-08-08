@@ -9,13 +9,13 @@ const ldUserIdKey = 'ld:$anonUserId';
 
 /**
  * Create an object which can process a context and populate any required keys
- * for transient objects.
+ * for anonymous objects.
  *
  * @param {Object} persistentStorage The persistent storage from which to store
- * and access persisted transient context keys.
- * @returns A TransientContextProcessor.
+ * and access persisted anonymous context keys.
+ * @returns An AnonymousContextProcessor.
  */
-function TransientContextProcessor(persistentStorage) {
+function AnonymousContextProcessor(persistentStorage) {
   function getContextKeyIdString(kind) {
     if (kind === undefined || kind === null || kind === 'user') {
       return ldUserIdKey;
@@ -49,13 +49,7 @@ function TransientContextProcessor(persistentStorage) {
       return Promise.resolve(context);
     }
 
-    const transient = ((kind === undefined || kind === null) && context.anonymous) || (kind && context.transient);
-    // If it has no kind, then it is a legacy style user and is transient if 'anonymous' is set.
-    // If it has a kind, then the attribute would be 'transient'.
-
-    // The context did not have a key, so the context needs to be transient, if it
-    // is not transient, then it is not valid.
-    if (transient) {
+    if (context.anonymous) {
       // If the key doesn't exist, then the persistent storage will resolve
       // with undefined.
       return getCachedContextKey(kind).then(cachedId => {
@@ -98,4 +92,4 @@ function TransientContextProcessor(persistentStorage) {
   };
 }
 
-module.exports = TransientContextProcessor;
+module.exports = AnonymousContextProcessor;
