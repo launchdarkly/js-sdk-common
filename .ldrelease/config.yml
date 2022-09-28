@@ -5,7 +5,7 @@ repo:
   private: js-sdk-common-private
 
 branches:
-  - name: master
+  - name: main
     description: 4.x
   - name: 3.x
 

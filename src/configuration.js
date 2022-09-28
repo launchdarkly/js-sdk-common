@@ -20,7 +20,6 @@ const baseOptionDefs = {
   streaming: { type: 'boolean' }, // default for this is undefined, which is different from false
   sendLDHeaders: { default: true },
   requestHeaderTransform: { type: 'function' },
-  allowFrequentDuplicateEvents: { default: false },
   sendEventsOnlyForVariation: { default: false },
   useReport: { default: false },
   evaluationReasons: { default: false },
@@ -36,7 +35,41 @@ const baseOptionDefs = {
   wrapperName: { type: 'string' },
   wrapperVersion: { type: 'string' },
   stateProvider: { type: 'object' }, // not a public option, used internally
+  application: { validator: applicationConfigValidator },
 };
+
+/**
+ * Expression to validate characters that are allowed in tag keys and values.
+ */
+const allowedTagCharacters = /^(\w|\.|-)+$/;
+
+/**
+ * Verify that a value meets the requirements for a tag value.
+ * @param {string} tagValue
+ * @param {Object} logger
+ */
+function validateTagValue(name, tagValue, logger) {
+  if (typeof tagValue !== 'string' || !tagValue.match(allowedTagCharacters)) {
+    logger.warn(messages.invalidTagValue(name));
+    return undefined;
+  }
+  if (tagValue.length > 64) {
+    logger.warn(messages.tagValueTooLong(name));
+    return undefined;
+  }
+  return tagValue;
+}
+
+function applicationConfigValidator(name, value, logger) {
+  const validated = {};
+  if (value.id) {
+    validated.id = validateTagValue(`${name}.id`, value.id, logger);
+  }
+  if (value.version) {
+    validated.version = validateTagValue(`${name}.version`, value.version, logger);
+  }
+  return validated;
+}
 
 function validate(options, emitter, extraOptionDefs, logger) {
   const optionDefs = utils.extend({ logger: { default: logger } }, baseOptionDefs, extraOptionDefs);
@@ -102,7 +135,15 @@ function validate(options, emitter, extraOptionDefs, logger) {
           reportArgumentError(messages.unknownOption(name));
         } else {
           const expectedType = optionDef.type || typeDescForValue(optionDef.default);
-          if (expectedType !== 'any') {
+          const validator = optionDef.validator;
+          if (validator) {
+            const validated = validator(name, config[name], logger);
+            if (validated !== undefined) {
+              ret[name] = validated;
+            } else {
+              delete ret[name];
+            }
+          } else if (expectedType !== 'any') {
             const allowedTypes = expectedType.split('|');
             const actualType = typeDescForValue(value);
             if (allowedTypes.indexOf(actualType) < 0) {
@@ -143,7 +184,30 @@ function validate(options, emitter, extraOptionDefs, logger) {
   return config;
 }
 
+/**
+ * Get tags for the specified configuration.
+ *
+ * If any additional tags are added to the configuration, then the tags from
+ * this method should be extended with those.
+ * @param {Object} config The already valiated configuration.
+ * @returns {Object} The tag configuration.
+ */
+function getTags(config) {
+  const tags = {};
+  if (config) {
+    if (config.application && config.application.id !== undefined && config.application.id !== null) {
+      tags['application-id'] = [config.application.id];
+    }
+    if (config.application && config.application.version !== undefined && config.application.id !== null) {
+      tags['application-version'] = [config.application.version];
+    }
+  }
+
+  return tags;
+}
+
 module.exports = {
   baseOptionDefs,
   validate,
+  getTags,
 };

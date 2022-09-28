@@ -115,10 +115,14 @@ declare module 'launchdarkly-js-sdk-common' {
     /**
      * Whether or not to include custom HTTP headers when requesting flags from LaunchDarkly.
      *
-     * Currently these are used to track what version of the SDK is active. This defaults to true
-     * (custom headers will be sent). One reason you might want to set it to false is that the presence
-     * of custom headers causes browsers to make an extra OPTIONS request (a CORS preflight check)
-     * before each flag request, which could affect performance.
+     * These are used to send metadata about the SDK (such as the version). They
+     * are also used to send the application.id and application.version set in
+     * the options.
+     * 
+     * This defaults to true (custom headers will be sent). One reason you might
+     * want to set it to false is that the presence of custom headers causes
+     * browsers to make an extra OPTIONS request (a CORS preflight check) before
+     * each flag request, which could affect performance.
      */
     sendLDHeaders?: boolean;
 
@@ -159,14 +163,6 @@ declare module 'launchdarkly-js-sdk-common' {
      * with [[LDContextMeta.privateAttributes]].
      */
     privateAttributes?: Array<string>;
-
-    /**
-     * Whether or not to send an analytics event for a flag evaluation even if the same flag was
-     * evaluated with the same value within the last five minutes.
-     *
-     * By default, this is false (duplicate events within five minutes will be dropped).
-     */
-    allowFrequentDuplicateEvents?: boolean;
 
     /**
      * Whether analytics events should be sent only when you call variation (true), or also when you
@@ -239,6 +235,31 @@ declare module 'launchdarkly-js-sdk-common' {
      * If `wrapperName` is unset, this field will be ignored.
      */
     wrapperVersion?: string;
+
+    /**
+     * Information about the application where the LaunchDarkly SDK is running.
+     */
+     application?: {
+      /**
+       * A unique identifier representing the application where the LaunchDarkly SDK is running.
+       * 
+       * This can be specified as any string value as long as it only uses the following characters: ASCII letters,
+       * ASCII digits, period, hyphen, underscore. A string containing any other characters will be ignored.
+       * 
+       * Example: `authentication-service`
+       */
+      id?: string;
+
+      /**
+       * A unique identifier representing the version of the application where the LaunchDarkly SDK is running.
+       * 
+       * This can be specified as any string value as long as it only uses the following characters: ASCII letters,
+       * ASCII digits, period, hyphen, underscore. A string containing any other characters will be ignored.
+       * 
+       * Example: `1.0.0` (standard version string) or `abcdef` (sha prefix)
+       */
+      version?: string;
+    }
   }
 
   /**

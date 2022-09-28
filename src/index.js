@@ -64,7 +64,6 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
 
   const requestor = Requestor(platform, options, environment);
 
-  let seenRequests = {};
   let flags = {};
   let useLocalStorage;
   let streamActive;
@@ -157,7 +156,6 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
   }
 
   function onIdentifyChange(context) {
-    seenRequests = {};
     sendIdentifyEvent(context);
   }
 
@@ -179,15 +177,6 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
     const context = ident.getContext();
     const now = new Date();
     const value = detail ? detail.value : null;
-    if (!options.allowFrequentDuplicateEvents) {
-      const cacheKey = JSON.stringify(value) + key;
-      const cached = seenRequests[cacheKey];
-      // cache TTL is five minutes
-      if (cached && now - cached < 300000) {
-        return;
-      }
-      seenRequests[cacheKey] = now;
-    }
 
     const event = {
       kind: 'feature',
@@ -319,7 +308,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
     }
 
     for (const key in flags) {
-      if (utils.objectHasOwnProperty(flags, key)) {
+      if (utils.objectHasOwnProperty(flags, key) && !flags[key].deleted) {
         results[key] = variationDetailInternal(key, null, !options.sendEventsOnlyForVariation).value;
       }
     }

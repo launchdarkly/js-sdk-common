@@ -180,6 +180,10 @@ const debugPostingDiagnosticEvent = function(event) {
   return 'sending diagnostic event (' + event.kind + ')';
 };
 
+const invalidTagValue = name => `Config option "${name}" must only contain letters, numbers, ., _ or -.`;
+
+const tagValueTooLong = name => `Value of "${name}" was longer than 64 characters and was discarded.`;
+
 module.exports = {
   bootstrapInvalid,
   bootstrapOldFormat,
@@ -208,12 +212,14 @@ module.exports = {
   invalidData,
   invalidKey,
   invalidContext,
+  invalidTagValue,
   localStorageUnavailable,
   networkError,
   optionBelowMinimum,
   streamClosing,
   streamConnecting,
   streamError,
+  tagValueTooLong,
   unknownCustomEventKey,
   unknownOption,
   contextNotSpecified,

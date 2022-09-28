@@ -101,7 +101,6 @@ describe('DiagnosticsManager', () => {
   };
   const defaultConfigInEvent = {
     allAttributesPrivate: false,
-    allowFrequentDuplicateEvents: false,
     bootstrapMode: false,
     customBaseURI: false,
     customEventsURI: false,
@@ -187,7 +186,6 @@ describe('DiagnosticsManager', () => {
     it('sends init event on start() with custom config', async () => {
       const configAndResultValues = [
         [{ allAttributesPrivate: true }, { allAttributesPrivate: true }],
-        [{ allowFrequentDuplicateEvents: true }, { allowFrequentDuplicateEvents: true }],
         [{ bootstrap: {} }, { bootstrapMode: true }],
         [{ baseUrl: 'http://other' }, { customBaseURI: true }],
         [{ eventsUrl: 'http://other' }, { customEventsURI: true }],

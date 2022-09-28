@@ -1,12 +1,13 @@
 const errors = require('./errors');
 const utils = require('./utils');
 const { v1: uuidv1 } = require('uuid');
+const { getLDHeaders, transformHeaders } = require('./headers');
 
 const MAX_URL_LENGTH = 2000;
 
 function EventSender(platform, environmentId, options) {
   const imageUrlPath = '/a/' + environmentId + '.gif';
-  const baseHeaders = utils.extend({ 'Content-Type': 'application/json' }, utils.getLDHeaders(platform, options));
+  const baseHeaders = utils.extend({ 'Content-Type': 'application/json' }, getLDHeaders(platform, options));
   const httpFallbackPing = platform.httpFallbackPing; // this will be set for us if we're in the browser SDK
   const sender = {};
 
@@ -34,7 +35,7 @@ function EventSender(platform, environmentId, options) {
             'X-LaunchDarkly-Payload-ID': payloadId,
           });
       return platform
-        .httpRequest('POST', url, utils.transformHeaders(headers, options), jsonBody)
+        .httpRequest('POST', url, transformHeaders(headers, options), jsonBody)
         .promise.then(result => {
           if (!result) {
             // This was a response from a fire-and-forget request, so we won't have a status.

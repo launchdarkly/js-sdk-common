@@ -102,7 +102,6 @@ describe('configuration', () => {
   checkBooleanProperty('sendEvents');
   checkBooleanProperty('allAttributesPrivate');
   checkBooleanProperty('sendLDHeaders');
-  checkBooleanProperty('allowFrequentDuplicateEvents');
   checkBooleanProperty('sendEventsOnlyForVariation');
   checkBooleanProperty('useReport');
   checkBooleanProperty('evaluationReasons');
@@ -212,5 +211,51 @@ describe('configuration', () => {
     expect(config.extraStringOptionWithoutDefault).toBe('ok');
     expect(config.extraFunctionOption).toBe(fn);
     await listener.expectError(messages.wrongOptionType('extraNumericOptionWithoutDefault', 'number', 'string'));
+  });
+
+  it('handles a valid application id', async () => {
+    const listener = errorListener();
+    const configIn = { application: { id: 'test-application' } };
+    expect(configuration.validate(configIn, listener.emitter, null, listener.logger).application.id).toEqual(
+      'test-application'
+    );
+  });
+
+  it('logs a warning with an invalid application id', async () => {
+    const listener = errorListener();
+    const configIn = { application: { id: 'test #$#$#' } };
+    expect(configuration.validate(configIn, listener.emitter, null, listener.logger).application.id).toBeUndefined();
+    await listener.expectWarningOnly(messages.invalidTagValue('application.id'));
+  });
+
+  it('logs a warning when a tag value is too long', async () => {
+    const listener = errorListener();
+    const configIn = { application: { id: 'a'.repeat(65), version: 'b'.repeat(64) } };
+    expect(configuration.validate(configIn, listener.emitter, null, listener.logger).application.id).toBeUndefined();
+    await listener.expectWarningOnly(messages.tagValueTooLong('application.id'));
+  });
+
+  it('handles a valid application version', async () => {
+    const listener = errorListener();
+    const configIn = { application: { version: 'test-version' } };
+    expect(configuration.validate(configIn, listener.emitter, null, listener.logger).application.version).toEqual(
+      'test-version'
+    );
+  });
+
+  it('logs a warning with an invalid application version', async () => {
+    const listener = errorListener();
+    const configIn = { application: { version: 'test #$#$#' } };
+    expect(
+      configuration.validate(configIn, listener.emitter, null, listener.logger).application.version
+    ).toBeUndefined();
+    await listener.expectWarningOnly(messages.invalidTagValue('application.version'));
+  });
+
+  it('includes application id and version in tags when present', async () => {
+    expect(configuration.getTags({ application: { id: 'test-id', version: 'test-version' } })).toEqual({
+      'application-id': ['test-id'],
+      'application-version': ['test-version'],
+    });
   });
 });
