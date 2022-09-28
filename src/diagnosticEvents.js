@@ -201,7 +201,6 @@ function DiagnosticsManager(
       usingSecureMode: !!config.hash,
       bootstrapMode: !!config.bootstrap,
       fetchGoalsDisabled: !config.fetchGoals,
-      allowFrequentDuplicateEvents: !!config.allowFrequentDuplicateEvents,
       sendEventsOnlyForVariation: !!config.sendEventsOnlyForVariation,
       autoAliasingOptOut: !!config.autoAliasingOptOut,
     };
