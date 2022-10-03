@@ -191,10 +191,13 @@ declare module 'launchdarkly-js-sdk-common' {
     inlineUsersInEvents?: boolean;
 
     /**
-     * Whether or not to send an analytics event for a flag evaluation even if the same flag was
-     * evaluated with the same value within the last five minutes.
+     * This option is deprecated, and setting it has no effect.
      *
-     * By default, this is false (duplicate events within five minutes will be dropped).
+     * The behavior is now to allow frequent duplicate events.
+     *
+     * This is not a problem because most events will be summarized, and
+     * events which are not summarized are important to the operation of features such as
+     * experimentation.
      */
     allowFrequentDuplicateEvents?: boolean;
 

@@ -63,7 +63,6 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
 
   const requestor = Requestor(platform, options, environment);
 
-  const seenRequests = {};
   let flags = {};
   let useLocalStorage;
   let streamActive;
@@ -181,15 +180,6 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
     const user = ident.getUser();
     const now = new Date();
     const value = detail ? detail.value : null;
-    if (!options.allowFrequentDuplicateEvents) {
-      const cacheKey = JSON.stringify(value) + (user && user.key ? user.key : '') + key; // see below
-      const cached = seenRequests[cacheKey];
-      // cache TTL is five minutes
-      if (cached && now - cached < 300000) {
-        return;
-      }
-      seenRequests[cacheKey] = now;
-    }
 
     const event = {
       kind: 'feature',
@@ -313,7 +303,7 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
     }
 
     for (const key in flags) {
-      if (utils.objectHasOwnProperty(flags, key)) {
+      if (utils.objectHasOwnProperty(flags, key) && !flags[key].deleted) {
         results[key] = variationDetailInternal(key, null, !options.sendEventsOnlyForVariation).value;
       }
     }

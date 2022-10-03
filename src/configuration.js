@@ -79,6 +79,10 @@ export function validate(options, emitter, extraOptionDefs, logger) {
     // eslint-disable-next-line camelcase
     private_attribute_names: 'privateAttributeNames',
     samplingInterval: null,
+    // The property name is the deprecated name, and the property value is the preferred name if
+    // any, or null/undefined if there is no replacement. This should be removed, along with
+    // the option, in the next major version.
+    allowFrequentDuplicateEvents: undefined,
   };
 
   function checkDeprecatedOptions(config) {

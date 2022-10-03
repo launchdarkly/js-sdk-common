@@ -66,6 +66,7 @@ describe('configuration', () => {
   checkDeprecated('all_attributes_private', 'allAttributesPrivate', true);
   checkDeprecated('private_attribute_names', 'privateAttributeNames', ['foo']);
   checkDeprecated('samplingInterval', null, 100);
+  checkDeprecated('allowFrequentDuplicateEvents', undefined, true);
 
   function checkBooleanProperty(name) {
     it('enforces boolean type and default for "' + name + '"', async () => {
@@ -105,7 +106,6 @@ describe('configuration', () => {
   checkBooleanProperty('allAttributesPrivate');
   checkBooleanProperty('sendLDHeaders');
   checkBooleanProperty('inlineUsersInEvents');
-  checkBooleanProperty('allowFrequentDuplicateEvents');
   checkBooleanProperty('sendEventsOnlyForVariation');
   checkBooleanProperty('useReport');
   checkBooleanProperty('evaluationReasons');
