@@ -2,6 +2,13 @@
 
 All notable changes to the `launchdarkly-js-sdk-common` package will be documented in this file. Changes that affect the dependent SDKs such as `launchdarkly-js-client-sdk` should also be logged in those projects, in the next release that uses the updated version of this package. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [3.7.0] - 2022-10-03
+### Removed:
+- Removed `seenRequests` cache. This cache was used to de-duplicate events, but it has been supplanted with summary events.
+
+### Deprecated:
+- The `allowFrequentDuplicateEvents` configuration has been deprecated because it controlled the behavior of the `seenRequests` cache.
+
 ## [3.6.0] - 2022-04-21
 ### Added:
 - `LDOptionsBase.application`, for configuration of application metadata that may be used in LaunchDarkly analytics or other product features. This does not affect feature flag evaluations.
