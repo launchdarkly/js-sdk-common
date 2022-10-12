@@ -14,6 +14,7 @@ const { commonBasicLogger } = require('./loggers');
 const utils = require('./utils');
 const errors = require('./errors');
 const messages = require('./messages');
+const { InspectorTypes, InspectorManager } = require('./InspectorManager');
 
 const changeEvent = 'change';
 const internalChangeEvent = 'internal-change';
@@ -32,6 +33,7 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
   const emitter = EventEmitter(logger);
   const initializationStateTracker = InitializationStateTracker(emitter);
   const options = configuration.validate(specifiedOptions, emitter, extraOptionDefs, logger);
+  const inspectorManager = InspectorManager(options.inspectors, logger);
   const sendEvents = options.sendEvents;
   let environment = env;
   let hash = options.hash;
@@ -154,11 +156,38 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
     }
   }
 
+  function notifyInspectionIdentityChanged() {
+    if (inspectorManager.hasListeners(InspectorTypes.clientIdentityChanged)) {
+      inspectorManager.onIdentityChanged(ident.getUser());
+    }
+  }
+
+  function notifyInspectionFlagChanged(data, newFlag) {
+    if (inspectorManager.hasListeners(InspectorTypes.flagDetailChanged)) {
+      inspectorManager.onFlagChanged(data.key, getFlagDetail(newFlag));
+    }
+  }
+
+  function notifyInspectionFlagsChanged() {
+    if (inspectorManager.hasListeners(InspectorTypes.flagDetailsChanged)) {
+      inspectorManager.onFlags(
+        Object.entries(flags)
+          .map(([key, value]) => ({ key, detail: getFlagDetail(value) }))
+          .reduce((acc, cur) => {
+            // eslint-disable-next-line no-param-reassign
+            acc[cur.key] = cur.detail;
+            return acc;
+          }, {})
+      );
+    }
+  }
+
   function onIdentifyChange(user, previousUser) {
     sendIdentifyEvent(user);
     if (!options.autoAliasingOptOut && previousUser && previousUser.anonymous && user && !user.anonymous) {
       alias(user, previousUser);
     }
+    notifyInspectionIdentityChanged();
   }
 
   function sendIdentifyEvent(user) {
@@ -257,14 +286,14 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
   }
 
   function variation(key, defaultValue) {
-    return variationDetailInternal(key, defaultValue, true, false).value;
+    return variationDetailInternal(key, defaultValue, true, false, false).value;
   }
 
   function variationDetail(key, defaultValue) {
-    return variationDetailInternal(key, defaultValue, true, true);
+    return variationDetailInternal(key, defaultValue, true, true, false);
   }
 
-  function variationDetailInternal(key, defaultValue, sendEvent, includeReasonInEvent) {
+  function variationDetailInternal(key, defaultValue, sendEvent, includeReasonInEvent, isAllFlags) {
     let detail;
 
     if (flags && utils.objectHasOwnProperty(flags, key) && flags[key] && !flags[key].deleted) {
@@ -279,6 +308,11 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
 
     if (sendEvent) {
       sendFlagEvent(key, detail, defaultValue, includeReasonInEvent);
+    }
+
+    // For the all flags case `onFlags` will be called instead.
+    if (!isAllFlags) {
+      notifyInspectionIdentityChanged();
     }
 
     return detail;
@@ -304,7 +338,7 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
 
     for (const key in flags) {
       if (utils.objectHasOwnProperty(flags, key) && !flags[key].deleted) {
-        results[key] = variationDetailInternal(key, null, !options.sendEventsOnlyForVariation).value;
+        results[key] = variationDetailInternal(key, null, !options.sendEventsOnlyForVariation, false, true).value;
       }
     }
 
@@ -433,6 +467,7 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
             mods[data.key] = { current: newDetail };
           }
           handleFlagChanges(mods); // don't wait for this Promise to be resolved
+          notifyInspectionFlagChanged(data, newFlag);
         } else {
           logger.debug(messages.debugStreamPatchIgnored(data.key));
         }
@@ -449,6 +484,7 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
             mods[data.key] = { previous: flags[data.key].value };
           }
           flags[data.key] = { version: data.version, deleted: true };
+          notifyInspectionFlagChanged(data, flags[data.key]);
           handleFlagChanges(mods); // don't wait for this Promise to be resolved
         } else {
           logger.debug(messages.debugStreamDeleteIgnored(data.key));
@@ -490,6 +526,9 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
     }
 
     flags = { ...newFlags };
+
+    notifyInspectionFlagsChanged();
+
     return handleFlagChanges(changes).catch(() => {}); // swallow any exceptions from this Promise
   }
 
@@ -663,6 +702,8 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
       .fetchFlagSettings(ident.getUser(), hash)
       .then(requestedFlags => {
         flags = requestedFlags || {};
+
+        notifyInspectionFlagsChanged();
         // Note, we don't need to call updateSettings here because local storage and change events are not relevant
         signalSuccessfulInit();
       })

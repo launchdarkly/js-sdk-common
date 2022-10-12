@@ -39,6 +39,7 @@ const baseOptionDefs = {
   stateProvider: { type: 'object' }, // not a public option, used internally
   autoAliasingOptOut: { default: false },
   application: { validator: applicationConfigValidator },
+  inspectors: { default: [] },
 };
 
 /**
