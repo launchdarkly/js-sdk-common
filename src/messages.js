@@ -181,3 +181,9 @@ export const debugPostingDiagnosticEvent = function(event) {
 };
 
 export const invalidTagValue = name => `Config option "${name}" must only contain letters, numbers, ., _ or -.`;
+
+export const invalidInspector = (type, name) => `an inspector: "${name}" of an invalid type (${type}) was configured`;
+
+export const inspectorMethodError = (type, name) => `an inspector: "${name}" of type: "${type}" generated an exception`;
+
+export const tagValueTooLong = name => `Value of "${name}" was longer than 64 characters and was discarded.`;
