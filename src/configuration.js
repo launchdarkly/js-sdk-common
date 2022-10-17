@@ -39,6 +39,7 @@ export const baseOptionDefs = {
   stateProvider: { type: 'object' }, // not a public option, used internally
   autoAliasingOptOut: { default: false },
   application: { validator: applicationConfigValidator },
+  inspectors: { default: [] },
 };
 
 /**
@@ -48,24 +49,28 @@ const allowedTagCharacters = /^(\w|\.|-)+$/;
 
 /**
  * Verify that a value meets the requirements for a tag value.
- * @param {Object} config
  * @param {string} tagValue
+ * @param {Object} logger
  */
-function validateTagValue(name, config, tagValue, logger) {
+function validateTagValue(name, tagValue, logger) {
   if (typeof tagValue !== 'string' || !tagValue.match(allowedTagCharacters)) {
     logger.warn(messages.invalidTagValue(name));
+    return undefined;
+  }
+  if (tagValue.length > 64) {
+    logger.warn(messages.tagValueTooLong(name));
     return undefined;
   }
   return tagValue;
 }
 
-function applicationConfigValidator(name, config, value, logger) {
+function applicationConfigValidator(name, value, logger) {
   const validated = {};
   if (value.id) {
-    validated.id = validateTagValue(`${name}.id`, config, value.id, logger);
+    validated.id = validateTagValue(`${name}.id`, value.id, logger);
   }
   if (value.version) {
-    validated.version = validateTagValue(`${name}.version`, config, value.version, logger);
+    validated.version = validateTagValue(`${name}.version`, value.version, logger);
   }
   return validated;
 }
@@ -142,7 +147,7 @@ export function validate(options, emitter, extraOptionDefs, logger) {
           const expectedType = optionDef.type || typeDescForValue(optionDef.default);
           const validator = optionDef.validator;
           if (validator) {
-            const validated = validator(name, config, config[name], logger);
+            const validated = validator(name, config[name], logger);
             if (validated !== undefined) {
               ret[name] = validated;
             } else {
