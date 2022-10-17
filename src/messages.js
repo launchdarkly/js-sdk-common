@@ -180,6 +180,10 @@ const debugPostingDiagnosticEvent = function(event) {
   return 'sending diagnostic event (' + event.kind + ')';
 };
 
+const invalidInspector = (type, name) => `an inspector: "${name}" of an invalid type (${type}) was configured`;
+
+const inspectorMethodError = (type, name) => `an inspector: "${name}" of type: "${type}" generated an exception`;
+
 const invalidTagValue = name => `Config option "${name}" must only contain letters, numbers, ., _ or -.`;
 
 const tagValueTooLong = name => `Value of "${name}" was longer than 64 characters and was discarded.`;
@@ -208,8 +212,10 @@ module.exports = {
   httpErrorMessage,
   httpUnavailable,
   identifyDisabled,
+  inspectorMethodError,
   invalidContentType,
   invalidData,
+  invalidInspector,
   invalidKey,
   invalidTagValue,
   invalidUser,
