@@ -93,7 +93,6 @@ function InspectorManager(inspectors, logger) {
   manager.onFlagChanged = (flagKey, flag) => {
     if (inspectorsByType[InspectorTypes.flagDetailChanged].length) {
       onNextTick(() => {
-        console.log('what?');
         inspectorsByType[InspectorTypes.flagDetailChanged].forEach(inspector => inspector.method(flagKey, flag));
       });
     }
