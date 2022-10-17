@@ -156,6 +156,12 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
     }
   }
 
+  function notifyInspectionFlagUsed(key, detail) {
+    if (inspectorManager.hasListeners(InspectorTypes.flagUsed)) {
+      inspectorManager.onFlagUsed(key, detail, ident.getUser());
+    }
+  }
+
   function notifyInspectionIdentityChanged() {
     if (inspectorManager.hasListeners(InspectorTypes.clientIdentityChanged)) {
       inspectorManager.onIdentityChanged(ident.getUser());
@@ -312,7 +318,7 @@ export function initialize(env, user, specifiedOptions, platform, extraOptionDef
 
     // For the all flags case `onFlags` will be called instead.
     if (!isAllFlags) {
-      notifyInspectionIdentityChanged();
+      notifyInspectionFlagUsed(key, detail);
     }
 
     return detail;
