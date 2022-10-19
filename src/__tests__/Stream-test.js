@@ -170,6 +170,7 @@ describe('Stream', () => {
     const nAttempts = 5;
     for (let i = 0; i < nAttempts; i++) {
       es.mockError('test error');
+      await sleepAsync(10);
       const created1 = await platform.testing.expectStream();
       const es1 = created1.eventSource;
 
@@ -185,6 +186,40 @@ describe('Stream', () => {
     }
   });
 
+  it.each([401, 403])('does not reconnect after an unrecoverable error', async status => {
+    const config = { ...defaultConfig, streamReconnectDelay: 1, useReport: false };
+    const stream = new Stream(platform, config, envName);
+    stream.connect(user);
+
+    const created = await platform.testing.expectStream();
+    const es = created.eventSource;
+
+    expect(es.readyState).toBe(EventSource.CONNECTING);
+    es.mockOpen();
+    expect(es.readyState).toBe(EventSource.OPEN);
+
+    es.mockError({ status });
+    await sleepAsync(10);
+    expect(platform.testing.eventSourcesCreated.length()).toEqual(0);
+  });
+
+  it.each([400, 408, 429])('does reconnect after a recoverable error', async status => {
+    const config = { ...defaultConfig, streamReconnectDelay: 1, useReport: false };
+    const stream = new Stream(platform, config, envName);
+    stream.connect(user);
+
+    const created = await platform.testing.expectStream();
+    const es = created.eventSource;
+
+    expect(es.readyState).toBe(EventSource.CONNECTING);
+    es.mockOpen();
+    expect(es.readyState).toBe(EventSource.OPEN);
+
+    es.mockError({ status });
+    await sleepAsync(10);
+    expect(platform.testing.eventSourcesCreated.length()).toEqual(1);
+  });
+
   it('logs a warning for only the first failed connection attempt', async () => {
     const config = { ...defaultConfig, streamReconnectDelay: 1 };
     const stream = new Stream(platform, config, envName);
@@ -197,6 +232,7 @@ describe('Stream', () => {
     const nAttempts = 5;
     for (let i = 0; i < nAttempts; i++) {
       es.mockError('test error');
+      await sleepAsync(10);
       const created1 = await platform.testing.expectStream();
       es = created1.eventSource;
       es.mockOpen();
@@ -221,6 +257,7 @@ describe('Stream', () => {
     const nAttempts = 5;
     for (let i = 0; i < nAttempts; i++) {
       es.mockError('test error #1');
+      await sleepAsync(10);
       const created1 = await platform.testing.expectStream();
       es = created1.eventSource;
       es.mockOpen();
@@ -232,6 +269,7 @@ describe('Stream', () => {
 
     for (let i = 0; i < nAttempts; i++) {
       es.mockError('test error #2');
+      await sleepAsync(10);
       const created1 = await platform.testing.expectStream();
       es = created1.eventSource;
       es.mockOpen();
@@ -239,8 +277,8 @@ describe('Stream', () => {
 
     // make sure there is just a single logged message rather than five (one per attempt)
     expect(logger.output.warn).toEqual([
-      messages.streamError('test error #1', 1),
-      messages.streamError('test error #2', 1),
+      expect.stringContaining('test error #1'),
+      expect.stringContaining('test error #2'),
     ]);
   });
 
