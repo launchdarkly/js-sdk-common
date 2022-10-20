@@ -2,6 +2,13 @@
 
 All notable changes to the `launchdarkly-js-sdk-common` package will be documented in this file. Changes that affect the dependent SDKs such as `launchdarkly-js-client-sdk` should also be logged in those projects, in the next release that uses the updated version of this package. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [3.8.2] - 2022-10-20
+### Added:
+- Implemented `jitter` and `backoff` for streaming connections. When a connection fails the retry will start at the `streamReconnectDelay` and will double on each unsuccessful consecutive connection attempt (`backoff`) to a max of 30 seconds. The delay will be adjusted from 50%-100% of the calculated delay to prevent many clients from attempting to reconnect at the same time (`jitter`).
+
+### Changed:
+- Removed usage of `flatMap`. (Thanks [@mateuszsikora](https://github.com/launchdarkly/js-sdk-common/pull/77))
+
 ## [3.8.1] - 2022-10-17
 ### Fixed:
 - Fixed an issue that prevented the `flag-used` inspector from being called.
