@@ -2,6 +2,21 @@
 
 All notable changes to the `launchdarkly-js-sdk-common` package will be documented in this file. Changes that affect the dependent SDKs such as `launchdarkly-js-client-sdk` should also be logged in those projects, in the next release that uses the updated version of this package. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [4.3.1] - 2022-10-17
+### Fixed:
+- Fixed an issue that prevented the `flag-used` inspector from being called.
+
+## [4.3.0] - 2022-10-17
+### Added:
+- Added support for `Inspectors` that can be used for collecting information for monitoring, analytics, and debugging.
+
+## [4.2.0] - 2022-10-03
+### Removed:
+- Removed `seenRequests` cache. This cache was used to de-duplicate events, but it has been supplanted with summary events.
+
+### Deprecated:
+- The `allowFrequentDuplicateEvents` configuration has been deprecated because it controlled the behavior of the `seenRequests` cache.
+
 ## [4.1.1] - 2022-06-07
 ### Changed:
 - Enforce a 64 character limit for `application.id` and `application.version` configuration options.

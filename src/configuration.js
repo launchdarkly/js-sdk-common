@@ -36,6 +36,7 @@ const baseOptionDefs = {
   wrapperVersion: { type: 'string' },
   stateProvider: { type: 'object' }, // not a public option, used internally
   application: { validator: applicationConfigValidator },
+  inspectors: { default: [] },
 };
 
 /**
