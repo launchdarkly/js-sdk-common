@@ -123,13 +123,15 @@ const streamError = function(err, streamReconnectDelay) {
   return (
     'Error on stream connection: ' +
     errorString(err) +
-    ', will continue retrying every ' +
+    ', will continue retrying after ' +
     streamReconnectDelay +
     ' milliseconds.'
   );
 };
 
 const unknownOption = name => 'Ignoring unknown config option "' + name + '"';
+
+const unrecoverableStreamError = err => `Error on stream connection ${errorString(err)}, giving up permanently`;
 
 const wrongOptionType = (name, expectedType, actualType) =>
   'Config option "' + name + '" should be of type ' + expectedType + ', got ' + actualType + ', using default value';
@@ -228,6 +230,7 @@ module.exports = {
   tagValueTooLong,
   unknownCustomEventKey,
   unknownOption,
+  unrecoverableStreamError,
   userNotSpecified,
   wrongOptionType,
   wrongOptionTypeBoolean,
