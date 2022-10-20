@@ -123,10 +123,14 @@ export const streamError = function(err, streamReconnectDelay) {
   return (
     'Error on stream connection: ' +
     errorString(err) +
-    ', will continue retrying every ' +
+    ', will continue retrying after ' +
     streamReconnectDelay +
     ' milliseconds.'
   );
+};
+
+export const unrecoverableStreamError = function(err) {
+  return `Error on stream connection ${errorString(err)}, giving up permanently`;
 };
 
 export const unknownOption = name => 'Ignoring unknown config option "' + name + '"';
