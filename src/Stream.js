@@ -1,6 +1,7 @@
 const messages = require('./messages');
 const { appendUrlPath, base64URLEncode, objectHasOwnProperty } = require('./utils');
 const { getLDHeaders, transformHeaders } = require('./headers');
+const { isHttpErrorRecoverable } = require('./errors');
 
 // The underlying event source implementation is abstracted via the platform object, which should
 // have these three properties:
@@ -16,6 +17,8 @@ const { getLDHeaders, transformHeaders } = require('./headers');
 // interval between heartbeats from the LaunchDarkly streaming server. If this amount of time elapses
 // with no new data, the connection will be cycled.
 const streamReadTimeoutMillis = 5 * 60 * 1000; // 5 minutes
+const maxRetryDelay = 30 * 1000; // Maximum retry delay 30 seconds.
+const jitterRatio = 0.5; // Delay should be 50%-100% of calculated time.
 
 function Stream(platform, config, environment, diagnosticsAccumulator) {
   const baseUrl = config.streamUrl;
@@ -24,7 +27,7 @@ function Stream(platform, config, environment, diagnosticsAccumulator) {
   const evalUrlPrefix = appendUrlPath(baseUrl, '/eval/' + environment);
   const useReport = config.useReport;
   const withReasons = config.evaluationReasons;
-  const streamReconnectDelay = config.streamReconnectDelay;
+  const baseReconnectDelay = config.streamReconnectDelay;
   const headers = getLDHeaders(platform, config);
   let firstConnectionErrorLogged = false;
   let es = null;
@@ -33,6 +36,22 @@ function Stream(platform, config, environment, diagnosticsAccumulator) {
   let context = null;
   let hash = null;
   let handlers = null;
+  let retryCount = 0;
+
+  function backoff() {
+    const delay = baseReconnectDelay * Math.pow(2, retryCount);
+    return delay > maxRetryDelay ? maxRetryDelay : delay;
+  }
+
+  function jitter(computedDelayMillis) {
+    return computedDelayMillis - Math.trunc(Math.random() * jitterRatio * computedDelayMillis);
+  }
+
+  function getNextRetryDelay() {
+    const delay = jitter(backoff());
+    retryCount += 1;
+    return delay;
+  }
 
   stream.connect = function(newContext, newHash, newHandlers) {
     context = newContext;
@@ -63,13 +82,31 @@ function Stream(platform, config, environment, diagnosticsAccumulator) {
   };
 
   function handleError(err) {
+    // The event source may not produce a status. But the LaunchDarkly
+    // polyfill can. If we can get the status, then we should stop retrying
+    // on certain error codes.
+    if (err.status && typeof err.status === 'number' && !isHttpErrorRecoverable(err.status)) {
+      // If we encounter an unrecoverable condition, then we do not want to
+      // retry anymore.
+      closeConnection();
+      logger.error(messages.unrecoverableStreamError(err));
+      // Ensure any pending retry attempts are not done.
+      if (reconnectTimeoutReference) {
+        clearTimeout(reconnectTimeoutReference);
+        reconnectTimeoutReference = null;
+      }
+      return;
+    }
+
+    const delay = getNextRetryDelay();
+
     if (!firstConnectionErrorLogged) {
-      logger.warn(messages.streamError(err, streamReconnectDelay));
+      logger.warn(messages.streamError(err, delay));
       firstConnectionErrorLogged = true;
     }
     logConnectionResult(false);
     closeConnection();
-    tryConnect(streamReconnectDelay);
+    tryConnect(delay);
   }
 
   function tryConnect(delay) {
@@ -123,6 +160,11 @@ function Stream(platform, config, environment, diagnosticsAccumulator) {
       }
 
       es.onerror = handleError;
+
+      es.onopen = () => {
+        // If the connection is a success, then reset the retryCount.
+        retryCount = 0;
+      };
     }
   }
 
