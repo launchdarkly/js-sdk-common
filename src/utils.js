@@ -1,7 +1,7 @@
 const base64 = require('base64-js');
 const fastDeepEqual = require('fast-deep-equal');
 
-const userAttrsToStringify = ['key', 'secondary', 'ip', 'country', 'email', 'firstName', 'lastName', 'avatar', 'name'];
+const userAttrsToStringify = ['key', 'ip', 'country', 'email', 'firstName', 'lastName', 'avatar', 'name'];
 
 function appendUrlPath(baseUrl, path) {
   // Ensure that URL concatenation is done correctly regardless of whether the

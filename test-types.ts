@@ -9,7 +9,6 @@ var anonUserWithNoKey: ld.LDUser = { anonymous: true };
 var anonUserWithKey: ld.LDUser = { key: 'anon-user', anonymous: true };
 var user: ld.LDContext = {
   key: 'user',
-  secondary: 'otherkey',
   name: 'name',
   firstName: 'first',
   lastName: 'last',

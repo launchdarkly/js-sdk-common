@@ -275,16 +275,6 @@ declare module 'launchdarkly-js-sdk-common' {
    * They cannot be addressed in targetting rules.
    */
    export interface LDContextMeta {
-    /**
-     * An optional secondary key for a context.
-     *
-     * TKTK
-     * 
-     * This affects [feature flag targeting](https://docs.launchdarkly.com/home/flags/targeting-users#targeting-rules-based-on-user-attributes) 
-     * as follows: if you have chosen to bucket context by a specific attribute, the secondary key (if set)
-     * is used to further distinguish between contexts which are otherwise identical according to that attribute.
-     */
-    secondary?: string;
 
     /**
      * 
@@ -376,6 +366,36 @@ declare module 'launchdarkly-js-sdk-common' {
 
   /**
    * A LaunchDarkly user object.
+   *
+   * @deprecated
+   * The LDUser object is currently supported for ease of upgrade.
+   * In order to convert an LDUser into a LDSingleKindContext the following changes should
+   * be made.
+   * 
+   * 1.) Add a kind to the object. `kind: 'user'`.
+   * 
+   * 2.) Move custom attributes to the top level of the object.
+   * 
+   * 3.) Move `privateAttributeNames` to `_meta.privateAttributes`.
+   * 
+   * ```
+   * const LDUser: user = {
+   *   key: '1234',
+   *   privateAttributeNames: ['myAttr']
+   *   custom: {
+   *     myAttr: 'value'
+   *   }
+   * }
+   * 
+   * const LDSingleKindContext: context = {
+   *   kind: 'user',
+   *   key: '1234',
+   *   myAttr: 'value'
+   *   _meta: {
+   *     privateAttributes: ['myAttr']
+   *   }
+   * }
+   * ```
    */
   export interface LDUser {
     /**
@@ -389,14 +409,6 @@ declare module 'launchdarkly-js-sdk-common' {
      * It is an error to omit the `key` property if `anonymous` is not set.
      */
     key?: string;
-
-    /**
-     * An optional secondary key for a user. This affects
-     * [feature flag targeting](https://docs.launchdarkly.com/home/flags/targeting-users#targeting-rules-based-on-user-attributes)
-     * as follows: if you have chosen to bucket users by a specific attribute, the secondary key (if set)
-     * is used to further distinguish between users who are otherwise identical according to that attribute.
-     */
-    secondary?: string;
 
     /**
      * The user's name.
