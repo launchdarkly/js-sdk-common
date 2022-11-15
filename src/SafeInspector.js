@@ -1,4 +1,4 @@
-const { messages } = require('.');
+const messages = require('./messages');
 
 /**
  * Wrap an inspector ensuring that calling its methods are safe.
