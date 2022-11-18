@@ -88,11 +88,11 @@ function Requestor(platform, options, environment) {
     let body;
 
     if (useReport) {
-      endpoint = [baseUrl, '/sdk/evalx/', environment, '/user'].join('');
+      endpoint = [baseUrl, '/sdk/evalx/', environment, '/context'].join('');
       body = JSON.stringify(context);
     } else {
       data = utils.base64URLEncode(JSON.stringify(context));
-      endpoint = [baseUrl, '/sdk/evalx/', environment, '/users/', data].join('');
+      endpoint = [baseUrl, '/sdk/evalx/', environment, '/contexts/', data].join('');
     }
     if (hash) {
       query = 'h=' + hash;

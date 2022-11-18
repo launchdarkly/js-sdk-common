@@ -44,6 +44,10 @@ const baseOptionDefs = {
  */
 const allowedTagCharacters = /^(\w|\.|-)+$/;
 
+function canonicalizeUrl(url) {
+  return url?.replace(/\/+$/, '');
+}
+
 /**
  * Verify that a value meets the requirements for a tag value.
  * @param {string} tagValue
@@ -165,6 +169,11 @@ function validate(options, emitter, extraOptionDefs, logger) {
         }
       }
     });
+
+    ret.baseUrl = canonicalizeUrl(ret.baseUrl);
+    ret.streamUrl = canonicalizeUrl(ret.streamUrl);
+    ret.eventsUrl = canonicalizeUrl(ret.eventsUrl);
+
     return ret;
   }
 

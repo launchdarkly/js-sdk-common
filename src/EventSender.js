@@ -31,7 +31,7 @@ function EventSender(platform, environmentId, options) {
       const headers = isDiagnostic
         ? baseHeaders
         : utils.extend({}, baseHeaders, {
-            'X-LaunchDarkly-Event-Schema': '3',
+            'X-LaunchDarkly-Event-Schema': '4',
             'X-LaunchDarkly-Payload-ID': payloadId,
           });
       return platform
