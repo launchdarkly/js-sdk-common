@@ -80,10 +80,9 @@ function validate(options, emitter, extraOptionDefs, logger) {
   const optionDefs = utils.extend({ logger: { default: logger } }, baseOptionDefs, extraOptionDefs);
 
   const deprecatedOptions = {
-    // The property name is the deprecated name, and the property value is the preferred name if
-    // any, or null/undefined if there is no replacement. This should be removed, along with
-    // the option, in the next major version.
-    allowFrequentDuplicateEvents: undefined,
+    // As of the latest major version, there are no deprecated options. Next time we deprecate
+    // something, add an item here where the property name is the deprecated name, and the
+    // property value is the preferred name if any, or null/undefined if there is no replacement.
   };
 
   function checkDeprecatedOptions(config) {

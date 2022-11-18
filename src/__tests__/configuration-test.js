@@ -44,24 +44,26 @@ describe('configuration', () => {
     await listener.expectNoErrors();
   }
 
-  function checkDeprecated(oldName, newName, value) {
-    const desc = newName
-      ? 'allows "' + oldName + '" as a deprecated equivalent to "' + newName + '"'
-      : 'warns that "' + oldName + '" is deprecated';
-    it(desc, async () => {
-      const listener = errorListener();
-      const config0 = {};
-      config0[oldName] = value;
-      const config1 = configuration.validate(config0, listener.emitter, null, listener.logger);
-      if (newName) {
-        expect(config1[newName]).toBe(value);
-        expect(config1[oldName]).toBeUndefined();
-      } else {
-        expect(config1[oldName]).toEqual(value);
-      }
-      await listener.expectWarningOnly(messages.deprecated(oldName, newName));
-    });
-  }
+  // As of the latest major version, there are no deprecated options. This logic can be restored
+  // the next time we deprecate something.
+  // function checkDeprecated(oldName, newName, value) {
+  //   const desc = newName
+  //     ? 'allows "' + oldName + '" as a deprecated equivalent to "' + newName + '"'
+  //     : 'warns that "' + oldName + '" is deprecated';
+  //   it(desc, async () => {
+  //     const listener = errorListener();
+  //     const config0 = {};
+  //     config0[oldName] = value;
+  //     const config1 = configuration.validate(config0, listener.emitter, null, listener.logger);
+  //     if (newName) {
+  //       expect(config1[newName]).toBe(value);
+  //       expect(config1[oldName]).toBeUndefined();
+  //     } else {
+  //       expect(config1[oldName]).toEqual(value);
+  //     }
+  //     await listener.expectWarningOnly(messages.deprecated(oldName, newName));
+  //   });
+  // }
 
   function checkBooleanProperty(name) {
     it('enforces boolean type and default for "' + name + '"', async () => {
@@ -105,8 +107,6 @@ describe('configuration', () => {
   checkBooleanProperty('evaluationReasons');
   checkBooleanProperty('diagnosticOptOut');
   checkBooleanProperty('streaming');
-
-  checkDeprecated('allowFrequentDuplicateEvents', undefined, true);
 
   function checkNumericProperty(name, validValue) {
     it('enforces numeric type and default for "' + name + '"', async () => {
