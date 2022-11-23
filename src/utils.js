@@ -184,6 +184,29 @@ function sanitizeContext(context) {
   return newContext || context;
 }
 
+function getContextKeys(context) {
+  const keys = {};
+
+  if (context) {
+    const { kind, key } = context;
+    if (!kind) {
+      keys.user = `${key}`;
+    } else if (kind === 'multi') {
+      Object.entries(context)
+        .filter(([key]) => key !== 'kind')
+        .forEach(([key, value]) => {
+          if (value?.key) {
+            keys[key] = value.key;
+          }
+        });
+    } else {
+      keys[kind] = `${key}`;
+    }
+  }
+
+  return keys;
+}
+
 module.exports = {
   appendUrlPath,
   base64URLEncode,
@@ -192,6 +215,7 @@ module.exports = {
   clone,
   deepEquals,
   extend,
+  getContextKeys,
   getLDUserAgentString,
   objectHasOwnProperty,
   onNextTick,
