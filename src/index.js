@@ -14,7 +14,7 @@ const { commonBasicLogger } = require('./loggers');
 const utils = require('./utils');
 const errors = require('./errors');
 const messages = require('./messages');
-const { checkContext } = require('./context');
+const { checkContext, getContextKeys } = require('./context');
 const { InspectorTypes, InspectorManager } = require('./InspectorManager');
 
 const changeEvent = 'change';
@@ -809,4 +809,5 @@ module.exports = {
   errors,
   messages,
   utils,
+  getContextKeys,
 };

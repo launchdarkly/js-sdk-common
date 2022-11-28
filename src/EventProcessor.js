@@ -4,6 +4,7 @@ const ContextFilter = require('./ContextFilter');
 const errors = require('./errors');
 const messages = require('./messages');
 const utils = require('./utils');
+const { getContextKeys } = require('./context');
 
 function EventProcessor(
   platform,
@@ -50,7 +51,7 @@ function EventProcessor(
       // identify events always have an inline context
       ret.context = contextFilter.filter(e.context);
     } else {
-      ret.contextKeys = getContextKeys(e);
+      ret.contextKeys = getContextKeysFromEvent(e);
       delete ret['context'];
     }
     if (e.kind === 'feature') {
@@ -60,26 +61,8 @@ function EventProcessor(
     return ret;
   }
 
-  function getContextKeys(event) {
-    const keys = {};
-    const context = event.context;
-    if (context !== undefined) {
-      if (context.kind === undefined) {
-        keys.user = String(context.key);
-      } else if (context.kind === 'multi') {
-        Object.entries(context)
-          .filter(([key]) => key !== 'kind')
-          .forEach(([key, value]) => {
-            if (value !== undefined && value.key !== undefined) {
-              keys[key] = value.key;
-            }
-          });
-      } else {
-        keys[context.kind] = String(context.key);
-      }
-      return keys;
-    }
-    return undefined;
+  function getContextKeysFromEvent(event) {
+    return getContextKeys(event.context, logger);
   }
 
   function addToOutbox(event) {

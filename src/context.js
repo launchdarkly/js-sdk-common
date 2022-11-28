@@ -89,8 +89,44 @@ function getCanonicalKey(context) {
   }
 }
 
+function getContextKeys(context, logger) {
+  if (!context) {
+    return undefined;
+  }
+
+  const keys = {};
+  const { kind, key } = context;
+
+  switch (kind) {
+    case typeof kind === 'undefined':
+      keys.user = `${key}`;
+      break;
+    case 'multi':
+      Object.entries(context)
+        .filter(([key]) => key !== 'kind')
+        .forEach(([key, value]) => {
+          if (value?.key) {
+            keys[key] = value.key;
+          }
+        });
+      break;
+    case null:
+      logger?.warn(`null is not a valid context kind: ${context}`);
+      break;
+    case '':
+      logger?.warn(`'' is not a valid context kind: ${context}`);
+      break;
+    default:
+      keys[kind] = `${key}`;
+      break;
+  }
+
+  return keys;
+}
+
 module.exports = {
   checkContext,
+  getContextKeys,
   getContextKinds,
   getCanonicalKey,
 };

@@ -1,4 +1,4 @@
-const { checkContext, getContextKinds, getCanonicalKey } = require('../context');
+const { checkContext, getContextKeys, getContextKinds, getCanonicalKey } = require('../context');
 
 describe.each([{ key: 'test' }, { kind: 'user', key: 'test' }, { kind: 'multi', user: { key: 'test' } }])(
   'given a context which contains a single kind',
@@ -89,5 +89,113 @@ describe('when determining canonical keys', () => {
   it('does not break with an null/undefined context', () => {
     expect(getCanonicalKey(undefined)).toBeUndefined();
     expect(getCanonicalKey(null)).toBeUndefined();
+  });
+});
+
+describe('getContextKeys', () => {
+  it('returns undefined if argument is undefined', () => {
+    const context = undefined;
+    const keys = getContextKeys(context);
+    expect(keys).toBeUndefined();
+  });
+
+  it('works with legacy user without kind attribute', () => {
+    const user = {
+      key: 'legacy-user-key',
+      name: 'Test User',
+      custom: {
+        customAttribute1: true,
+      },
+    };
+    const keys = getContextKeys(user);
+    expect(keys).toEqual({ user: 'legacy-user-key' });
+  });
+
+  it('gets keys from multi context', () => {
+    const context = {
+      kind: 'multi',
+      user: {
+        key: 'test-user-key',
+        name: 'Test User',
+        isPremiumCustomer: true,
+      },
+      organization: {
+        key: 'test-organization-key',
+        name: 'Test Company',
+        industry: 'technology',
+      },
+    };
+    const keys = getContextKeys(context);
+    expect(keys).toEqual({ user: 'test-user-key', organization: 'test-organization-key' });
+  });
+
+  it('ignores undefined keys from multi context', () => {
+    const context = {
+      kind: 'multi',
+      user: {
+        key: 'test-user-key',
+        name: 'Test User',
+        isPremiumCustomer: true,
+      },
+      organization: {
+        name: 'Test Company',
+        industry: 'technology',
+      },
+      rogueAttribute: undefined,
+    };
+    const keys = getContextKeys(context);
+    expect(keys).toEqual({ user: 'test-user-key' });
+  });
+
+  it.only('ignores empty string and null keys from multi context', () => {
+    const context = {
+      kind: 'multi',
+      user: {
+        key: 'test-user-key',
+        name: 'Test User',
+        isPremiumCustomer: true,
+      },
+      organization: {
+        key: '',
+        name: 'Test Company',
+        industry: 'technology',
+      },
+      drone: {
+        key: null,
+        name: 'test-drone',
+      },
+    };
+    const keys = getContextKeys(context);
+    expect(keys).toEqual({ user: 'test-user-key' });
+  });
+
+  it('gets keys from single context', () => {
+    const context = {
+      kind: 'drone',
+      key: 'test-drone-key',
+      name: 'test-drone',
+    };
+    const keys = getContextKeys(context);
+    expect(keys).toEqual({ drone: 'test-drone-key' });
+  });
+
+  it('ignores kind when it is an empty string', () => {
+    const context = {
+      kind: '',
+      key: 'test-drone-key',
+      name: 'test-drone',
+    };
+    const keys = getContextKeys(context);
+    expect(keys).toEqual({});
+  });
+
+  it('ignores kind when it is null', () => {
+    const context = {
+      kind: null,
+      key: 'test-drone-key',
+      name: 'test-drone',
+    };
+    const keys = getContextKeys(context);
+    expect(keys).toEqual({});
   });
 });
