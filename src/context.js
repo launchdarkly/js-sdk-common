@@ -89,7 +89,7 @@ function getCanonicalKey(context) {
   }
 }
 
-function getContextKeys(context) {
+function getContextKeys(context, logger) {
   if (!context) {
     return undefined;
   }
@@ -111,8 +111,10 @@ function getContextKeys(context) {
         });
       break;
     case null:
+      logger?.warn(`null is not a valid context kind: ${context}`);
+      break;
     case '':
-      // ignore invalid keys: null and ''
+      logger?.warn(`'' is not a valid context kind: ${context}`);
       break;
     default:
       keys[kind] = `${key}`;

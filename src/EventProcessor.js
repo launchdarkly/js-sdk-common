@@ -62,7 +62,7 @@ function EventProcessor(
   }
 
   function getContextKeysFromEvent(event) {
-    return getContextKeys(event.context);
+    return getContextKeys(event.context, logger);
   }
 
   function addToOutbox(event) {
