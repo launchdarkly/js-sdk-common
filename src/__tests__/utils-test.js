@@ -1,4 +1,11 @@
-import { appendUrlPath, base64URLEncode, getLDUserAgentString, wrapPromiseCallback, chunkEventsForUrl } from '../utils';
+import {
+  appendUrlPath,
+  base64URLEncode,
+  chunkEventsForUrl,
+  getContextKeys,
+  getLDUserAgentString,
+  wrapPromiseCallback,
+} from '../utils';
 
 import * as stubPlatform from './stubPlatform';
 
@@ -72,6 +79,72 @@ describe('utils', () => {
       const events = [event, event, event, event, event];
       const chunks = chunkEventsForUrl(eventLength * 2, events);
       expect(chunks).toEqual([[event, event], [event, event], [event]]);
+    });
+  });
+
+  describe('getContextKeys', () => {
+    it('returns undefined if argument is undefined', () => {
+      const context = undefined;
+      const keys = getContextKeys(context);
+      expect(keys).toBeUndefined();
+    });
+
+    it('works with legacy user without kind attribute', () => {
+      const user = {
+        key: 'legacy-user-key',
+        name: 'Test User',
+        custom: {
+          customAttribute1: true,
+        },
+      };
+      const keys = getContextKeys(user);
+      expect(keys).toEqual({ user: 'legacy-user-key' });
+    });
+
+    it('gets keys from multi context', () => {
+      const context = {
+        kind: 'multi',
+        user: {
+          key: 'test-user-key',
+          name: 'Test User',
+          isPremiumCustomer: true,
+        },
+        organization: {
+          key: 'test-organization-key',
+          name: 'Test Company',
+          industry: 'technology',
+        },
+      };
+      const keys = getContextKeys(context);
+      expect(keys).toEqual({ user: 'test-user-key', organization: 'test-organization-key' });
+    });
+
+    it('ignores undefined keys from multi context', () => {
+      const context = {
+        kind: 'multi',
+        user: {
+          key: 'test-user-key',
+          name: 'Test User',
+          isPremiumCustomer: true,
+        },
+        organization: {
+          name: 'Test Company',
+          industry: 'technology',
+        },
+        rogueAttribute: undefined,
+      };
+      const keys = getContextKeys(context);
+      expect(keys).toEqual({ user: 'test-user-key' });
+    });
+
+    it('gets keys from single context', () => {
+      const context = {
+        key: 'test-drone-key',
+        kind: 'drone',
+        name: 'test-drone',
+      };
+      const keys = getContextKeys(context);
+      expect(keys).toEqual({ drone: 'test-drone-key' });
     });
   });
 });

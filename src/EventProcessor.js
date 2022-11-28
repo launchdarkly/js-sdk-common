@@ -61,8 +61,7 @@ function EventProcessor(
   }
 
   function getContextKeysFromEvent(event) {
-    const { context } = event;
-    return context ? utils.getContextKeys(context) : undefined;
+    return utils.getContextKeys(event.context);
   }
 
   function addToOutbox(event) {

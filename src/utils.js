@@ -185,23 +185,25 @@ function sanitizeContext(context) {
 }
 
 function getContextKeys(context) {
-  const keys = {};
+  if (!context) {
+    return undefined;
+  }
 
-  if (context) {
-    const { kind, key } = context;
-    if (!kind) {
-      keys.user = `${key}`;
-    } else if (kind === 'multi') {
-      Object.entries(context)
-        .filter(([key]) => key !== 'kind')
-        .forEach(([key, value]) => {
-          if (value?.key) {
-            keys[key] = value.key;
-          }
-        });
-    } else {
-      keys[kind] = `${key}`;
-    }
+  const keys = {};
+  const { kind, key } = context;
+
+  if (!kind) {
+    keys.user = `${key}`;
+  } else if (kind === 'multi') {
+    Object.entries(context)
+      .filter(([key]) => key !== 'kind')
+      .forEach(([key, value]) => {
+        if (value?.key) {
+          keys[key] = value.key;
+        }
+      });
+  } else {
+    keys[kind] = `${key}`;
   }
 
   return keys;
