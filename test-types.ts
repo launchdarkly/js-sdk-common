@@ -91,3 +91,5 @@ var flagSetValue: ld.LDFlagValue = flagSet['key'];
 
 client.close(() => {});
 client.close().then(() => {});
+
+var contextKeys = ld.getContextKeys(user);
