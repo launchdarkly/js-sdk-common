@@ -3,6 +3,8 @@
  * @param {string} kind
  * @returns true if the kind is valid.
  */
+const { commonBasicLogger } = require('./loggers');
+
 function validKind(kind) {
   return typeof kind === 'string' && kind !== 'kind' && kind.match(/^(\w|\.|-)+$/);
 }
@@ -89,7 +91,7 @@ function getCanonicalKey(context) {
   }
 }
 
-function getContextKeys(context, logger) {
+function getContextKeys(context, logger = commonBasicLogger()) {
   if (!context) {
     return undefined;
   }
@@ -111,10 +113,10 @@ function getContextKeys(context, logger) {
         });
       break;
     case null:
-      logger?.warn(`null is not a valid context kind: ${context}`);
+      logger.warn(`null is not a valid context kind: ${context}`);
       break;
     case '':
-      logger?.warn(`'' is not a valid context kind: ${context}`);
+      logger.warn(`'' is not a valid context kind: ${context}`);
       break;
     default:
       keys[kind] = `${key}`;
