@@ -147,13 +147,55 @@ describe('getContextKeys', () => {
     expect(keys).toEqual({ user: 'test-user-key' });
   });
 
+  it.only('ignores empty string and null keys from multi context', () => {
+    const context = {
+      kind: 'multi',
+      user: {
+        key: 'test-user-key',
+        name: 'Test User',
+        isPremiumCustomer: true,
+      },
+      organization: {
+        key: '',
+        name: 'Test Company',
+        industry: 'technology',
+      },
+      drone: {
+        key: null,
+        name: 'test-drone',
+      },
+    };
+    const keys = getContextKeys(context);
+    expect(keys).toEqual({ user: 'test-user-key' });
+  });
+
   it('gets keys from single context', () => {
     const context = {
-      key: 'test-drone-key',
       kind: 'drone',
+      key: 'test-drone-key',
       name: 'test-drone',
     };
     const keys = getContextKeys(context);
     expect(keys).toEqual({ drone: 'test-drone-key' });
+  });
+
+  it('ignores kind when it is an empty string', () => {
+    const context = {
+      kind: '',
+      key: 'test-drone-key',
+      name: 'test-drone',
+    };
+    const keys = getContextKeys(context);
+    expect(keys).toEqual({});
+  });
+
+  it('ignores kind when it is null', () => {
+    const context = {
+      kind: null,
+      key: 'test-drone-key',
+      name: 'test-drone',
+    };
+    const keys = getContextKeys(context);
+    expect(keys).toEqual({});
   });
 });

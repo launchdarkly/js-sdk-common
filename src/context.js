@@ -97,18 +97,26 @@ function getContextKeys(context) {
   const keys = {};
   const { kind, key } = context;
 
-  if (!kind) {
-    keys.user = `${key}`;
-  } else if (kind === 'multi') {
-    Object.entries(context)
-      .filter(([key]) => key !== 'kind')
-      .forEach(([key, value]) => {
-        if (value?.key) {
-          keys[key] = value.key;
-        }
-      });
-  } else {
-    keys[kind] = `${key}`;
+  switch (kind) {
+    case typeof kind === 'undefined':
+      keys.user = `${key}`;
+      break;
+    case 'multi':
+      Object.entries(context)
+        .filter(([key]) => key !== 'kind')
+        .forEach(([key, value]) => {
+          if (value?.key) {
+            keys[key] = value.key;
+          }
+        });
+      break;
+    case null:
+    case '':
+      // ignore invalid keys: null and ''
+      break;
+    default:
+      keys[kind] = `${key}`;
+      break;
   }
 
   return keys;
