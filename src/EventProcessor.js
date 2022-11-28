@@ -4,6 +4,7 @@ const ContextFilter = require('./ContextFilter');
 const errors = require('./errors');
 const messages = require('./messages');
 const utils = require('./utils');
+const { getContextKeys } = require('./context');
 
 function EventProcessor(
   platform,
@@ -61,7 +62,7 @@ function EventProcessor(
   }
 
   function getContextKeysFromEvent(event) {
-    return utils.getContextKeys(event.context);
+    return getContextKeys(event.context);
   }
 
   function addToOutbox(event) {
