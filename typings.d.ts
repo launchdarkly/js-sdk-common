@@ -984,6 +984,11 @@ declare module 'launchdarkly-js-sdk-common' {
    */
   export type LDLogLevel = 'debug' | 'info' | 'warn' | 'error' | 'none';
 
+  export function getContextKeys(
+    context: LDContext,
+    logger?: LDLogger,
+  ): {[attribute: string]: string} | undefined;
+
   /**
    * Callback interface for collecting information about the SDK at runtime.
    * 
