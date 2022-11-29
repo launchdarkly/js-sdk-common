@@ -100,7 +100,7 @@ function getContextKeys(context, logger = commonBasicLogger()) {
   const { kind, key } = context;
 
   switch (kind) {
-    case typeof kind === 'undefined':
+    case undefined:
       keys.user = `${key}`;
       break;
     case 'multi':
