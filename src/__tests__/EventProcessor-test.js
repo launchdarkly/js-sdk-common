@@ -344,10 +344,12 @@ describe.each([
       expect(se.endDate).toEqual(2000);
       expect(se.features).toEqual({
         flagkey1: {
+          contextKinds: ['user'],
           default: 'default1',
           counters: [{ version: 11, variation: 1, value: 'value1', count: 1 }],
         },
         flagkey2: {
+          contextKinds: ['user'],
           default: 'default2',
           counters: [{ version: 22, variation: 1, value: 'value2', count: 1 }],
         },

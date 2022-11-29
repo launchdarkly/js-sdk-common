@@ -39,7 +39,7 @@ describe('EventSummarizer', () => {
       creationDate: 1000,
       key: key,
       version: version,
-      user: user,
+      context: user,
       variation: variation,
       value: value,
       default: defaultVal,
@@ -63,6 +63,7 @@ describe('EventSummarizer', () => {
     data.features.key1.counters.sort((a, b) => a.value - b.value);
     const expectedFeatures = {
       key1: {
+        contextKinds: ['user'],
         default: 111,
         counters: [
           { value: 100, variation: 1, version: 11, count: 2 },
@@ -70,10 +71,12 @@ describe('EventSummarizer', () => {
         ],
       },
       key2: {
+        contextKinds: ['user'],
         default: 222,
         counters: [{ value: 999, variation: 1, version: 22, count: 1 }],
       },
       badkey: {
+        contextKinds: ['user'],
         default: 333,
         counters: [{ value: 333, unknown: true, count: 1 }],
       },
@@ -94,8 +97,56 @@ describe('EventSummarizer', () => {
     data.features.key1.counters.sort((a, b) => a.value - b.value);
     const expectedFeatures = {
       key1: {
+        contextKinds: ['user'],
         default: 111,
         counters: [{ variation: 0, value: 100, version: 11, count: 1 }, { value: 111, version: 11, count: 2 }],
+      },
+    };
+    expect(data.features).toEqual(expectedFeatures);
+  });
+
+  it('includes keys from all kinds', () => {
+    const es = EventSummarizer();
+    const event1 = {
+      kind: 'feature',
+      creationDate: 1000,
+      key: 'key1',
+      version: 11,
+      context: { key: 'test' },
+      variation: 1,
+      value: 100,
+      default: 111,
+    };
+    const event2 = {
+      kind: 'feature',
+      creationDate: 1000,
+      key: 'key1',
+      version: 11,
+      context: { kind: 'org', key: 'test' },
+      variation: 1,
+      value: 100,
+      default: 111,
+    };
+    const event3 = {
+      kind: 'feature',
+      creationDate: 1000,
+      key: 'key1',
+      version: 11,
+      context: { kind: 'multi', bacon: { key: 'crispy' }, eggs: { key: 'scrambled' } },
+      variation: 1,
+      value: 100,
+      default: 111,
+    };
+    es.summarizeEvent(event1);
+    es.summarizeEvent(event2);
+    es.summarizeEvent(event3);
+    const data = es.getSummary();
+
+    const expectedFeatures = {
+      key1: {
+        default: 111,
+        counters: [{ variation: 1, value: 100, version: 11, count: 3 }],
+        contextKinds: ['user', 'org', 'bacon', 'eggs'],
       },
     };
     expect(data.features).toEqual(expectedFeatures);
