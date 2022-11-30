@@ -327,8 +327,7 @@ declare module 'launchdarkly-js-sdk-common' {
      * 
      * This is a metadata property, rather than an attribute that can be addressed in evaluations:
      * that is, a rule clause that references the attribute name "privateAttributes", will not use
-     * this value, but instead will use whatever value (if any) you have set for that name with a
-     * method such as SetString.
+     * this value, but would use a "privateAttributes" attribute set on the context.
      */
     privateAttributes?: string[];
   }
