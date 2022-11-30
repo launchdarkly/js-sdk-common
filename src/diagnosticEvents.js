@@ -1,6 +1,6 @@
 const { v1: uuidv1 } = require('uuid');
 // Note that in the diagnostic events spec, these IDs are to be generated with UUID v4. However,
-// in JS we were already using v1 for unique user keys, so to avoid bringing in two packages we
+// in JS we were already using v1 for unique context keys, so to avoid bringing in two packages we
 // will use v1 here as well.
 
 const { baseOptionDefs } = require('./configuration');
