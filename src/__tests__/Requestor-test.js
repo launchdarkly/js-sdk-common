@@ -69,7 +69,7 @@ describe('Requestor', () => {
 
       expect(server.requests.length()).toEqual(1);
       const req = await server.requests.take();
-      expect(req.path).toEqual(`/sdk/evalx/${env}/users/${encodedUser}`);
+      expect(req.path).toEqual(`/sdk/evalx/${env}/contexts/${encodedUser}`);
     });
   });
 
@@ -81,7 +81,7 @@ describe('Requestor', () => {
 
       expect(server.requests.length()).toEqual(1);
       const req = await server.requests.take();
-      expect(req.path).toEqual(`/sdk/evalx/${env}/users/${encodedUser}?h=hash1`);
+      expect(req.path).toEqual(`/sdk/evalx/${env}/contexts/${encodedUser}?h=hash1`);
     });
   });
 
@@ -93,7 +93,7 @@ describe('Requestor', () => {
 
       expect(server.requests.length()).toEqual(1);
       const req = await server.requests.take();
-      expect(req.path).toEqual(`/sdk/evalx/${env}/users/${encodedUser}?withReasons=true`);
+      expect(req.path).toEqual(`/sdk/evalx/${env}/contexts/${encodedUser}?withReasons=true`);
     });
   });
 
@@ -105,7 +105,7 @@ describe('Requestor', () => {
 
       expect(server.requests.length()).toEqual(1);
       const req = await server.requests.take();
-      expect(req.path).toEqual(`/sdk/evalx/${env}/users/${encodedUser}?h=hash1&withReasons=true`);
+      expect(req.path).toEqual(`/sdk/evalx/${env}/contexts/${encodedUser}?h=hash1&withReasons=true`);
     });
   });
 
@@ -117,7 +117,7 @@ describe('Requestor', () => {
 
       expect(server.requests.length()).toEqual(1);
       const req = await server.requests.take();
-      expect(req.path).toEqual(`/sdk/evalx/${env}/user`);
+      expect(req.path).toEqual(`/sdk/evalx/${env}/context`);
     });
   });
 
@@ -129,7 +129,7 @@ describe('Requestor', () => {
 
       expect(server.requests.length()).toEqual(1);
       const req = await server.requests.take();
-      expect(req.path).toEqual(`/sdk/evalx/${env}/user?h=hash1`);
+      expect(req.path).toEqual(`/sdk/evalx/${env}/context?h=hash1`);
     });
   });
 
@@ -141,7 +141,7 @@ describe('Requestor', () => {
 
       expect(server.requests.length()).toEqual(1);
       const req = await server.requests.take();
-      expect(req.path).toEqual(`/sdk/evalx/${env}/user?withReasons=true`);
+      expect(req.path).toEqual(`/sdk/evalx/${env}/context?withReasons=true`);
     });
   });
 
@@ -153,7 +153,7 @@ describe('Requestor', () => {
 
       expect(server.requests.length()).toEqual(1);
       const req = await server.requests.take();
-      expect(req.path).toEqual(`/sdk/evalx/${env}/user?h=hash1&withReasons=true`);
+      expect(req.path).toEqual(`/sdk/evalx/${env}/context?h=hash1&withReasons=true`);
     });
   });
 

@@ -39,16 +39,16 @@ describe('given an inspector with callbacks of every type', () => {
       {
         type: 'flag-used',
         name: 'my-flag-used-inspector',
-        method: (flagKey, flagDetail, user) => {
-          eventQueue.add({ type: 'flag-used', flagKey, flagDetail, user });
+        method: (flagKey, flagDetail, context) => {
+          eventQueue.add({ type: 'flag-used', flagKey, flagDetail, context });
         },
       },
       // 'flag-used registered twice.
       {
         type: 'flag-used',
         name: 'my-other-flag-used-inspector',
-        method: (flagKey, flagDetail, user) => {
-          eventQueue.add({ type: 'flag-used', flagKey, flagDetail, user });
+        method: (flagKey, flagDetail, context) => {
+          eventQueue.add({ type: 'flag-used', flagKey, flagDetail, context });
         },
       },
       {
@@ -75,10 +75,10 @@ describe('given an inspector with callbacks of every type', () => {
       {
         type: 'client-identity-changed',
         name: 'my-identity-inspector',
-        method: user => {
+        method: context => {
           eventQueue.add({
             type: 'client-identity-changed',
-            user,
+            context,
           });
         },
       },
@@ -137,7 +137,7 @@ describe('given an inspector with callbacks of every type', () => {
           kind: 'OFF',
         },
       },
-      user: { key: 'test-key' },
+      context: { key: 'test-key' },
     };
     const event1 = await eventQueue.take();
     expect(event1).toMatchObject(expectedEvent);
@@ -180,7 +180,7 @@ describe('given an inspector with callbacks of every type', () => {
     const event = await eventQueue.take();
     expect(event).toMatchObject({
       type: 'client-identity-changed',
-      user: { key: 'the-key' },
+      context: { key: 'the-key' },
     });
   });
 });

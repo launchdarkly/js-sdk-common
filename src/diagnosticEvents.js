@@ -1,6 +1,6 @@
 const { v1: uuidv1 } = require('uuid');
 // Note that in the diagnostic events spec, these IDs are to be generated with UUID v4. However,
-// in JS we were already using v1 for unique user keys, so to avoid bringing in two packages we
+// in JS we were already using v1 for unique context keys, so to avoid bringing in two packages we
 // will use v1 here as well.
 
 const { baseOptionDefs } = require('./configuration');
@@ -195,14 +195,12 @@ function DiagnosticsManager(
       reconnectTimeMillis: config.streamReconnectDelay,
       streamingDisabled: !streamingEnabled,
       allAttributesPrivate: !!config.allAttributesPrivate,
-      inlineUsersInEvents: !!config.inlineUsersInEvents,
       diagnosticRecordingIntervalMillis: config.diagnosticRecordingInterval,
       // The following extra properties are only provided by client-side JS SDKs:
       usingSecureMode: !!config.hash,
       bootstrapMode: !!config.bootstrap,
       fetchGoalsDisabled: !config.fetchGoals,
       sendEventsOnlyForVariation: !!config.sendEventsOnlyForVariation,
-      autoAliasingOptOut: !!config.autoAliasingOptOut,
     };
     // Client-side JS SDKs do not have the following properties which other SDKs have:
     // connectTimeoutMillis

@@ -20,8 +20,6 @@ const baseOptionDefs = {
   streaming: { type: 'boolean' }, // default for this is undefined, which is different from false
   sendLDHeaders: { default: true },
   requestHeaderTransform: { type: 'function' },
-  inlineUsersInEvents: { default: false },
-  allowFrequentDuplicateEvents: { default: false },
   sendEventsOnlyForVariation: { default: false },
   useReport: { default: false },
   evaluationReasons: { default: false },
@@ -30,14 +28,13 @@ const baseOptionDefs = {
   samplingInterval: { default: 0, minimum: 0 },
   streamReconnectDelay: { default: 1000, minimum: 0 },
   allAttributesPrivate: { default: false },
-  privateAttributeNames: { default: [] },
+  privateAttributes: { default: [] },
   bootstrap: { type: 'string|object' },
   diagnosticRecordingInterval: { default: 900000, minimum: 2000 },
   diagnosticOptOut: { default: false },
   wrapperName: { type: 'string' },
   wrapperVersion: { type: 'string' },
   stateProvider: { type: 'object' }, // not a public option, used internally
-  autoAliasingOptOut: { default: false },
   application: { validator: applicationConfigValidator },
   inspectors: { default: [] },
 };
@@ -46,6 +43,10 @@ const baseOptionDefs = {
  * Expression to validate characters that are allowed in tag keys and values.
  */
 const allowedTagCharacters = /^(\w|\.|-)+$/;
+
+function canonicalizeUrl(url) {
+  return url?.replace(/\/+$/, '');
+}
 
 /**
  * Verify that a value meets the requirements for a tag value.
@@ -79,10 +80,9 @@ function validate(options, emitter, extraOptionDefs, logger) {
   const optionDefs = utils.extend({ logger: { default: logger } }, baseOptionDefs, extraOptionDefs);
 
   const deprecatedOptions = {
-    // The property name is the deprecated name, and the property value is the preferred name if
-    // any, or null/undefined if there is no replacement. This should be removed, along with
-    // the option, in the next major version.
-    allowFrequentDuplicateEvents: undefined,
+    // As of the latest major version, there are no deprecated options. Next time we deprecate
+    // something, add an item here where the property name is the deprecated name, and the
+    // property value is the preferred name if any, or null/undefined if there is no replacement.
   };
 
   function checkDeprecatedOptions(config) {
@@ -169,6 +169,11 @@ function validate(options, emitter, extraOptionDefs, logger) {
         }
       }
     });
+
+    ret.baseUrl = canonicalizeUrl(ret.baseUrl);
+    ret.streamUrl = canonicalizeUrl(ret.streamUrl);
+    ret.eventsUrl = canonicalizeUrl(ret.eventsUrl);
+
     return ret;
   }
 

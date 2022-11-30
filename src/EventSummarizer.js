@@ -1,11 +1,24 @@
+const { getContextKinds } = require('./context');
+
+function getKinds(event) {
+  if (event.context) {
+    return getContextKinds(event.context);
+  }
+  if (event.contextKeys) {
+    return Object.keys(event.contextKeys);
+  }
+  return [];
+}
+
 function EventSummarizer() {
   const es = {};
 
   let startDate = 0,
     endDate = 0,
-    counters = {};
+    counters = {},
+    contextKinds = {};
 
-  es.summarizeEvent = function(event) {
+  es.summarizeEvent = event => {
     if (event.kind === 'feature') {
       const counterKey =
         event.key +
@@ -14,14 +27,21 @@ function EventSummarizer() {
         ':' +
         (event.version !== null && event.version !== undefined ? event.version : '');
       const counterVal = counters[counterKey];
+      let kinds = contextKinds[event.key];
+      if (!kinds) {
+        kinds = new Set();
+        contextKinds[event.key] = kinds;
+      }
+      getKinds(event).forEach(kind => kinds.add(kind));
+
       if (counterVal) {
         counterVal.count = counterVal.count + 1;
       } else {
         counters[counterKey] = {
           count: 1,
           key: event.key,
-          variation: event.variation,
           version: event.version,
+          variation: event.variation,
           value: event.value,
           default: event.default,
         };
@@ -35,16 +55,16 @@ function EventSummarizer() {
     }
   };
 
-  es.getSummary = function() {
+  es.getSummary = () => {
     const flagsOut = {};
     let empty = true;
-    for (const i in counters) {
-      const c = counters[i];
+    for (const c of Object.values(counters)) {
       let flag = flagsOut[c.key];
       if (!flag) {
         flag = {
           default: c.default,
           counters: [],
+          contextKinds: [...contextKinds[c.key]],
         };
         flagsOut[c.key] = flag;
       }
@@ -55,7 +75,7 @@ function EventSummarizer() {
       if (c.variation !== undefined && c.variation !== null) {
         counterOut.variation = c.variation;
       }
-      if (c.version) {
+      if (c.version !== undefined && c.version !== null) {
         counterOut.version = c.version;
       } else {
         counterOut.unknown = true;
@@ -72,10 +92,11 @@ function EventSummarizer() {
         };
   };
 
-  es.clearSummary = function() {
+  es.clearSummary = () => {
     startDate = 0;
     endDate = 0;
     counters = {};
+    contextKinds = {};
   };
 
   return es;
