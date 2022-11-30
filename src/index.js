@@ -7,13 +7,14 @@ const PersistentStorage = require('./PersistentStorage');
 const Stream = require('./Stream');
 const Requestor = require('./Requestor');
 const Identity = require('./Identity');
-const UserValidator = require('./UserValidator');
+const AnonymousContextProcessor = require('./AnonymousContextProcessor');
 const configuration = require('./configuration');
 const diagnostics = require('./diagnosticEvents');
 const { commonBasicLogger } = require('./loggers');
 const utils = require('./utils');
 const errors = require('./errors');
 const messages = require('./messages');
+const { checkContext, getContextKeys } = require('./context');
 const { InspectorTypes, InspectorManager } = require('./InspectorManager');
 
 const changeEvent = 'change';
@@ -28,7 +29,7 @@ const internalChangeEvent = 'internal-change';
 //
 // For definitions of the API in the platform object, see stubPlatform.js in the test code.
 
-function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
+function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
   const logger = createLogger();
   const emitter = EventEmitter(logger);
   const initializationStateTracker = InitializationStateTracker(emitter);
@@ -77,19 +78,19 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
   // The "stateProvider" object is used in the Electron SDK, to allow one client instance to take partial
   // control of another. If present, it has the following contract:
   // - getInitialState() returns the initial client state if it is already available. The state is an
-  //   object whose properties are "environment", "user", and "flags".
+  //   object whose properties are "environment", "context", and "flags".
   // - on("init", listener) triggers an event when the initial client state becomes available, passing
   //   the state object to the listener.
-  // - on("update", listener) triggers an event when flag values change and/or the current user changes.
-  //   The parameter is an object that *may* contain "user" and/or "flags".
+  // - on("update", listener) triggers an event when flag values change and/or the current context changes.
+  //   The parameter is an object that *may* contain "context" and/or "flags".
   // - enqueueEvent(event) accepts an analytics event object and returns true if the stateProvider will
   //   be responsible for delivering it, or false if we still should deliver it ourselves.
   const stateProvider = options.stateProvider;
 
   const ident = Identity(null, onIdentifyChange);
-  const userValidator = UserValidator(persistentStorage);
+  const anonymousContextProcessor = new AnonymousContextProcessor(persistentStorage);
   const persistentFlagStore = persistentStorage.isEnabled()
-    ? new PersistentFlagStore(persistentStorage, environment, hash, ident, logger)
+    ? PersistentFlagStore(persistentStorage, environment, hash, ident, logger)
     : null;
 
   function createLogger() {
@@ -134,22 +135,22 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
 
   function enqueueEvent(event) {
     if (!environment) {
-      // We're in paired mode and haven't been initialized with an environment or user yet
+      // We're in paired mode and haven't been initialized with an environment or context yet
       return;
     }
     if (stateProvider && stateProvider.enqueueEvent && stateProvider.enqueueEvent(event)) {
       return; // it'll be handled elsewhere
     }
-    if (event.kind !== 'alias') {
-      if (!event.user) {
-        if (firstEvent) {
-          logger.warn(messages.eventWithoutUser());
-          firstEvent = false;
-        }
-        return;
+
+    if (!event.context) {
+      if (firstEvent) {
+        logger.warn(messages.eventWithoutContext());
+        firstEvent = false;
       }
-      firstEvent = false;
+      return;
     }
+    firstEvent = false;
+
     if (shouldEnqueueEvent()) {
       logger.debug(messages.debugEnqueueingEvent(event.kind));
       events.enqueue(event);
@@ -158,13 +159,13 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
 
   function notifyInspectionFlagUsed(key, detail) {
     if (inspectorManager.hasListeners(InspectorTypes.flagUsed)) {
-      inspectorManager.onFlagUsed(key, detail, ident.getUser());
+      inspectorManager.onFlagUsed(key, detail, ident.getContext());
     }
   }
 
   function notifyInspectionIdentityChanged() {
     if (inspectorManager.hasListeners(InspectorTypes.clientIdentityChanged)) {
-      inspectorManager.onIdentityChanged(ident.getUser());
+      inspectorManager.onIdentityChanged(ident.getContext());
     }
   }
 
@@ -188,46 +189,39 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
     }
   }
 
-  function onIdentifyChange(user, previousUser) {
-    sendIdentifyEvent(user);
-    if (!options.autoAliasingOptOut && previousUser && previousUser.anonymous && user && !user.anonymous) {
-      alias(user, previousUser);
-    }
+  function onIdentifyChange(context) {
+    sendIdentifyEvent(context);
     notifyInspectionIdentityChanged();
   }
 
-  function sendIdentifyEvent(user) {
+  function sendIdentifyEvent(context) {
     if (stateProvider) {
       // In paired mode, the other client is responsible for sending identify events
       return;
     }
-    if (user) {
+    if (context) {
       enqueueEvent({
         kind: 'identify',
-        key: user.key,
-        user: user,
+        context,
         creationDate: new Date().getTime(),
       });
     }
   }
 
   function sendFlagEvent(key, detail, defaultValue, includeReason) {
-    const user = ident.getUser();
+    const context = ident.getContext();
     const now = new Date();
     const value = detail ? detail.value : null;
 
     const event = {
       kind: 'feature',
       key: key,
-      user: user,
+      context,
       value: value,
       variation: detail ? detail.variationIndex : null,
       default: defaultValue,
       creationDate: now.getTime(),
     };
-    if (user && user.anonymous) {
-      event.contextKind = userContextKind(user);
-    }
     const flag = flags[key];
     if (flag) {
       event.version = flag.flagVersion ? flag.flagVersion : flag.version;
@@ -241,26 +235,37 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
     enqueueEvent(event);
   }
 
-  function identify(user, newHash, onDone) {
+  function verifyContext(context) {
+    // The context will already have been processed to have a string key, so we
+    // do not need to allow for legacy keys in the check.
+    if (checkContext(context, false)) {
+      return Promise.resolve(context);
+    } else {
+      return Promise.reject(new errors.LDInvalidUserError(messages.invalidContext()));
+    }
+  }
+
+  function identify(context, newHash, onDone) {
     if (closed) {
       return utils.wrapPromiseCallback(Promise.resolve({}), onDone);
     }
     if (stateProvider) {
-      // We're being controlled by another client instance, so only that instance is allowed to change the user
+      // We're being controlled by another client instance, so only that instance is allowed to change the context
       logger.warn(messages.identifyDisabled());
       return utils.wrapPromiseCallback(Promise.resolve(utils.transformVersionedValuesToValues(flags)), onDone);
     }
     const clearFirst = useLocalStorage && persistentFlagStore ? persistentFlagStore.clearFlags() : Promise.resolve();
     return utils.wrapPromiseCallback(
       clearFirst
-        .then(() => userValidator.validateUser(user))
-        .then(realUser =>
+        .then(() => anonymousContextProcessor.processContext(context))
+        .then(verifyContext)
+        .then(validatedContext =>
           requestor
-            .fetchFlagSettings(realUser, newHash)
+            .fetchFlagSettings(validatedContext, newHash)
             // the following then() is nested within this one so we can use realUser from the previous closure
             .then(requestedFlags => {
               const flagValueMap = utils.transformVersionedValuesToValues(requestedFlags);
-              ident.setUser(realUser);
+              ident.setContext(validatedContext);
               hash = newHash;
               if (requestedFlags) {
                 return replaceAllFlags(requestedFlags).then(() => flagValueMap);
@@ -283,8 +288,8 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
     );
   }
 
-  function getUser() {
-    return ident.getUser();
+  function getContext() {
+    return ident.getContext();
   }
 
   function flush(onDone) {
@@ -355,26 +360,6 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
     return user.anonymous ? 'anonymousUser' : 'user';
   }
 
-  function alias(user, previousUser) {
-    if (stateProvider) {
-      // In paired mode, the other client is responsible for sending alias events
-      return;
-    }
-
-    if (!user || !previousUser) {
-      return;
-    }
-
-    enqueueEvent({
-      kind: 'alias',
-      key: user.key,
-      contextKind: userContextKind(user),
-      previousKey: previousUser.key,
-      previousContextKind: userContextKind(previousUser),
-      creationDate: new Date().getTime(),
-    });
-  }
-
   function track(key, data, metricValue) {
     if (typeof key !== 'string') {
       emitter.maybeReportError(new errors.LDInvalidEventKeyError(messages.unknownCustomEventKey(key)));
@@ -390,16 +375,16 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
       logger.warn(messages.unknownCustomEventKey(key));
     }
 
-    const user = ident.getUser();
+    const context = ident.getContext();
     const e = {
       kind: 'custom',
       key: key,
-      user: user,
+      context,
       url: platform.getCurrentUrl(),
       creationDate: new Date().getTime(),
     };
-    if (user && user.anonymous) {
-      e.contextKind = userContextKind(user);
+    if (context && context.anonymous) {
+      e.contextKind = userContextKind(context);
     }
     // Note, check specifically for null/undefined because it is legal to set these fields to a falsey value.
     if (data !== null && data !== undefined) {
@@ -413,7 +398,7 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
 
   function connectStream() {
     streamActive = true;
-    if (!ident.getUser()) {
+    if (!ident.getContext()) {
       return;
     }
     const tryParseData = jsonData => {
@@ -424,16 +409,16 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
         return undefined;
       }
     };
-    stream.connect(ident.getUser(), hash, {
+    stream.connect(ident.getContext(), hash, {
       ping: function() {
         logger.debug(messages.debugStreamPing());
-        const userAtTimeOfPingEvent = ident.getUser();
+        const contextAtTimeOfPingEvent = ident.getContext();
         requestor
-          .fetchFlagSettings(userAtTimeOfPingEvent, hash)
+          .fetchFlagSettings(contextAtTimeOfPingEvent, hash)
           .then(requestedFlags => {
-            // Check whether the current user is still the same - we don't want to overwrite the flags if
+            // Check whether the current context is still the same - we don't want to overwrite the flags if
             // the application has called identify() while this request was in progress
-            if (utils.deepEquals(userAtTimeOfPingEvent, ident.getUser())) {
+            if (utils.deepEquals(contextAtTimeOfPingEvent, ident.getContext())) {
               replaceAllFlags(requestedFlags || {});
             }
           })
@@ -663,17 +648,20 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
     if (!env) {
       return Promise.reject(new errors.LDInvalidEnvironmentIdError(messages.environmentNotSpecified()));
     }
-    return userValidator.validateUser(user).then(realUser => {
-      ident.setUser(realUser);
-      if (typeof options.bootstrap === 'object') {
-        // flags have already been set earlier
-        return signalSuccessfulInit();
-      } else if (useLocalStorage) {
-        return finishInitWithLocalStorage();
-      } else {
-        return finishInitWithPolling();
-      }
-    });
+    return anonymousContextProcessor
+      .processContext(context)
+      .then(verifyContext)
+      .then(validatedContext => {
+        ident.setContext(validatedContext);
+        if (typeof options.bootstrap === 'object') {
+          // flags have already been set earlier
+          return signalSuccessfulInit();
+        } else if (useLocalStorage) {
+          return finishInitWithLocalStorage();
+        } else {
+          return finishInitWithPolling();
+        }
+      });
   }
 
   function finishInitWithLocalStorage() {
@@ -681,7 +669,7 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
       if (storedFlags === null || storedFlags === undefined) {
         flags = {};
         return requestor
-          .fetchFlagSettings(ident.getUser(), hash)
+          .fetchFlagSettings(ident.getContext(), hash)
           .then(requestedFlags => replaceAllFlags(requestedFlags || {}))
           .then(signalSuccessfulInit)
           .catch(err => {
@@ -696,7 +684,7 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
         utils.onNextTick(signalSuccessfulInit);
 
         return requestor
-          .fetchFlagSettings(ident.getUser(), hash)
+          .fetchFlagSettings(ident.getContext(), hash)
           .then(requestedFlags => replaceAllFlags(requestedFlags))
           .catch(err => emitter.maybeReportError(err));
       }
@@ -705,7 +693,7 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
 
   function finishInitWithPolling() {
     return requestor
-      .fetchFlagSettings(ident.getUser(), hash)
+      .fetchFlagSettings(ident.getContext(), hash)
       .then(requestedFlags => {
         flags = requestedFlags || {};
 
@@ -721,14 +709,14 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
 
   function initFromStateProvider(state) {
     environment = state.environment;
-    ident.setUser(state.user);
+    ident.setContext(state.context);
     flags = { ...state.flags };
     utils.onNextTick(signalSuccessfulInit);
   }
 
   function updateFromStateProvider(state) {
-    if (state.user) {
-      ident.setUser(state.user);
+    if (state.context) {
+      ident.setContext(state.context);
     }
     if (state.flags) {
       replaceAllFlags(state.flags); // don't wait for this Promise to be resolved
@@ -788,11 +776,10 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
     waitForInitialization: () => initializationStateTracker.getInitializationPromise(),
     waitUntilReady: () => initializationStateTracker.getReadyPromise(),
     identify: identify,
-    getUser: getUser,
+    getContext: getContext,
     variation: variation,
     variationDetail: variationDetail,
     track: track,
-    alias: alias,
     on: on,
     off: off,
     setStreaming: setStreaming,
@@ -805,7 +792,7 @@ function initialize(env, user, specifiedOptions, platform, extraOptionDefs) {
     client: client, // The client object containing all public methods.
     options: options, // The validated configuration object, including all defaults.
     emitter: emitter, // The event emitter which can be used to log errors or trigger events.
-    ident: ident, // The Identity object that manages the current user.
+    ident: ident, // The Identity object that manages the current context.
     logger: logger, // The logging abstraction.
     requestor: requestor, // The Requestor object.
     start: start, // Starts the client once the environment is ready.
@@ -822,4 +809,5 @@ module.exports = {
   errors,
   messages,
   utils,
+  getContextKeys,
 };

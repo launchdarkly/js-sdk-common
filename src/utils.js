@@ -1,7 +1,7 @@
 const base64 = require('base64-js');
 const fastDeepEqual = require('fast-deep-equal');
 
-const userAttrsToStringify = ['key', 'secondary', 'ip', 'country', 'email', 'firstName', 'lastName', 'avatar', 'name'];
+const userAttrsToStringify = ['key', 'ip', 'country', 'email', 'firstName', 'lastName', 'avatar', 'name'];
 
 function appendUrlPath(baseUrl, path) {
   // Ensure that URL concatenation is done correctly regardless of whether the
@@ -120,7 +120,7 @@ function transformVersionedValuesToValues(flagsState) {
  * @param {Array[Object}]} events queue of events to divide
  * @returns Array[Array[Object]]
  */
-function chunkUserEventsForUrl(maxLength, events) {
+function chunkEventsForUrl(maxLength, events) {
   const allEvents = events.slice(0);
   const allChunks = [];
   let remainingSpace = maxLength;
@@ -165,34 +165,37 @@ function objectHasOwnProperty(object, name) {
   return Object.prototype.hasOwnProperty.call(object, name);
 }
 
-function sanitizeUser(user) {
-  if (!user) {
-    return user;
+function sanitizeContext(context) {
+  if (!context) {
+    return context;
   }
-  let newUser;
-  for (const i in userAttrsToStringify) {
-    const attr = userAttrsToStringify[i];
-    const value = user[attr];
-    if (value !== undefined && typeof value !== 'string') {
-      newUser = newUser || { ...user };
-      newUser[attr] = String(value);
-    }
+  let newContext;
+  // Only stringify user attributes for legacy users.
+  if (context.kind === null || context.kind === undefined) {
+    userAttrsToStringify.forEach(attr => {
+      const value = context[attr];
+      if (value !== undefined && typeof value !== 'string') {
+        newContext = newContext || { ...context };
+        newContext[attr] = String(value);
+      }
+    });
   }
-  return newUser || user;
+
+  return newContext || context;
 }
 
 module.exports = {
   appendUrlPath,
   base64URLEncode,
   btoa,
-  chunkUserEventsForUrl,
+  chunkEventsForUrl,
   clone,
   deepEquals,
   extend,
   getLDUserAgentString,
   objectHasOwnProperty,
   onNextTick,
-  sanitizeUser,
+  sanitizeContext,
   transformValuesToVersionedValues,
   transformVersionedValuesToValues,
   wrapPromiseCallback,
