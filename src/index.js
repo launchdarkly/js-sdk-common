@@ -189,8 +189,8 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
     }
   }
 
-  function onIdentifyChange(user) {
-    sendIdentifyEvent(user);
+  function onIdentifyChange(context) {
+    sendIdentifyEvent(context);
     notifyInspectionIdentityChanged();
   }
 
