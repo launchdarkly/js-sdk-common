@@ -6,7 +6,8 @@ repo:
 
 branches:
   - name: main
-    description: 4.x
+    description: 5.x
+  - name: 4.x
   - name: 3.x
 
 publications:
