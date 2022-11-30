@@ -9,7 +9,6 @@
   "scripts": {
     "lint": "eslint --format 'node_modules/eslint-formatter-pretty' --ignore-path .eslintignore",
     "lint:all": "eslint --format 'node_modules/eslint-formatter-pretty' --ignore-path .eslintignore src",
-    "lint-fix:all": "eslint --fix --format 'node_modules/eslint-formatter-pretty' --ignore-path .eslintignore src",
     "format": "npm run format:md && npm run format:js",
     "format:md": "prettier --parser markdown --ignore-path .prettierignore --write '*.md'",
     "format:js": "prettier --ignore-path .prettierignore --write 'src/**/*.js'",
@@ -27,7 +26,6 @@
     "@babel/preset-env": "^7.6.3",
     "@babel/runtime": "7.6.3",
     "@rollup/plugin-replace": "^2.2.0",
-    "@types/jest": "^27.4.1",
     "babel-eslint": "^10.1.0",
     "babel-jest": "^25.1.0",
     "cross-env": "^5.1.4",

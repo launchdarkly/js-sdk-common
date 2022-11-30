@@ -127,7 +127,7 @@ describe('LDClient', () => {
       await withServers(async baseConfig => {
         await withClient(numericUser, baseConfig, async client => {
           await client.waitForInitialization();
-          expect(client.getContext()).toEqual(stringifiedNumericUser);
+          expect(client.getUser()).toEqual(stringifiedNumericUser);
         });
       });
     });
@@ -139,14 +139,14 @@ describe('LDClient', () => {
         await withClient(anonUser, baseConfig, async client0 => {
           await client0.waitForInitialization();
 
-          generatedUser = client0.getContext();
+          generatedUser = client0.getUser();
           expect(generatedUser.key).toEqual(expect.anything());
           expect(generatedUser).toMatchObject(anonUser);
         });
         await withClient(anonUser, baseConfig, async client1 => {
           await client1.waitForInitialization();
 
-          const newUser1 = client1.getContext();
+          const newUser1 = client1.getUser();
           expect(newUser1).toEqual(generatedUser);
         });
       });
@@ -161,7 +161,7 @@ describe('LDClient', () => {
         await withClient(anonUser, baseConfig, async client0 => {
           await client0.waitForInitialization();
 
-          generatedUser = client0.getContext();
+          generatedUser = client0.getUser();
           expect(generatedUser.key).toEqual(expect.anything());
           expect(generatedUser).toMatchObject(anonUser);
         });
@@ -169,7 +169,7 @@ describe('LDClient', () => {
         await withClient(anonUser, baseConfig, async client1 => {
           await client1.waitForInitialization();
 
-          const newUser1 = client1.getContext();
+          const newUser1 = client1.getUser();
           expect(newUser1.key).toEqual(expect.anything());
           expect(newUser1.key).not.toEqual(generatedUser.key);
           expect(newUser1).toMatchObject(anonUser);
@@ -466,12 +466,12 @@ describe('LDClient', () => {
 
           const identifyPromise = client.identify(user2);
           await sleepAsync(100); // sleep to jump some async ticks
-          expect(client.getContext()).toEqual(user);
+          expect(client.getUser()).toEqual(user);
 
           signal.add();
           await identifyPromise;
 
-          expect(client.getContext()).toEqual(user2);
+          expect(client.getUser()).toEqual(user2);
         });
       });
     });
@@ -498,11 +498,7 @@ describe('LDClient', () => {
       });
     });
 
-    it.each([
-      { country: 'US' }, // Legacy user with no key, and not anonymous.
-      { kind: 'user' }, // A single kind that is not anonymous and has no key.
-      { kind: 'multi', app: { anonymous: true }, org: {}, user: { key: 'yes' } }, // Multi kind with 1 non-anonymous context without a key.
-    ])('returns an error and does not update flags when identify is called with invalid contexts', async badContext => {
+    it('returns an error and does not update flags when identify is called with invalid user', async () => {
       const flags0 = { 'enable-foo': { value: false } };
       const flags1 = { 'enable-foo': { value: true } };
       await withServers(async (baseConfig, pollServer) => {
@@ -520,7 +516,8 @@ describe('LDClient', () => {
           expect(client.variation('enable-foo')).toBe(false);
           expect(pollServer.requests.length()).toEqual(1);
 
-          await expect(client.identify(badContext)).rejects.toThrow();
+          const userWithNoKey = { country: 'US' };
+          await expect(client.identify(userWithNoKey)).rejects.toThrow();
 
           expect(client.variation('enable-foo')).toBe(false);
           expect(pollServer.requests.length()).toEqual(1);
@@ -536,7 +533,7 @@ describe('LDClient', () => {
           const anonUser = { anonymous: true, country: 'US' };
           await client.identify(anonUser);
 
-          const newUser = client.getContext();
+          const newUser = client.getUser();
           expect(newUser.key).toEqual(expect.anything());
           expect(newUser).toMatchObject(anonUser);
         });
@@ -549,7 +546,7 @@ describe('LDClient', () => {
       const user = { key: 'user' };
       const state = {
         environment: 'env',
-        context: user,
+        user: user,
         flags: { flagkey: { value: 'value' } },
       };
       const sp = stubPlatform.mockStateProvider(state);
@@ -578,7 +575,7 @@ describe('LDClient', () => {
       const user = { key: 'user' };
       const state = {
         environment: 'env',
-        context: user,
+        user: user,
         flags: { flagkey: { value: 'value' } },
       };
       const sp = stubPlatform.mockStateProvider(null);
@@ -595,7 +592,7 @@ describe('LDClient', () => {
       const user = { key: 'user' };
       const state0 = {
         environment: 'env',
-        context: user,
+        user: user,
         flags: { flagkey: { value: 'value0' } },
       };
       const sp = stubPlatform.mockStateProvider(state0);
@@ -621,7 +618,7 @@ describe('LDClient', () => {
     it('disables identify()', async () => {
       const user = { key: 'user' };
       const user1 = { key: 'user1' };
-      const state = { environment: 'env', context: user, flags: { flagkey: { value: 'value' } } };
+      const state = { environment: 'env', user: user, flags: { flagkey: { value: 'value' } } };
       const sp = stubPlatform.mockStateProvider(state);
 
       await withServers(async (baseConfig, pollServer) => {

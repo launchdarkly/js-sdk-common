@@ -50,7 +50,26 @@ describe('LDClient events', () => {
 
   function expectIdentifyEvent(e, user) {
     expect(e.kind).toEqual('identify');
-    expect(e.context).toEqual(user);
+    expect(e.user).toEqual(user);
+  }
+
+  function expectAliasEvent(e, user, previousUser) {
+    function userContextKind(user) {
+      return user.anonymous ? 'anonymousUser' : 'user';
+    }
+    expect(e.kind).toEqual('alias');
+    expect(e.key).toEqual(user.key);
+    expect(e.previousKey).toEqual(previousUser.key);
+    expect(e.contextKind).toEqual(userContextKind(user));
+    expect(e.previousContextKind).toEqual(userContextKind(previousUser));
+  }
+
+  function expectContextKindInEvent(e, user) {
+    if (user.anonymous) {
+      expect(e.contextKind).toEqual('anonymousUser');
+    } else {
+      expect(e.contextKind).toBe(undefined);
+    }
   }
 
   function expectFeatureEvent({
@@ -72,7 +91,7 @@ describe('LDClient events', () => {
     expect(e.default).toEqual(defaultVal);
     expect(e.trackEvents).toEqual(trackEvents);
     expect(e.debugEventsUntilDate).toEqual(debugEventsUntilDate);
-    expect(e.context).toEqual(user);
+    expectContextKindInEvent(e, user);
   }
 
   it('sends an identify event at startup', async () => {
@@ -106,6 +125,126 @@ describe('LDClient events', () => {
 
         expect(ep.events.length).toEqual(2);
         expectIdentifyEvent(ep.events[1], user1);
+      });
+    });
+  });
+
+  it('sends an alias event when alias() is called', async () => {
+    await withClientAndEventProcessor(user, {}, async (client, ep) => {
+      const anon1 = { key: 'user1', anonymous: true };
+      const anon2 = { key: 'user2', anonymous: true };
+      const known1 = { key: 'user3' };
+      const known2 = { key: 'user4' };
+      await client.waitForInitialization();
+      expect(ep.events.length).toEqual(1);
+
+      await client.alias(anon2, anon1);
+      expectAliasEvent(ep.events[1], anon2, anon1);
+
+      await client.alias(known1, anon1);
+      expectAliasEvent(ep.events[2], known1, anon1);
+
+      await client.alias(known2, known1);
+      expectAliasEvent(ep.events[3], known2, known1);
+
+      await client.alias(anon1, known1);
+      expectAliasEvent(ep.events[4], anon1, known1);
+
+      expect(ep.events.length).toEqual(5);
+    });
+  });
+
+  it('sends an alias event when identify() is called for anon to known', async () => {
+    // need a server because it'll do a polling request when we call identify
+    await withServer(async server => {
+      const anonUser = { key: 'anon-user', anonymous: true };
+      const knownUser = { key: 'known-user' };
+      await withClientAndEventProcessor(anonUser, { baseUrl: server.url }, async (client, ep) => {
+        await client.waitForInitialization();
+
+        expect(ep.events.length).toEqual(1);
+        expectIdentifyEvent(ep.events[0], anonUser);
+
+        await client.identify(knownUser);
+        expect(ep.events.length).toEqual(3);
+        expectIdentifyEvent(ep.events[1], knownUser);
+        expectAliasEvent(ep.events[2], knownUser, anonUser);
+      });
+    });
+  });
+
+  it('does not send an alias event when identify() is called if auto-aliasing is disabled', async () => {
+    // need a server because it'll do a polling request when we call identify
+    await withServer(async server => {
+      const anonUser = { key: 'anon-user', anonymous: true };
+      const knownUser = { key: 'known-user' };
+      await withClientAndEventProcessor(
+        anonUser,
+        { baseUrl: server.url, autoAliasingOptOut: true },
+        async (client, ep) => {
+          await client.waitForInitialization();
+
+          expect(ep.events.length).toEqual(1);
+          expectIdentifyEvent(ep.events[0], anonUser);
+
+          await client.identify(knownUser);
+          expect(ep.events.length).toEqual(2); //no additional alias events
+          expectIdentifyEvent(ep.events[1], knownUser);
+        }
+      );
+    });
+  });
+
+  it('does not send an alias event when identify() is called for known to anon', async () => {
+    // need a server because it'll do a polling request when we call identify
+    await withServer(async server => {
+      const knownUser = { key: 'known-user' };
+      const anonUser = { key: 'anon-user', anonymous: true };
+      await withClientAndEventProcessor(knownUser, { baseUrl: server.url }, async (client, ep) => {
+        await client.waitForInitialization();
+
+        expect(ep.events.length).toEqual(1);
+        expectIdentifyEvent(ep.events[0], knownUser);
+
+        await client.identify(anonUser);
+        expect(ep.events.length).toEqual(2); //no additional alias events
+        expectIdentifyEvent(ep.events[1], anonUser);
+      });
+    });
+  });
+
+  it('does not send an alias event when identify() is called for anon to anon', async () => {
+    // need a server because it'll do a polling request when we call identify
+    await withServer(async server => {
+      const anonUser1 = { key: 'anon-user1', anonymous: true };
+      const anonUser2 = { key: 'anon-user2', anonymous: true };
+      await withClientAndEventProcessor(anonUser1, { baseUrl: server.url }, async (client, ep) => {
+        await client.waitForInitialization();
+
+        expect(ep.events.length).toEqual(1);
+        expectIdentifyEvent(ep.events[0], anonUser1);
+
+        await client.identify(anonUser2);
+        expect(ep.events.length).toEqual(2); //no additional alias events
+        expectIdentifyEvent(ep.events[1], anonUser2);
+      });
+    });
+  });
+
+  it('does not send an alias event when identify() is called for known to known', async () => {
+    // need a server because it'll do a polling request when we call identify
+    await withServer(async server => {
+      const knownUser1 = { key: 'known-user1' };
+      const knownUser2 = { key: 'known-user2' };
+      await withClientAndEventProcessor(knownUser1, { baseUrl: server.url }, async (client, ep) => {
+        await client.waitForInitialization();
+
+        expect(ep.events.length).toEqual(1);
+        expectIdentifyEvent(ep.events[0], knownUser1);
+
+        await client.identify(knownUser2);
+        expect(ep.events.length).toEqual(2); //no additional alias events
+        expectIdentifyEvent(ep.events[1], knownUser2);
       });
     });
   });
@@ -296,7 +435,7 @@ describe('LDClient events', () => {
   it('does not send a feature event for a new flag value if there is a state provider', async () => {
     const oldFlags = { foo: { value: 'a', variation: 1, version: 2, flagVersion: 2000 } };
     const newFlags = { foo: { value: 'b', variation: 2, version: 3, flagVersion: 2001 } };
-    const sp = stubPlatform.mockStateProvider({ environment: envName, context: user, flags: oldFlags });
+    const sp = stubPlatform.mockStateProvider({ environment: envName, user: user, flags: oldFlags });
     await withServer(async server => {
       server.byDefault(respondJson(newFlags));
       const extraConfig = { stateProvider: sp, baseUrl: server.url };
@@ -407,9 +546,10 @@ describe('LDClient events', () => {
       const trackEvent = ep.events[1];
       expect(trackEvent.kind).toEqual('custom');
       expect(trackEvent.key).toEqual('eventkey');
-      expect(trackEvent.context).toEqual(user);
+      expect(trackEvent.user).toEqual(user);
       expect(trackEvent.data).toEqual(undefined);
       expect(trackEvent.url).toEqual(fakeUrl);
+      expectContextKindInEvent(trackEvent, user);
     });
   });
 
@@ -425,9 +565,10 @@ describe('LDClient events', () => {
         const trackEvent = ep.events[1];
         expect(trackEvent.kind).toEqual('custom');
         expect(trackEvent.key).toEqual('eventkey');
-        expect(trackEvent.context).toEqual(anonUser);
+        expect(trackEvent.user).toEqual(anonUser);
         expect(trackEvent.data).toEqual(undefined);
         expect(trackEvent.url).toEqual(fakeUrl);
+        expectContextKindInEvent(trackEvent, anonUser);
       });
     });
   });
@@ -443,9 +584,10 @@ describe('LDClient events', () => {
       const trackEvent = ep.events[1];
       expect(trackEvent.kind).toEqual('custom');
       expect(trackEvent.key).toEqual('eventkey');
-      expect(trackEvent.context).toEqual(user);
+      expect(trackEvent.user).toEqual(user);
       expect(trackEvent.data).toEqual(eventData);
       expect(trackEvent.url).toEqual(fakeUrl);
+      expectContextKindInEvent(trackEvent, user);
     });
   });
 
@@ -461,10 +603,11 @@ describe('LDClient events', () => {
       const trackEvent = ep.events[1];
       expect(trackEvent.kind).toEqual('custom');
       expect(trackEvent.key).toEqual('eventkey');
-      expect(trackEvent.context).toEqual(user);
+      expect(trackEvent.user).toEqual(user);
       expect(trackEvent.data).toEqual(eventData);
       expect(trackEvent.metricValue).toEqual(metricValue);
       expect(trackEvent.url).toEqual(fakeUrl);
+      expectContextKindInEvent(trackEvent, user);
     });
   });
 
@@ -503,12 +646,12 @@ describe('LDClient events', () => {
   it('should warn about missing user on first event', async () => {
     await withClientAndEventProcessor(null, {}, async client => {
       client.track('eventkey', null);
-      expect(platform.testing.logger.output.warn).toEqual([messages.eventWithoutContext()]);
+      expect(platform.testing.logger.output.warn).toEqual([messages.eventWithoutUser()]);
     });
   });
 
   it('allows stateProvider to take over sending an event', async () => {
-    const sp = stubPlatform.mockStateProvider({ environment: envName, context: user, flags: {} });
+    const sp = stubPlatform.mockStateProvider({ environment: envName, user: user, flags: {} });
     const divertedEvents = [];
     sp.enqueueEvent = event => divertedEvents.push(event);
 

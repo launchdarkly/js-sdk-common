@@ -33,7 +33,7 @@ function Stream(platform, config, environment, diagnosticsAccumulator) {
   let es = null;
   let reconnectTimeoutReference = null;
   let connectionAttemptStartTime;
-  let context = null;
+  let user = null;
   let hash = null;
   let handlers = null;
   let retryCount = 0;
@@ -53,8 +53,8 @@ function Stream(platform, config, environment, diagnosticsAccumulator) {
     return delay;
   }
 
-  stream.connect = function(newContext, newHash, newHandlers) {
-    context = newContext;
+  stream.connect = function(newUser, newHash, newHandlers) {
+    user = newUser;
     hash = newHash;
     handlers = {};
     for (const key in newHandlers || {}) {
@@ -133,14 +133,14 @@ function Stream(platform, config, environment, diagnosticsAccumulator) {
           url = evalUrlPrefix;
           options.method = 'REPORT';
           options.headers['Content-Type'] = 'application/json';
-          options.body = JSON.stringify(context);
+          options.body = JSON.stringify(user);
         } else {
           // if we can't do REPORT, fall back to the old ping-based stream
           url = appendUrlPath(baseUrl, '/ping/' + environment);
           query = '';
         }
       } else {
-        url = evalUrlPrefix + '/' + base64URLEncode(JSON.stringify(context));
+        url = evalUrlPrefix + '/' + base64URLEncode(JSON.stringify(user));
       }
       options.headers = transformHeaders(options.headers, config);
       if (withReasons) {

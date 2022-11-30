@@ -1,10 +1,9 @@
 const EventSender = require('./EventSender');
 const EventSummarizer = require('./EventSummarizer');
-const ContextFilter = require('./ContextFilter');
+const UserFilter = require('./UserFilter');
 const errors = require('./errors');
 const messages = require('./messages');
 const utils = require('./utils');
-const { getContextKeys } = require('./context');
 
 function EventProcessor(
   platform,
@@ -18,7 +17,8 @@ function EventProcessor(
   const eventSender = sender || EventSender(platform, environmentId, options);
   const mainEventsUrl = utils.appendUrlPath(options.eventsUrl, '/events/bulk/' + environmentId);
   const summarizer = EventSummarizer();
-  const contextFilter = ContextFilter(options);
+  const userFilter = UserFilter(options);
+  const inlineUsers = options.inlineUsersInEvents;
   const samplingInterval = options.samplingInterval;
   const eventCapacity = options.eventCapacity;
   const flushInterval = options.flushInterval;
@@ -47,22 +47,22 @@ function EventProcessor(
   // Transform an event from its internal format to the format we use when sending a payload.
   function makeOutputEvent(e) {
     const ret = utils.extend({}, e);
-    if (e.kind === 'identify') {
-      // identify events always have an inline context
-      ret.context = contextFilter.filter(e.context);
+    if (e.kind === 'alias') {
+      // alias events do not require any transformation
+      return ret;
+    }
+    if (inlineUsers || e.kind === 'identify') {
+      // identify events always have an inline user
+      ret.user = userFilter.filterUser(e.user);
     } else {
-      ret.contextKeys = getContextKeysFromEvent(e);
-      delete ret['context'];
+      ret.userKey = e.user.key;
+      delete ret['user'];
     }
     if (e.kind === 'feature') {
       delete ret['trackEvents'];
       delete ret['debugEventsUntilDate'];
     }
     return ret;
-  }
-
-  function getContextKeysFromEvent(event) {
-    return getContextKeys(event.context, logger);
   }
 
   function addToOutbox(event) {
@@ -107,7 +107,7 @@ function EventProcessor(
     }
     if (addDebugEvent) {
       const debugEvent = utils.extend({}, event, { kind: 'debug' });
-      debugEvent.context = contextFilter.filter(debugEvent.context);
+      debugEvent.user = userFilter.filterUser(debugEvent.user);
       delete debugEvent['trackEvents'];
       delete debugEvent['debugEventsUntilDate'];
       addToOutbox(debugEvent);
@@ -136,8 +136,7 @@ function EventProcessor(
     }
     queue = [];
     logger.debug(messages.debugPostingEvents(eventsToSend.length));
-    return eventSender.sendEvents(eventsToSend, mainEventsUrl).then(responses => {
-      const responseInfo = responses && responses[0];
+    return eventSender.sendEvents(eventsToSend, mainEventsUrl).then(responseInfo => {
       if (responseInfo) {
         if (responseInfo.serverTime) {
           lastKnownPastTime = responseInfo.serverTime;

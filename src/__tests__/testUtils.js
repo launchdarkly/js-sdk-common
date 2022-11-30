@@ -2,6 +2,7 @@ import { AsyncQueue } from 'launchdarkly-js-test-helpers';
 
 export const numericUser = {
   key: 1,
+  secondary: 2,
   ip: 3,
   country: 4,
   email: 5,
@@ -32,6 +33,7 @@ export function promiseListener() {
 
 export const stringifiedNumericUser = {
   key: '1',
+  secondary: '2',
   ip: '3',
   country: '4',
   email: '5',
@@ -62,7 +64,7 @@ export function MockEventSender() {
     calls,
     sendEvents: (events, url) => {
       calls.add({ events, url });
-      return Promise.resolve([{ serverTime, status }]);
+      return Promise.resolve({ serverTime, status });
     },
     setServerTime: time => {
       serverTime = time;

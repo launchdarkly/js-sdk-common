@@ -101,6 +101,7 @@ describe('DiagnosticsManager', () => {
   };
   const defaultConfigInEvent = {
     allAttributesPrivate: false,
+    autoAliasingOptOut: false,
     bootstrapMode: false,
     customBaseURI: false,
     customEventsURI: false,
@@ -109,6 +110,7 @@ describe('DiagnosticsManager', () => {
     eventsCapacity: defaultConfig.eventCapacity,
     eventsFlushIntervalMillis: defaultConfig.flushInterval,
     fetchGoalsDisabled: false,
+    inlineUsersInEvents: false,
     reconnectTimeMillis: defaultConfig.streamReconnectDelay,
     sendEventsOnlyForVariation: false,
     streamingDisabled: true,
@@ -194,10 +196,12 @@ describe('DiagnosticsManager', () => {
         [{ eventCapacity: 222 }, { eventsCapacity: 222 }],
         [{ flushInterval: 2222 }, { eventsFlushIntervalMillis: 2222 }],
         [{ fetchGoals: false }, { fetchGoalsDisabled: true }],
+        [{ inlineUsersInEvents: true }, { inlineUsersInEvents: true }],
         [{ streamReconnectDelay: 2222 }, { reconnectTimeMillis: 2222 }],
         [{ sendEventsOnlyForVariation: true }, { sendEventsOnlyForVariation: true }],
         [{ streaming: true }, { streamingDisabled: false }],
         [{ hash: 'x' }, { usingSecureMode: true }],
+        [{ autoAliasingOptOut: true }, { autoAliasingOptOut: true }],
       ];
       for (const i in configAndResultValues) {
         const configOverrides = configAndResultValues[i][0];

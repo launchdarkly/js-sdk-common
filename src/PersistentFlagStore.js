@@ -5,9 +5,9 @@ function PersistentFlagStore(storage, environment, hash, ident) {
 
   function getFlagsKey() {
     let key = '';
-    const context = ident.getContext();
-    if (context) {
-      key = hash || utils.btoa(JSON.stringify(context));
+    const user = ident.getUser();
+    if (user) {
+      key = hash || utils.btoa(JSON.stringify(user));
     }
     return 'ld:' + environment + ':' + key;
   }

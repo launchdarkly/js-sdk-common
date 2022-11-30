@@ -3,7 +3,7 @@ const { respondJson } = require('./mockHttp');
 const stubPlatform = require('./stubPlatform');
 
 const envName = 'UNKNOWN_ENVIRONMENT_ID';
-const context = { key: 'context-key' };
+const user = { key: 'user' };
 
 describe('given a streaming client with registered inspectors', () => {
   const eventQueue = new AsyncQueue();
@@ -11,15 +11,15 @@ describe('given a streaming client with registered inspectors', () => {
   const inspectors = [
     {
       type: 'flag-used',
-      method: (flagKey, flagDetail, context) => {
-        eventQueue.add({ type: 'flag-used', flagKey, flagDetail, context });
+      method: (flagKey, flagDetail, user) => {
+        eventQueue.add({ type: 'flag-used', flagKey, flagDetail, user });
       },
     },
     // 'flag-used registered twice.
     {
       type: 'flag-used',
-      method: (flagKey, flagDetail, context) => {
-        eventQueue.add({ type: 'flag-used', flagKey, flagDetail, context });
+      method: (flagKey, flagDetail, user) => {
+        eventQueue.add({ type: 'flag-used', flagKey, flagDetail, user });
       },
     },
     {
@@ -43,10 +43,10 @@ describe('given a streaming client with registered inspectors', () => {
     },
     {
       type: 'client-identity-changed',
-      method: context => {
+      method: user => {
         eventQueue.add({
           type: 'client-identity-changed',
-          context,
+          user,
         });
       },
     },
@@ -59,8 +59,8 @@ describe('given a streaming client with registered inspectors', () => {
     platform = stubPlatform.defaults();
     const server = platform.testing.http.newServer();
     server.byDefault(respondJson({}));
-    const config = { streaming: true, baseUrl: server.url, inspectors, sendEvents: false };
-    client = platform.testing.makeClient(envName, context, config);
+    const config = { streaming: true, baseUrl: server.url, inspectors };
+    client = platform.testing.makeClient(envName, user, config);
     await client.waitUntilReady();
   });
 
@@ -81,7 +81,7 @@ describe('given a streaming client with registered inspectors', () => {
     const ident = await eventQueue.take();
     expect(ident).toMatchObject({
       type: 'client-identity-changed',
-      context,
+      user,
     });
     const flagsEvent = await eventQueue.take();
     expect(flagsEvent).toMatchObject({

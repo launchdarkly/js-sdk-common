@@ -1,4 +1,10 @@
-import { appendUrlPath, base64URLEncode, chunkEventsForUrl, getLDUserAgentString, wrapPromiseCallback } from '../utils';
+import {
+  appendUrlPath,
+  base64URLEncode,
+  getLDUserAgentString,
+  wrapPromiseCallback,
+  chunkUserEventsForUrl,
+} from '../utils';
 
 import * as stubPlatform from './stubPlatform';
 
@@ -64,13 +70,13 @@ describe('utils', () => {
     });
   });
 
-  describe('chunkEventsForUrl', () => {
+  describe('chunkUserEventsForUrl', () => {
     it('should properly chunk the list of events', () => {
-      const context = { key: 'foo', kind: 'user' };
-      const event = { kind: 'identify', key: context.key };
+      const user = { key: 'foo' };
+      const event = { kind: 'identify', key: user.key };
       const eventLength = base64URLEncode(JSON.stringify(event)).length;
       const events = [event, event, event, event, event];
-      const chunks = chunkEventsForUrl(eventLength * 2, events);
+      const chunks = chunkUserEventsForUrl(eventLength * 2, events);
       expect(chunks).toEqual([[event, event], [event, event], [event]]);
     });
   });

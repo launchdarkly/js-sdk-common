@@ -7,10 +7,10 @@ import PersistentStorage from '../PersistentStorage';
 import * as utils from '../utils';
 
 describe('PersistentFlagStore', () => {
-  const context = { key: 'context-key', kind: 'user' };
-  const ident = Identity(context);
+  const user = { key: 'user' };
+  const ident = Identity(user);
   const env = 'ENVIRONMENT';
-  const lsKey = 'ld:' + env + ':' + utils.btoa(JSON.stringify(context));
+  const lsKey = 'ld:' + env + ':' + utils.btoa(JSON.stringify(user));
 
   it('stores flags', async () => {
     const platform = stubPlatform.defaults();
@@ -73,7 +73,7 @@ describe('PersistentFlagStore', () => {
     expect(platform.testing.getLocalStorageImmediately(lsKey)).toBe(undefined);
   });
 
-  it('uses hash, if present, instead of context properties', async () => {
+  it('uses hash, if present, instead of user properties', async () => {
     const platform = stubPlatform.defaults();
     const storage = PersistentStorage(platform.localStorage, platform.testing.logger);
     const hash = '12345';

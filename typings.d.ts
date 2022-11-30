@@ -58,8 +58,8 @@ declare module 'launchdarkly-js-sdk-common' {
      * The initial set of flags to use until the remote set is retrieved.
      *
      * If `"localStorage"` is specified, the flags will be saved and retrieved from browser local
-     * storage. Alternatively, an {@link LDFlagSet} can be specified which will be used as the initial
-     * source of flag values. In the latter case, the flag values will be available via {@link LDClient.variation}
+     * storage. Alternatively, an [[LDFlagSet]] can be specified which will be used as the initial
+     * source of flag values. In the latter case, the flag values will be available via [[variation]]
      * immediately after calling `initialize()` (normally they would not be available until the
      * client signals that it is ready).
      *
@@ -93,7 +93,7 @@ declare module 'launchdarkly-js-sdk-common' {
      *
      * If this is true, the client will always attempt to maintain a streaming connection; if false,
      * it never will. If you leave the value undefined (the default), the client will open a streaming
-     * connection if you subscribe to `"change"` or `"change:flag-key"` events (see {@link LDClient.on}).
+     * connection if you subscribe to `"change"` or `"change:flag-key"` events (see [[LDClient.on]]).
      *
      * This is equivalent to calling `client.setStreaming()` with the same value.
      */
@@ -103,9 +103,9 @@ declare module 'launchdarkly-js-sdk-common' {
      * Whether or not to use the REPORT verb to fetch flag settings.
      *
      * If this is true, flag settings will be fetched with a REPORT request
-     * including a JSON entity body with the context object.
+     * including a JSON entity body with the user object.
      *
-     * Otherwise (by default) a GET request will be issued with the context passed as
+     * Otherwise (by default) a GET request will be issued with the user passed as
      * a base64 URL-encoded path parameter.
      *
      * Do not use unless advised by LaunchDarkly.
@@ -139,7 +139,7 @@ declare module 'launchdarkly-js-sdk-common' {
      * calculated.
      *
      * The additional information will then be available through the client's
-     * {@link LDClient.variationDetail} method. Since this increases the size of network requests,
+     * [[LDClient.variationDetail]] method. Since this increases the size of network requests,
      * such information is not sent unless you set this option to true.
      */
     evaluationReasons?: boolean;
@@ -150,7 +150,7 @@ declare module 'launchdarkly-js-sdk-common' {
     sendEvents?: boolean;
 
     /**
-     * Whether all context attributes (except the context key) should be marked as private, and
+     * Whether all user attributes (except the user key) should be marked as private, and
      * not sent to LaunchDarkly in analytics events.
      *
      * By default, this is false.
@@ -158,23 +158,30 @@ declare module 'launchdarkly-js-sdk-common' {
     allAttributesPrivate?: boolean;
 
     /**
-     * Specifies a list of attribute names (either built-in or custom) which should be marked as
-     * private, and not sent to LaunchDarkly in analytics events. You can also specify this on a
-     * per-context basis with {@link LDContextMeta.privateAttributes}.
-     * 
-     * Any contexts sent to LaunchDarkly with this configuration active will have attributes with
-     * these names removed in analytic events. This is in addition to any attributes that were
-     * marked as private for an individual context with {@link LDContextMeta.privateAttributes}.
-     * Setting {@link LDOptions.allAttributesPrivate} to true overrides this.
-     * 
-     * If and only if a parameter starts with a slash, it is interpreted as a slash-delimited path
-     * that can denote a nested property within a JSON object. For instance, "/address/street" means
-     * that if there is an attribute called "address" that is a JSON object, and one of the object's
-     * properties is "street", the "street" property will be redacted from the analytics data but
-     * other properties within "address" will still be sent. This syntax also uses the JSON Pointer
-     * convention of escaping a literal slash character as "~1" and a tilde as "~0".
+     * The names of user attributes that should be marked as private, and not sent
+     * to LaunchDarkly in analytics events. You can also specify this on a per-user basis
+     * with [[LDUser.privateAttributeNames]].
      */
-    privateAttributes?: Array<string>;
+    privateAttributeNames?: Array<string>;
+
+    /**
+     * Whether to include full user details in every analytics event.
+     *
+     * The default is `false`: events will only include the user key, except for one "index" event
+     * that provides the full details for the user.
+     */
+    inlineUsersInEvents?: boolean;
+
+    /**
+     * This option is deprecated, and setting it has no effect.
+     *
+     * The behavior is now to allow frequent duplicate events.
+     *
+     * This is not a problem because most events will be summarized, and
+     * events which are not summarized are important to the operation of features such as
+     * experimentation.
+     */
+    allowFrequentDuplicateEvents?: boolean;
 
     /**
      * Whether analytics events should be sent only when you call variation (true), or also when you
@@ -209,7 +216,7 @@ declare module 'launchdarkly-js-sdk-common' {
      * How long (in milliseconds) to wait after a failure of the stream connection before trying to
      * reconnect.
      *
-     * This only applies if streaming has been enabled by setting {@link streaming} to true or
+     * This only applies if streaming has been enabled by setting [[streaming]] to true or
      * subscribing to `"change"` events. The default is 1000ms.
      */
     streamReconnectDelay?: number;
@@ -228,7 +235,7 @@ declare module 'launchdarkly-js-sdk-common' {
     /**
      * The interval at which periodic diagnostic data is sent, in milliseconds.
      *
-     * The default is 900000 (every 15 minutes) and the minimum value is 6000. See {@link diagnosticOptOut}
+     * The default is 900000 (every 15 minutes) and the minimum value is 6000. See [[diagnosticOptOut]]
      * for more information on the diagnostics data being sent.
      */
     diagnosticRecordingInterval?: number;
@@ -247,6 +254,14 @@ declare module 'launchdarkly-js-sdk-common' {
      * If `wrapperName` is unset, this field will be ignored.
      */
     wrapperVersion?: string;
+
+    /**
+     * Whether to disable the automatic sending of an alias event when [[identify]] is
+     * called with a non-anonymous user when the previous user is anonymous.
+     *
+     * The default value is `false`.
+     */
+    autoAliasingOptOut?: boolean;
 
     /**
      * Information about the application where the LaunchDarkly SDK is running.
@@ -280,202 +295,7 @@ declare module 'launchdarkly-js-sdk-common' {
   }
 
   /**
-   * Meta attributes are used to control behavioral aspects of the Context.
-   * They cannot be addressed in targeting rules.
-   */
-  export interface LDContextMeta {
-
-    /**
-     * 
-     * Designate any number of Context attributes, or properties within them, as private: that is,
-     * their values will not be sent to LaunchDarkly in analytics events.
-     * 
-     * Each parameter can be a simple attribute name, such as "email". Or, if the first character is
-     * a slash, the parameter is interpreted as a slash-delimited path to a property within a JSON
-     * object, where the first path component is a Context attribute name and each following
-     * component is a nested property name: for example, suppose the attribute "address" had the
-     * following JSON object value:
-     * 
-     * ```
-     * 	{"street": {"line1": "abc", "line2": "def"}}
-     * ```
-     * 
-     * Using ["/address/street/line1"] in this case would cause the "line1" property to be marked as
-     * private. This syntax deliberately resembles JSON Pointer, but other JSON Pointer features
-     * such as array indexing are not supported for Private.
-     * 
-     * This action only affects analytics events that involve this particular Context. To mark some
-     * (or all) Context attributes as private for all users, use the overall configuration for the
-     * SDK.
-     * See {@link LDOptions.allAttributesPrivate} and {@link LDOptions.privateAttributes}.
-     * 
-     * The attributes "kind" and "key", and the "_meta" attributes cannot be made private.
-     * 
-     * In this example, firstName is marked as private, but lastName is not:
-     * 
-     * ```
-     * const context = {
-     *   kind: 'org',
-     *   key: 'my-key',
-     *   firstName: 'Pierre',
-     *   lastName: 'Menard',
-     *   _meta: {
-     *     privateAttributes: ['firstName'], 
-     *   }
-     * };
-     * ```
-     * 
-     * This is a metadata property, rather than an attribute that can be addressed in evaluations:
-     * that is, a rule clause that references the attribute name "privateAttributes", will not use
-     * this value, but would use a "privateAttributes" attribute set on the context.
-     */
-    privateAttributes?: string[];
-  }
-
-  /**
-   * Interface containing elements which are common to both single kind contexts as well as the
-   * parts that compose a multi context. For more information see {@link LDSingleKindContext} and
-   * {@link LDMultiKindContext}.
-   */
-  interface LDContextCommon {
-    /**
-     * If true, the context will _not_ appear on the Contexts page in the LaunchDarkly dashboard.
-     */
-    anonymous?: boolean;
-
-    /**
-     * A unique string identifying a context.
-     */
-    key: string;
-
-    /**
-     * The context's name.
-     *
-     * You can search for contexts on the Contexts page by name.
-     */
-    name?: string;
-
-    /**
-     * Meta attributes are used to control behavioral aspects of the Context, such as private
-     * private attributes. See {@link LDContextMeta.privateAttributes} as an example.
-     *
-     * They cannot be addressed in targeting rules.
-     */
-    _meta?: LDContextMeta;
-
-    /**
-     * Any additional attributes associated with the context.
-     */
-    [attribute: string]: any;
-  }
-
-
-  /**
-   * A context which represents a single kind.
-   * 
-   * For a single kind context the 'kind' may not be 'multi'.
-   * 
-   * ```
-   * const myOrgContext = {
-   *   kind: 'org',
-   *   key: 'my-org-key',
-   *   someAttribute: 'my-attribute-value'
-   * };
-   * ```
-   * 
-   * The above context would be a single kind context representing an organization. It has a key
-   * for that organization, and a single attribute 'someAttribute'.
-   */
-  interface LDSingleKindContext extends LDContextCommon {
-    /**
-     * The kind of the context.
-     */
-    kind: string;
-  }
-
-  /**
-   * A context which represents multiple kinds. Each kind having its own key and attributes.
-   * 
-   * A multi-context must contain `kind: 'multi'` at the root.
-   * 
-   * ```
-   * const myMultiContext = {
-   *   // Multi-contexts must be of kind 'multi'.
-   *   kind: 'multi',
-   *   // The context is namespaced by its kind. This is an 'org' kind context.
-   *   org: {
-   *     // Each component context has its own key and attributes.
-   *     key: 'my-org-key',
-   *     someAttribute: 'my-attribute-value',
-   *   },
-   *   user: {
-   *     key: 'my-user-key',
-   *     firstName: 'Bob',
-   *     lastName: 'Bobberson',
-   *     _meta: {
-   *       // Each component context has its own _meta attributes. This will only apply the this
-   *       // 'user' context.
-   *       privateAttributes: ['firstName']
-   *     }
-   *   }
-   * };
-   * ```
-   * 
-   * The above multi-context contains both an 'org' and a 'user'. Each with their own key,
-   * attributes, and _meta attributes.
-   */
-  interface LDMultiKindContext {
-    /**
-     * The kind of the context.
-     */
-    kind: "multi",
-
-    /**
-     * The contexts which compose this multi-kind context.
-     * 
-     * These should be of type LDContextCommon. "multi" is to allow
-     * for the top level "kind" attribute.
-     */
-    [kind: string]: "multi" | LDContextCommon;
-  }
-
-  /**
-   * A LaunchDarkly context object.
-   */
-  export type LDContext = LDUser | LDSingleKindContext | LDMultiKindContext;
-
-  /**
    * A LaunchDarkly user object.
-   *
-   * @deprecated
-   * The LDUser object is currently supported for ease of upgrade.
-   * In order to convert an LDUser into a LDSingleKindContext the following changes should
-   * be made.
-   * 
-   * 1.) Add a kind to the object. `kind: 'user'`.
-   * 
-   * 2.) Move custom attributes to the top level of the object.
-   * 
-   * 3.) Move `privateAttributeNames` to `_meta.privateAttributes`.
-   * 
-   * ```
-   * const LDUser: user = {
-   *   key: '1234',
-   *   privateAttributeNames: ['myAttr']
-   *   custom: {
-   *     myAttr: 'value'
-   *   }
-   * }
-   * 
-   * const LDSingleKindContext: context = {
-   *   kind: 'user',
-   *   key: '1234',
-   *   myAttr: 'value'
-   *   _meta: {
-   *     privateAttributes: ['myAttr']
-   *   }
-   * }
-   * ```
    */
   export interface LDUser {
     /**
@@ -489,6 +309,14 @@ declare module 'launchdarkly-js-sdk-common' {
      * It is an error to omit the `key` property if `anonymous` is not set.
      */
     key?: string;
+
+    /**
+     * An optional secondary key for a user. This affects
+     * [feature flag targeting](https://docs.launchdarkly.com/home/flags/targeting-users#targeting-rules-based-on-user-attributes)
+     * as follows: if you have chosen to bucket users by a specific attribute, the secondary key (if set)
+     * is used to further distinguish between users who are otherwise identical according to that attribute.
+     */
+    secondary?: string;
 
     /**
      * The user's name.
@@ -546,23 +374,23 @@ declare module 'launchdarkly-js-sdk-common' {
      * Specifies a list of attribute names (either built-in or custom) which should be
      * marked as private, and not sent to LaunchDarkly in analytics events. This is in
      * addition to any private attributes designated in the global configuration
-     * with {@link LDOptions.privateAttributes} or {@link LDOptions.allAttributesPrivate}.
+     * with [[LDOptions.privateAttributeNames]] or [[LDOptions.allAttributesPrivate]].
      */
     privateAttributeNames?: Array<string>;
   }
 
   /**
    * Describes the reason that a flag evaluation produced a particular value. This is
-   * part of the {@link LDEvaluationDetail} object returned by {@link LDClient.variationDetail]].
+   * part of the [[LDEvaluationDetail]] object returned by [[LDClient.variationDetail]].
    */
   interface LDEvaluationReason {
     /**
      * The general category of the reason:
      *
      * - `'OFF'`: The flag was off and therefore returned its configured off value.
-     * - `'FALLTHROUGH'`: The flag was on but the context did not match any targets or rules.
-     * - `'TARGET_MATCH'`: The context key was specifically targeted for this flag.
-     * - `'RULE_MATCH'`: the context matched one of the flag's rules.
+     * - `'FALLTHROUGH'`: The flag was on but the user did not match any targets or rules.
+     * - `'TARGET_MATCH'`: The user key was specifically targeted for this flag.
+     * - `'RULE_MATCH'`: the user matched one of the flag's rules.
      * - `'PREREQUISITE_FAILED'`: The flag was considered off because it had at least one
      *   prerequisite flag that either was off or did not return the desired variation.
      * - `'ERROR'`: The flag could not be evaluated, e.g. because it does not exist or due
@@ -595,14 +423,14 @@ declare module 'launchdarkly-js-sdk-common' {
    * An object that combines the result of a feature flag evaluation with information about
    * how it was calculated.
    *
-   * This is the result of calling {@link LDClient.variationDetail}.
+   * This is the result of calling [[LDClient.variationDetail]].
    *
    * For more information, see the [SDK reference guide](https://docs.launchdarkly.com/sdk/features/evaluation-reasons#javascript).
    */
   export interface LDEvaluationDetail {
     /**
      * The result of the flag evaluation. This will be either one of the flag's variations or
-     * the default value that was passed to {@link LDClient.variationDetail}.
+     * the default value that was passed to [[LDClient.variationDetail]].
      */
     value: LDFlagValue;
 
@@ -647,9 +475,9 @@ declare module 'launchdarkly-js-sdk-common' {
      * ```
      *
      * If you want to distinguish between these success and failure conditions, use
-     * {@link waitForInitialization} instead.
+     * [[waitForInitialization]] instead.
      *
-     * If you prefer to use event listeners ({@link on}) rather than Promises, you can listen on the
+     * If you prefer to use event listeners ([[on]]) rather than Promises, you can listen on the
      * client for a `"ready"` event, which will be fired in either case.
      *
      * @returns
@@ -685,7 +513,7 @@ declare module 'launchdarkly-js-sdk-common' {
      * request it, so if you never call `waitForInitialization()` then you do not have to worry about
      * unhandled rejections.
      *
-     * Note that you can also use event listeners ({@link on}) for the same purpose: the event `"initialized"`
+     * Note that you can also use event listeners ([[on]]) for the same purpose: the event `"initialized"`
      * indicates success, and `"failed"` indicates failure.
      *
      * @returns
@@ -695,45 +523,45 @@ declare module 'launchdarkly-js-sdk-common' {
     waitForInitialization(): Promise<void>;
 
     /**
-     * Identifies a context to LaunchDarkly.
+     * Identifies a user to LaunchDarkly.
      *
-     * Unlike the server-side SDKs, the client-side JavaScript SDKs maintain a current context state,
-     * which is set at initialization time. You only need to call `identify()` if the context has changed
+     * Unlike the server-side SDKs, the client-side JavaScript SDKs maintain a current user state,
+     * which is set at initialization time. You only need to call `identify()` if the user has changed
      * since then.
      *
-     * Changing the current context also causes all feature flag values to be reloaded. Until that has
-     * finished, calls to {@link variation} will still return flag values for the previous context. You can
+     * Changing the current user also causes all feature flag values to be reloaded. Until that has
+     * finished, calls to [[variation]] will still return flag values for the previous user. You can
      * use a callback or a Promise to determine when the new flag values are available.
      *
-     * @param context
-     *   The context properties. Must contain at least the `key` property.
+     * @param user
+     *   The user properties. Must contain at least the `key` property.
      * @param hash
-     *   The signed context key if you are using [Secure Mode](https://docs.launchdarkly.com/sdk/features/secure-mode#configuring-secure-mode-in-the-javascript-client-side-sdk).
+     *   The signed user key if you are using [Secure Mode](https://docs.launchdarkly.com/sdk/features/secure-mode#configuring-secure-mode-in-the-javascript-client-side-sdk).
      * @param onDone
-     *   A function which will be called as soon as the flag values for the new context are available,
-     *   with two parameters: an error value (if any), and an {@link LDFlagSet} containing the new values
-     *   (which can also be obtained by calling {@link variation}). If the callback is omitted, you will
+     *   A function which will be called as soon as the flag values for the new user are available,
+     *   with two parameters: an error value (if any), and an [[LDFlagSet]] containing the new values
+     *   (which can also be obtained by calling [[variation]]). If the callback is omitted, you will
      *   receive a Promise instead.
      * @returns
      *   If you provided a callback, then nothing. Otherwise, a Promise which resolve once the flag
-     *   values for the new context are available, providing an {@link LDFlagSet} containing the new values
-     *   (which can also be obtained by calling {@link variation}).
+     *   values for the new user are available, providing an [[LDFlagSet]] containing the new values
+     *   (which can also be obtained by calling [[variation]]).
      */
-    identify(context: LDContext, hash?: string, onDone?: (err: Error | null, flags: LDFlagSet | null) => void): Promise<LDFlagSet>;
+    identify(user: LDUser, hash?: string, onDone?: (err: Error | null, flags: LDFlagSet | null) => void): Promise<LDFlagSet>;
 
     /**
-     * Returns the client's current context.
+     * Returns the client's current user.
      *
-     * This is the context that was most recently passed to {@link identify}, or, if {@link identify} has never
-     * been called, the initial context specified when the client was created.
+     * This is the user that was most recently passed to [[identify]], or, if [[identify]] has never
+     * been called, the initial user specified when the client was created.
      */
-    getContext(): LDContext;
+    getUser(): LDUser;
 
     /**
      * Flushes all pending analytics events.
      *
      * Normally, batches of events are delivered in the background at intervals determined by the
-     * `flushInterval` property of {@link LDOptions}. Calling `flush()` triggers an immediate delivery.
+     * `flushInterval` property of [[LDOptions]]. Calling `flush()` triggers an immediate delivery.
      *
      * @param onDone
      *   A function which will be called when the flush completes. If omitted, you
@@ -747,10 +575,10 @@ declare module 'launchdarkly-js-sdk-common' {
     flush(onDone?: () => void): Promise<void>;
 
     /**
-     * Determines the variation of a feature flag for the current context.
+     * Determines the variation of a feature flag for the current user.
      *
      * In the client-side JavaScript SDKs, this is always a fast synchronous operation because all of
-     * the feature flag values for the current context have already been loaded into memory.
+     * the feature flag values for the current user have already been loaded into memory.
      *
      * @param key
      *   The unique key of the feature flag.
@@ -762,10 +590,10 @@ declare module 'launchdarkly-js-sdk-common' {
     variation(key: string, defaultValue?: LDFlagValue): LDFlagValue;
 
     /**
-     * Determines the variation of a feature flag for a context, along with information about how it was
+     * Determines the variation of a feature flag for a user, along with information about how it was
      * calculated.
      *
-     * Note that this will only work if you have set `evaluationExplanations` to true in {@link LDOptions}.
+     * Note that this will only work if you have set `evaluationExplanations` to true in [[LDOptions]].
      * Otherwise, the `reason` property of the result will be null.
      *
      * The `reason` property of the result will also be included in analytics events, if you are
@@ -779,7 +607,7 @@ declare module 'launchdarkly-js-sdk-common' {
      *   The default value of the flag, to be used if the value is not available from LaunchDarkly.
      *
      * @returns
-     *   An {@link LDEvaluationDetail} object containing the value and explanation.
+     *   An [[LDEvaluationDetail]] object containing the value and explanation.
      */
     variationDetail(key: string, defaultValue?: LDFlagValue): LDEvaluationDetail;
 
@@ -788,9 +616,9 @@ declare module 'launchdarkly-js-sdk-common' {
      *
      * If this is true, the client will always attempt to maintain a streaming connection; if false,
      * it never will. If you leave the value undefined (the default), the client will open a streaming
-     * connection if you subscribe to `"change"` or `"change:flag-key"` events (see {@link LDClient.on}).
+     * connection if you subscribe to `"change"` or `"change:flag-key"` events (see [[LDClient.on]]).
      *
-     * This can also be set as the `streaming` property of {@link LDOptions}.
+     * This can also be set as the `streaming` property of [[LDOptions]].
      */
     setStreaming(value?: boolean): void;
 
@@ -811,9 +639,9 @@ declare module 'launchdarkly-js-sdk-common' {
      *   The callback parameter is an Error object. If you do not listen for "error"
      *   events, then the errors will be logged with `console.log()`.
      * - `"change"`: The client has received new feature flag data. This can happen either
-     *   because you have switched contexts with {@link identify}, or because the client has a
+     *   because you have switched users with [[identify]], or because the client has a
      *   stream connection and has received a live change to a flag value (see below).
-     *   The callback parameter is an {@link LDFlagChangeset}.
+     *   The callback parameter is an [[LDFlagChangeset]].
      * - `"change:FLAG-KEY"`: The client has received a new value for a specific flag
      *   whose key is `FLAG-KEY`. The callback receives two parameters: the current (new)
      *   flag value, and the previous value. This is always accompanied by a general
@@ -822,27 +650,27 @@ declare module 'launchdarkly-js-sdk-common' {
      * The `"change"` and `"change:FLAG-KEY"` events have special behavior: by default, the
      * client will open a streaming connection to receive live changes if and only if
      * you are listening for one of these events. This behavior can be overridden by
-     * setting `streaming` in {@link LDOptions} or calling {@link LDClient.setStreaming}.
+     * setting `streaming` in [[LDOptions]] or calling [[LDClient.setStreaming]].
      *
      * @param key
      *   The name of the event for which to listen.
      * @param callback
      *   The function to execute when the event fires. The callback may or may not
-     *   receive parameters, depending on the type of event.
+     *   receive parameters, depending on the type of event; see [[LDEventSignature]].
      * @param context
      *   The `this` context to use for the callback.
      */
     on(key: string, callback: (...args: any[]) => void, context?: any): void;
 
     /**
-     * Deregisters an event listener. See {@link on} for the available event types.
+     * Deregisters an event listener. See [[on]] for the available event types.
      *
      * @param key
      *   The name of the event for which to stop listening.
      * @param callback
      *   The function to deregister.
      * @param context
-     *   The `this` context for the callback, if one was specified for {@link on}.
+     *   The `this` context for the callback, if one was specified for [[on]].
      */
     off(key: string, callback: (...args: any[]) => void, context?: any): void;
 
@@ -866,40 +694,56 @@ declare module 'launchdarkly-js-sdk-common' {
     track(key: string, data?: any, metricValue?: number): void;
 
     /**
-     * Returns a map of all available flags to the current context's values.
+     * Associates two users for analytics purposes.
+     *
+     * This can be helpful in the situation where a person is represented by multiple
+     * LaunchDarkly users. This may happen, for example, when a person initially logs into
+     * an application-- the person might be represented by an anonymous user prior to logging
+     * in and a different user after logging in, as denoted by a different user key.
+     *
+     * @param user
+     *   The newly identified user.
+     * @param previousUser
+     *   The previously identified user.
+     */
+    alias(user: LDUser, previousUser: LDUser): void;
+
+    /**
+     * Returns a map of all available flags to the current user's values. This will send analytics
+     * events unless [[LDOptions.sendEventsOnlyForVariation]] is true.
      *
      * @returns
      *   An object in which each key is a feature flag key and each value is the flag value.
      *   Note that there is no way to specify a default value for each flag as there is with
-     *   {@link variation}, so any flag that cannot be evaluated will have a null value.
+     *   [[variation]], so any flag that cannot be evaluated will have a null value.
      */
     allFlags(): LDFlagSet;
 
-    /**
-     * Shuts down the client and releases its resources, after delivering any pending analytics
-     * events. After the client is closed, all calls to {@link variation} will return default values,
-     * and it will not make any requests to LaunchDarkly.
-     *
-     * @param onDone
-     *   A function which will be called when the operation completes. If omitted, you
-     *   will receive a Promise instead.
-     *
-     * @returns
-     *   If you provided a callback, then nothing. Otherwise, a Promise which resolves once
-     *   closing is finished. It will never be rejected.
-     */
-    close(onDone?: () => void): Promise<void>;
+   /**
+    * Shuts down the client and releases its resources, after delivering any pending analytics
+    * events. After the client is closed, all calls to [[variation]] will return default values,
+    * and it will not make any requests to LaunchDarkly.
+    *
+    * @param onDone
+    *   A function which will be called when the operation completes. If omitted, you
+    *   will receive a Promise instead.
+    *
+    * @returns
+    *   If you provided a callback, then nothing. Otherwise, a Promise which resolves once
+    *   closing is finished. It will never be rejected.
+    */
+   close(onDone?: () => void): Promise<void>;
   }
 
   /**
-   * Provides a simple {@link LDLogger} implementation.
+   * Provides a simple [[LDLogger]] implementation.
    *
    * This logging implementation uses a simple format that includes only the log level
    * and the message text. Output is written to the console unless otherwise specified.
-   * You can filter by log level as described in {@link BasicLoggerOptions.level}.
+   * You can filter by log level as described in [[BasicLoggerOptions.level]].
    *
-   * To use the logger created by this function, put it into {@link LDOptions.logger}. If
-   * you do not set {@link LDOptions.logger} to anything, the SDK uses a default logger
+   * To use the logger created by this function, put it into [[LDOptions.logger]]. If
+   * you do not set [[LDOptions.logger]] to anything, the SDK uses a default logger
    * that is equivalent to `ld.basicLogger({ level: 'info' })`.
    *
    * @param options Configuration for the logger. If no options are specified, the
@@ -930,19 +774,19 @@ declare module 'launchdarkly-js-sdk-common' {
    * @ignore (don't need to show this separately in TypeDoc output; each SDK should provide its own
    *   basicLogger function that delegates to this and sets the formatter parameter)
    */
-  export function commonBasicLogger(
+   export function commonBasicLogger(
     options?: BasicLoggerOptions,
     formatter?: (format: string, ...args: any[]) => void
   ): LDLogger;
 
   /**
-   * Configuration for {@link basicLogger}.
+   * Configuration for [[basicLogger]].
    */
   export interface BasicLoggerOptions {
     /**
      * The lowest level of log message to enable.
      *
-     * See {@link LDLogLevel} for a list of possible levels. Setting a level here causes
+     * See [[LDLogLevel]] for a list of possible levels. Setting a level here causes
      * all lower-importance levels to be disabled: for instance, if you specify
      * `'warn'`, then `'debug'` and `'info'` are disabled.
      *
@@ -974,19 +818,14 @@ declare module 'launchdarkly-js-sdk-common' {
   }
 
   /**
-   * Logging levels that can be used with {@link basicLogger}.
+   * Logging levels that can be used with [[basicLogger]].
    *
-   * Set {@link BasicLoggerOptions.level} to one of these values to control what levels
+   * Set [[BasicLoggerOptions.level]] to one of these values to control what levels
    * of log messages are enabled. Going from lowest importance (and most verbose)
    * to most importance, the levels are `'debug'`, `'info'`, `'warn'`, and `'error'`.
    * You can also specify `'none'` instead to disable all logging.
    */
   export type LDLogLevel = 'debug' | 'info' | 'warn' | 'error' | 'none';
-
-  export function getContextKeys(
-    context: LDContext,
-    logger?: LDLogger,
-  ): {[attribute: string]: string} | undefined;
 
   /**
    * Callback interface for collecting information about the SDK at runtime.
@@ -1009,9 +848,9 @@ declare module 'launchdarkly-js-sdk-common' {
      * wrapper SDKs which have different methods of tracking when a flag was accessed. It is not called when a call is made
      * to allFlags.
      */
-    method: (flagKey: string, flagDetail: LDEvaluationDetail, context: LDContext) => void;
+    method: (flagKey: string, flagDetail: LDEvaluationDetail, user: LDUser) => void;
   }
-
+  
   /**
    * Callback interface for collecting information about the SDK at runtime.
    * 
@@ -1030,15 +869,15 @@ declare module 'launchdarkly-js-sdk-common' {
      * Name of the inspector. Will be used for logging issues with the inspector.
      */
     name: string,
-
+    
     /**
      * This method is called when the flags in the store are replaced with new flags. It will contain all flags
      * regardless of if they have been evaluated.
      */
     method: (details: Record<string, LDEvaluationDetail>) => void;
   }
-
-
+  
+    
   /**
    * Callback interface for collecting information about the SDK at runtime.
    * 
@@ -1056,7 +895,7 @@ declare module 'launchdarkly-js-sdk-common' {
      * Name of the inspector. Will be used for logging issues with the inspector.
      */
     name: string,
-
+  
     /**
      * This method is called when a flag is updated. It will not be called
      * when all flags are updated.
@@ -1079,11 +918,11 @@ declare module 'launchdarkly-js-sdk-common' {
      * Name of the inspector. Will be used for logging issues with the inspector.
      */
     name: string,
-
+  
     /**
      * This method will be called when an identify operation completes.
      */
-    method: (context: LDContext) => void;
+    method: (user: LDUser) => void;
   }
 
   type LDInspection = LDInspectionFlagUsedHandler | LDInspectionFlagDetailsChangedHandler

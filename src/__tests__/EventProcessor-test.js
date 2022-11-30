@@ -9,20 +9,9 @@ import { MockEventSender } from './testUtils';
 // various inputs. The actual delivery of data is done by EventSender, which has its own
 // tests; here, we use a mock EventSender.
 
-describe.each([
-  [{ key: 'userKey', name: 'Red' }, { key: 'userKey', kind: 'user', _meta: { redactedAttributes: ['/name'] } }],
-  [
-    { kind: 'user', key: 'userKey', name: 'Red' },
-    { key: 'userKey', kind: 'user', _meta: { redactedAttributes: ['/name'] } },
-  ],
-  [
-    { kind: 'multi', user: { key: 'userKey', name: 'Red' } },
-    { kind: 'multi', user: { key: 'userKey', _meta: { redactedAttributes: ['/name'] } } },
-  ],
-])('EventProcessor', (context, filteredContext) => {
-  // const user = { key: 'userKey', name: 'Red' };
-  const eventContext = { ...context, kind: context.kind || 'user' };
-  // const filteredUser = { key: 'userKey', kind: 'user', _meta: { redactedAttributes: ['/name'] } };
+describe('EventProcessor', () => {
+  const user = { key: 'userKey', name: 'Red' };
+  const filteredUser = { key: 'userKey', privateAttrs: ['name'] };
   const eventsUrl = '/fake-url';
   const envId = 'env';
   const logger = stubPlatform.logger();
@@ -58,11 +47,11 @@ describe.each([
 
   function checkUserInline(e, source, inlineUser) {
     if (inlineUser) {
-      expect(e.context).toEqual(inlineUser);
-      expect(e.contextKeys).toBeUndefined();
+      expect(e.user).toEqual(inlineUser);
+      expect(e.userKey).toBeUndefined();
     } else {
-      expect(e.contextKeys).toEqual({ user: source.context.key || source.context.user.key });
-      expect(e.context).toBeUndefined();
+      expect(e.userKey).toEqual(source.user.key);
+      expect(e.user).toBeUndefined();
     }
   }
 
@@ -78,13 +67,13 @@ describe.each([
     checkUserInline(e, source, inlineUser);
   }
 
-  function checkCustomEvent(e, source) {
+  function checkCustomEvent(e, source, inlineUser) {
     expect(e.kind).toEqual('custom');
     expect(e.creationDate).toEqual(source.creationDate);
     expect(e.key).toEqual(source.key);
     expect(e.data).toEqual(source.data);
     expect(e.metricValue).toEqual(source.metricValue);
-    checkUserInline(e, source);
+    checkUserInline(e, source, inlineUser);
   }
 
   function checkSummaryEvent(e) {
@@ -93,7 +82,7 @@ describe.each([
 
   it('should enqueue identify event', async () => {
     await withProcessorAndSender(defaultConfig, async (ep, mockEventSender) => {
-      const event = { kind: 'identify', creationDate: 1000, context: eventContext };
+      const event = { kind: 'identify', creationDate: 1000, key: user.key, user: user };
       ep.enqueue(event);
       await ep.flush();
 
@@ -105,7 +94,7 @@ describe.each([
   it('filters user in identify event', async () => {
     const config = { ...defaultConfig, allAttributesPrivate: true };
     await withProcessorAndSender(config, async (ep, mockEventSender) => {
-      const event = { kind: 'identify', creationDate: 1000, context: eventContext };
+      const event = { kind: 'identify', creationDate: 1000, key: user.key, user: user };
       ep.enqueue(event);
       await ep.flush();
 
@@ -114,8 +103,8 @@ describe.each([
         {
           kind: 'identify',
           creationDate: event.creationDate,
-
-          context: filteredContext,
+          key: user.key,
+          user: filteredUser,
         },
       ]);
     });
@@ -127,7 +116,7 @@ describe.each([
         kind: 'feature',
         creationDate: 1000,
         key: 'flagkey',
-        context: eventContext,
+        user: user,
         trackEvents: true,
       };
       ep.enqueue(event);
@@ -141,15 +130,36 @@ describe.each([
     });
   });
 
+  it('can include inline user in feature event', async () => {
+    const config = { ...defaultConfig, inlineUsersInEvents: true };
+    await withProcessorAndSender(config, async (ep, mockEventSender) => {
+      const event = {
+        kind: 'feature',
+        creationDate: 1000,
+        key: 'flagkey',
+        user: user,
+        trackEvents: true,
+      };
+      ep.enqueue(event);
+      await ep.flush();
+
+      expect(mockEventSender.calls.length()).toEqual(1);
+      const output = (await mockEventSender.calls.take()).events;
+      expect(output.length).toEqual(2);
+      checkFeatureEvent(output[0], event, false, user);
+      checkSummaryEvent(output[1]);
+    });
+  });
+
   it('can include reason in feature event', async () => {
-    const config = { ...defaultConfig };
+    const config = { ...defaultConfig, inlineUsersInEvents: true };
     const reason = { kind: 'FALLTHROUGH' };
     await withProcessorAndSender(config, async (ep, mockEventSender) => {
       const event = {
         kind: 'feature',
         creationDate: 1000,
         key: 'flagkey',
-        context: eventContext,
+        user: user,
         trackEvents: true,
         reason: reason,
       };
@@ -159,7 +169,28 @@ describe.each([
       expect(mockEventSender.calls.length()).toEqual(1);
       const output = (await mockEventSender.calls.take()).events;
       expect(output.length).toEqual(2);
-      checkFeatureEvent(output[0], event, false);
+      checkFeatureEvent(output[0], event, false, user);
+      checkSummaryEvent(output[1]);
+    });
+  });
+
+  it('filters user in feature event', async () => {
+    const config = { ...defaultConfig, allAttributesPrivate: true, inlineUsersInEvents: true };
+    await withProcessorAndSender(config, async (ep, mockEventSender) => {
+      const event = {
+        kind: 'feature',
+        creationDate: 1000,
+        key: 'flagkey',
+        user: user,
+        trackEvents: true,
+      };
+      ep.enqueue(event);
+      await ep.flush();
+
+      expect(mockEventSender.calls.length()).toEqual(1);
+      const output = (await mockEventSender.calls.take()).events;
+      expect(output.length).toEqual(2);
+      checkFeatureEvent(output[0], event, false, filteredUser);
       checkSummaryEvent(output[1]);
     });
   });
@@ -170,7 +201,7 @@ describe.each([
       const e = {
         kind: 'feature',
         creationDate: 1000,
-        context: eventContext,
+        user: user,
         key: 'flagkey',
         version: 11,
         variation: 1,
@@ -184,7 +215,7 @@ describe.each([
       expect(mockEventSender.calls.length()).toEqual(1);
       const output = (await mockEventSender.calls.take()).events;
       expect(output.length).toEqual(2);
-      checkFeatureEvent(output[0], e, true, { ...context, kind: context.kind || 'user' });
+      checkFeatureEvent(output[0], e, true, user);
       checkSummaryEvent(output[1]);
     });
   });
@@ -196,7 +227,7 @@ describe.each([
       const e = {
         kind: 'feature',
         creationDate: 1000,
-        context: eventContext,
+        user: user,
         key: 'flagkey',
         version: 11,
         variation: 1,
@@ -211,7 +242,7 @@ describe.each([
       expect(mockEventSender.calls.length()).toEqual(1);
       const output = (await mockEventSender.calls.take()).events;
       expect(output.length).toEqual(2);
-      checkFeatureEvent(output[0], e, true, filteredContext);
+      checkFeatureEvent(output[0], e, true, filteredUser);
       checkSummaryEvent(output[1]);
     });
   });
@@ -222,7 +253,7 @@ describe.each([
       const e = {
         kind: 'feature',
         creationDate: 1000,
-        context: eventContext,
+        user: user,
         key: 'flagkey',
         version: 11,
         variation: 1,
@@ -237,7 +268,7 @@ describe.each([
       const output = (await mockEventSender.calls.take()).events;
       expect(output.length).toEqual(3);
       checkFeatureEvent(output[0], e, false);
-      checkFeatureEvent(output[1], e, true, { ...context, kind: context.kind || 'user' });
+      checkFeatureEvent(output[1], e, true, user);
       checkSummaryEvent(output[2]);
     });
   });
@@ -249,7 +280,7 @@ describe.each([
       mockEventSender.setServerTime(serverTime);
 
       // Send and flush an event we don't care about, just to set the last server time
-      ep.enqueue({ kind: 'identify', context: { key: 'otherUser' } });
+      ep.enqueue({ kind: 'identify', user: { key: 'otherUser' } });
       await ep.flush();
 
       // Now send an event with debug mode on, with a "debug until" time that is further in
@@ -258,7 +289,7 @@ describe.each([
       const e = {
         kind: 'feature',
         creationDate: 1000,
-        context: eventContext,
+        user: user,
         key: 'flagkey',
         version: 11,
         variation: 1,
@@ -285,7 +316,7 @@ describe.each([
       mockEventSender.setServerTime(serverTime);
 
       // Send and flush an event we don't care about, just to set the last server time
-      ep.enqueue({ kind: 'identify', context: { key: 'otherUser' } });
+      ep.enqueue({ kind: 'identify', user: { key: 'otherUser' } });
       await ep.flush();
 
       // Now send an event with debug mode on, with a "debug until" time that is further in
@@ -294,7 +325,7 @@ describe.each([
       const e = {
         kind: 'feature',
         creationDate: 1000,
-        context: eventContext,
+        user: user,
         key: 'flagkey',
         version: 11,
         variation: 1,
@@ -320,7 +351,7 @@ describe.each([
         return {
           kind: 'feature',
           creationDate: date,
-          context: eventContext,
+          user: user,
           key: key,
           version: version,
           variation: variation,
@@ -344,12 +375,10 @@ describe.each([
       expect(se.endDate).toEqual(2000);
       expect(se.features).toEqual({
         flagkey1: {
-          contextKinds: ['user'],
           default: 'default1',
           counters: [{ version: 11, variation: 1, value: 'value1', count: 1 }],
         },
         flagkey2: {
-          contextKinds: ['user'],
           default: 'default2',
           counters: [{ version: 22, variation: 1, value: 'value2', count: 1 }],
         },
@@ -362,7 +391,7 @@ describe.each([
       const e = {
         kind: 'custom',
         creationDate: 1000,
-        context: eventContext,
+        user: user,
         key: 'eventkey',
         data: { thing: 'stuff' },
         metricValue: 1.5,
@@ -377,11 +406,51 @@ describe.each([
     });
   });
 
+  it('can include inline user in custom event', async () => {
+    const config = { ...defaultConfig, inlineUsersInEvents: true };
+    await withProcessorAndSender(config, async (ep, mockEventSender) => {
+      const e = {
+        kind: 'custom',
+        creationDate: 1000,
+        user: user,
+        key: 'eventkey',
+        data: { thing: 'stuff' },
+      };
+      ep.enqueue(e);
+      await ep.flush();
+
+      expect(mockEventSender.calls.length()).toEqual(1);
+      const output = (await mockEventSender.calls.take()).events;
+      expect(output.length).toEqual(1);
+      checkCustomEvent(output[0], e, user);
+    });
+  });
+
+  it('filters user in custom event', async () => {
+    const config = { ...defaultConfig, allAttributesPrivate: true, inlineUsersInEvents: true };
+    await withProcessorAndSender(config, async (ep, mockEventSender) => {
+      const e = {
+        kind: 'custom',
+        creationDate: 1000,
+        user: user,
+        key: 'eventkey',
+        data: { thing: 'stuff' },
+      };
+      ep.enqueue(e);
+      await ep.flush();
+
+      expect(mockEventSender.calls.length()).toEqual(1);
+      const output = (await mockEventSender.calls.take()).events;
+      expect(output.length).toEqual(1);
+      checkCustomEvent(output[0], e, filteredUser);
+    });
+  });
+
   it('enforces event capacity', async () => {
     const config = { ...defaultConfig, eventCapacity: 1, logger: stubPlatform.logger() };
-    const e0 = { kind: 'custom', creationDate: 1000, context: eventContext, key: 'key0' };
-    const e1 = { kind: 'custom', creationDate: 1001, context: eventContext, key: 'key1' };
-    const e2 = { kind: 'custom', creationDate: 1002, context: eventContext, key: 'key2' };
+    const e0 = { kind: 'custom', creationDate: 1000, user: user, key: 'key0' };
+    const e1 = { kind: 'custom', creationDate: 1001, user: user, key: 'key1' };
+    const e2 = { kind: 'custom', creationDate: 1002, user: user, key: 'key2' };
     await withProcessorAndSender(config, async (ep, mockEventSender) => {
       ep.enqueue(e0);
       ep.enqueue(e1);
@@ -406,7 +475,7 @@ describe.each([
 
   async function verifyUnrecoverableHttpError(status) {
     await withProcessorAndSender(defaultConfig, async (ep, mockEventSender) => {
-      const e = { kind: 'identify', creationDate: 1000, context: eventContext };
+      const e = { kind: 'identify', creationDate: 1000, user: user };
       ep.enqueue(e);
       mockEventSender.setStatus(status);
       await ep.flush();
@@ -421,7 +490,7 @@ describe.each([
 
   async function verifyRecoverableHttpError(status) {
     await withProcessorAndSender(defaultConfig, async (ep, mockEventSender) => {
-      const e = { kind: 'identify', creationDate: 1000, context: eventContext };
+      const e = { kind: 'identify', creationDate: 1000, user: user };
       ep.enqueue(e);
       mockEventSender.setStatus(status);
       await ep.flush();
@@ -448,8 +517,8 @@ describe.each([
 
   describe('interaction with diagnostic events', () => {
     it('sets eventsInLastBatch on flush', async () => {
-      const e0 = { kind: 'custom', creationDate: 1000, context: eventContext, key: 'key0' };
-      const e1 = { kind: 'custom', creationDate: 1001, context: eventContext, key: 'key1' };
+      const e0 = { kind: 'custom', creationDate: 1000, user: user, key: 'key0' };
+      const e1 = { kind: 'custom', creationDate: 1001, user: user, key: 'key1' };
       await withDiagnosticProcessorAndSender(defaultConfig, async (ep, mockEventSender, diagnosticAccumulator) => {
         expect(diagnosticAccumulator.getProps().eventsInLastBatch).toEqual(0);
 
@@ -467,9 +536,9 @@ describe.each([
 
     it('increments droppedEvents when capacity is exceeded', async () => {
       const config = { ...defaultConfig, eventCapacity: 1, logger: stubPlatform.logger() };
-      const e0 = { kind: 'custom', creationDate: 1000, context: eventContext, key: 'key0' };
-      const e1 = { kind: 'custom', creationDate: 1001, context: eventContext, key: 'key1' };
-      const e2 = { kind: 'custom', creationDate: 1002, context: eventContext, key: 'key2' };
+      const e0 = { kind: 'custom', creationDate: 1000, user: user, key: 'key0' };
+      const e1 = { kind: 'custom', creationDate: 1001, user: user, key: 'key1' };
+      const e2 = { kind: 'custom', creationDate: 1002, user: user, key: 'key2' };
       await withDiagnosticProcessorAndSender(config, async (ep, mockEventSender, diagnosticAccumulator) => {
         ep.enqueue(e0);
         ep.enqueue(e1);

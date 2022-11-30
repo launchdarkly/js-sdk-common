@@ -1,22 +1,23 @@
 const utils = require('./utils');
 
-function Identity(initialContext, onChange) {
+function Identity(initialUser, onChange) {
   const ident = {};
-  let context;
+  let user;
 
-  ident.setContext = function(c) {
-    context = utils.sanitizeContext(c);
-    if (context && onChange) {
-      onChange(utils.clone(context));
+  ident.setUser = function(u) {
+    const previousUser = user && utils.clone(user);
+    user = utils.sanitizeUser(u);
+    if (user && onChange) {
+      onChange(utils.clone(user), previousUser);
     }
   };
 
-  ident.getContext = function() {
-    return context ? utils.clone(context) : null;
+  ident.getUser = function() {
+    return user ? utils.clone(user) : null;
   };
 
-  if (initialContext) {
-    ident.setContext(initialContext);
+  if (initialUser) {
+    ident.setUser(initialUser);
   }
 
   return ident;

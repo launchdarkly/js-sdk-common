@@ -57,12 +57,12 @@ function InspectorManager(inspectors, logger) {
    *
    * @param {string} flagKey The key for the flag.
    * @param {Object} detail The LDEvaluationDetail for the flag.
-   * @param {Object} context The LDContext for the flag.
+   * @param {Object} user The LDUser for the flag.
    */
-  manager.onFlagUsed = (flagKey, detail, context) => {
+  manager.onFlagUsed = (flagKey, detail, user) => {
     if (inspectorsByType[InspectorTypes.flagUsed].length) {
       onNextTick(() => {
-        inspectorsByType[InspectorTypes.flagUsed].forEach(inspector => inspector.method(flagKey, detail, context));
+        inspectorsByType[InspectorTypes.flagUsed].forEach(inspector => inspector.method(flagKey, detail, user));
       });
     }
   };
@@ -99,16 +99,16 @@ function InspectorManager(inspectors, logger) {
   };
 
   /**
-   * Notify the registered inspectors that the context identity has changed.
+   * Notify the registered inspectors that the user identity has changed.
    *
    * The notification itself will be dispatched asynchronously.
    *
-   * @param {Object} context The `LDContext` which is now identified.
+   * @param {Object} user The `LDUser` which is now identified.
    */
-  manager.onIdentityChanged = context => {
+  manager.onIdentityChanged = user => {
     if (inspectorsByType[InspectorTypes.clientIdentityChanged].length) {
       onNextTick(() => {
-        inspectorsByType[InspectorTypes.clientIdentityChanged].forEach(inspector => inspector.method(context));
+        inspectorsByType[InspectorTypes.clientIdentityChanged].forEach(inspector => inspector.method(user));
       });
     }
   };
