@@ -7,7 +7,7 @@ import PersistentStorage from '../PersistentStorage';
 import * as utils from '../utils';
 
 describe('PersistentFlagStore', () => {
-  const context = { key: 'context-key' };
+  const context = { key: 'context-key', kind: 'user' };
   const ident = Identity(context);
   const env = 'ENVIRONMENT';
   const lsKey = 'ld:' + env + ':' + utils.btoa(JSON.stringify(context));

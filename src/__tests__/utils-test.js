@@ -66,7 +66,7 @@ describe('utils', () => {
 
   describe('chunkEventsForUrl', () => {
     it('should properly chunk the list of events', () => {
-      const context = { key: 'foo' };
+      const context = { key: 'foo', kind: 'user' };
       const event = { kind: 'identify', key: context.key };
       const eventLength = base64URLEncode(JSON.stringify(event)).length;
       const events = [event, event, event, event, event];
