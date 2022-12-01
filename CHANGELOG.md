@@ -2,6 +2,26 @@
 
 All notable changes to the `launchdarkly-js-sdk-common` package will be documented in this file. Changes that affect the dependent SDKs such as `launchdarkly-js-client-sdk` should also be logged in those projects, in the next release that uses the updated version of this package. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [5.0.0] - 2022-11-30
+This major version release of `js-sdk-common` corresponds to the upcoming releases of the `js-client-sdk` v3 and `react-client-sdk` v3, and cannot be used with earlier SDK versions.
+
+### Added:
+- Replaced users with contexts. A context is a generalized way of referring to the people, services, machines, or other resources that encounter feature flags in your product. All methods which previously operated on `LDUser` now operate on `LDContext`.
+
+### Changed:
+- `LDClient.getUser` has been replaced with `LDClient.getContext`.
+- `privateAttributeNames` has been replaced with `privateAttributes`. Private attributes now allow using attribute references, which allow for marking nodes in nested JSON private. 
+
+### Removed:
+- Alias events are no longer supported and the `alias` method has been removed from `LDClient`.
+- Support for the `secondary` attribute has been removed from `LDUser`.  If a secondary attribute is included in a context, then it is a normal attribute that can be used in rule evaluation, but it will not affect bucketing.
+- `allowFrequentDuplicateEvents` has been removed from `LDOptions`. This had been deprecated in a previous version. The default behavior is as if this option had been set to true.
+- `autoAliasingOptOut` has been removed from `LDOptions`. This functionality has been superseded by multi-context support.
+- `inlineUsersInEvents` has been removed from `LDOptions`. Changes associated with contexts has removed the needed for this option.
+
+### Deprecated:
+- The `LDUser`  object has been deprecated. Support for `LDUser` is maintained to simplify the upgrade process, but it is recommended to use `LDContext` in the shape of either `LDSingleKindContext` or `LDMultiKindContext`.
+
 ## [4.3.2] - 2022-10-20
 ### Added:
 - Implemented `jitter` and `backoff` for streaming connections. When a connection fails the retry will start at the `streamReconnectDelay` and will double on each unsuccessful consecutive connection attempt (`backoff`) to a max of 30 seconds. The delay will be adjusted from 50%-100% of the calculated delay to prevent many clients from attempting to reconnect at the same time (`jitter`).
