@@ -1,4 +1,4 @@
-const { messages } = require('.');
+const messages = require('./messages');
 const SafeInspector = require('./SafeInspector');
 const { onNextTick } = require('./utils');
 
