@@ -337,7 +337,7 @@ declare module 'launchdarkly-js-sdk-common' {
    * parts that compose a multi context. For more information see {@link LDSingleKindContext} and
    * {@link LDMultiKindContext}.
    */
-  interface LDContextCommon {
+  export interface LDContextCommon {
     /**
      * If true, the context will _not_ appear on the Contexts page in the LaunchDarkly dashboard.
      */
@@ -386,7 +386,7 @@ declare module 'launchdarkly-js-sdk-common' {
    * The above context would be a single kind context representing an organization. It has a key
    * for that organization, and a single attribute 'someAttribute'.
    */
-  interface LDSingleKindContext extends LDContextCommon {
+  export interface LDSingleKindContext extends LDContextCommon {
     /**
      * The kind of the context.
      */
@@ -424,7 +424,7 @@ declare module 'launchdarkly-js-sdk-common' {
    * The above multi-context contains both an 'org' and a 'user'. Each with their own key,
    * attributes, and _meta attributes.
    */
-  interface LDMultiKindContext {
+  export interface LDMultiKindContext {
     /**
      * The kind of the context.
      */
@@ -555,7 +555,7 @@ declare module 'launchdarkly-js-sdk-common' {
    * Describes the reason that a flag evaluation produced a particular value. This is
    * part of the {@link LDEvaluationDetail} object returned by {@link LDClient.variationDetail]].
    */
-  interface LDEvaluationReason {
+  export interface LDEvaluationReason {
     /**
      * The general category of the reason:
      *
@@ -996,7 +996,7 @@ declare module 'launchdarkly-js-sdk-common' {
    * This interface should not be used by the application to access flags for the purpose of controlling application
    * flow. It is intended for monitoring, analytics, or debugging purposes.
    */
-  interface LDInspectionFlagUsedHandler {
+  export interface LDInspectionFlagUsedHandler {
     type: 'flag-used',
 
     /**
@@ -1023,7 +1023,7 @@ declare module 'launchdarkly-js-sdk-common' {
    * This interface should not be used by the application to access flags for the purpose of controlling application
    * flow. It is intended for monitoring, analytics, or debugging purposes.
    */
-  interface LDInspectionFlagDetailsChangedHandler {
+  export interface LDInspectionFlagDetailsChangedHandler {
     type: 'flag-details-changed',
 
     /**
@@ -1049,7 +1049,7 @@ declare module 'launchdarkly-js-sdk-common' {
    * This interface should not be used by the application to access flags for the purpose of controlling application
    * flow. It is intended for monitoring, analytics, or debugging purposes.
    */
-  interface LDInspectionFlagDetailChangedHandler {
+  export interface LDInspectionFlagDetailChangedHandler {
     type: 'flag-detail-changed',
 
     /**
@@ -1072,7 +1072,7 @@ declare module 'launchdarkly-js-sdk-common' {
    * This interface should not be used by the application to access flags for the purpose of controlling application
    * flow. It is intended for monitoring, analytics, or debugging purposes.
    */
-  interface LDInspectionIdentifyHandler {
+  export interface LDInspectionIdentifyHandler {
     type: 'client-identity-changed',
 
     /**
@@ -1086,6 +1086,6 @@ declare module 'launchdarkly-js-sdk-common' {
     method: (context: LDContext) => void;
   }
 
-  type LDInspection = LDInspectionFlagUsedHandler | LDInspectionFlagDetailsChangedHandler
+  export type LDInspection = LDInspectionFlagUsedHandler | LDInspectionFlagDetailsChangedHandler
     | LDInspectionFlagDetailChangedHandler | LDInspectionIdentifyHandler;
 }
