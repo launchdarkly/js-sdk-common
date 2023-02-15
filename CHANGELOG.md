@@ -2,6 +2,10 @@
 
 All notable changes to the `launchdarkly-js-sdk-common` package will be documented in this file. Changes that affect the dependent SDKs such as `launchdarkly-js-client-sdk` should also be logged in those projects, in the next release that uses the updated version of this package. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [5.0.2] - 2023-02-15
+### Changed:
+- Removed usage of optional chaining (`?.`) to improve compatibility with projects which are using older transpilation tooling.
+
 ## [5.0.1] - 2023-01-10
 ### Changed:
 - Updated all types in `typings.d.ts` to be exported. This is to ensure that those types are included in generated documentation of dependent SDKs.
