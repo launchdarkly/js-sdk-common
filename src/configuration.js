@@ -45,7 +45,7 @@ const baseOptionDefs = {
 const allowedTagCharacters = /^(\w|\.|-)+$/;
 
 function canonicalizeUrl(url) {
-  return url?.replace(/\/+$/, '');
+  return url && url.replace(/\/+$/, '');
 }
 
 /**

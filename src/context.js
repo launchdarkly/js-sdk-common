@@ -107,7 +107,7 @@ function getContextKeys(context, logger = commonBasicLogger()) {
       Object.entries(context)
         .filter(([key]) => key !== 'kind')
         .forEach(([key, value]) => {
-          if (value?.key) {
+          if (value && value.key) {
             keys[key] = value.key;
           }
         });
