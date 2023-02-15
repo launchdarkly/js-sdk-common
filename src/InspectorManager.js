@@ -31,16 +31,17 @@ function InspectorManager(inspectors, logger) {
     [InspectorTypes.clientIdentityChanged]: [],
   };
 
-  const safeInspectors = inspectors?.map(inspector => SafeInspector(inspector, logger));
+  const safeInspectors = inspectors && inspectors.map(inspector => SafeInspector(inspector, logger));
 
-  safeInspectors.forEach(safeInspector => {
-    // Only add inspectors of supported types.
-    if (Object.prototype.hasOwnProperty.call(inspectorsByType, safeInspector.type)) {
-      inspectorsByType[safeInspector.type].push(safeInspector);
-    } else {
-      logger.warn(messages.invalidInspector(safeInspector.type, safeInspector.name));
-    }
-  });
+  safeInspectors &&
+    safeInspectors.forEach(safeInspector => {
+      // Only add inspectors of supported types.
+      if (Object.prototype.hasOwnProperty.call(inspectorsByType, safeInspector.type)) {
+        inspectorsByType[safeInspector.type].push(safeInspector);
+      } else {
+        logger.warn(messages.invalidInspector(safeInspector.type, safeInspector.name));
+      }
+    });
 
   /**
    * Check if there is an inspector of a specific type registered.
@@ -48,7 +49,7 @@ function InspectorManager(inspectors, logger) {
    * @param {string} type The type of the inspector to check.
    * @returns True if there are any inspectors of that type registered.
    */
-  manager.hasListeners = type => inspectorsByType[type]?.length;
+  manager.hasListeners = type => inspectorsByType[type] && inspectorsByType[type].length;
 
   /**
    * Notify registered inspectors of a flag being used.
