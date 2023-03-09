@@ -53,12 +53,12 @@ function Stream(platform, config, environment, diagnosticsAccumulator) {
     return delay;
   }
 
-  stream.connect = function(newContext, newHash, newHandlers) {
+  stream.connect = function (newContext, newHash, newHandlers) {
     context = newContext;
     hash = newHash;
     handlers = {};
     for (const key in newHandlers || {}) {
-      handlers[key] = function(e) {
+      handlers[key] = function (e) {
         // Reset the state for logging the first connection error so that the first
         // connection error following a successful connection will once again be logged.
         // We will decorate *all* handlers to do this to keep this abstraction agnostic
@@ -71,13 +71,13 @@ function Stream(platform, config, environment, diagnosticsAccumulator) {
     tryConnect();
   };
 
-  stream.disconnect = function() {
+  stream.disconnect = function () {
     clearTimeout(reconnectTimeoutReference);
     reconnectTimeoutReference = null;
     closeConnection();
   };
 
-  stream.isConnected = function() {
+  stream.isConnected = function () {
     return !!(es && platform.eventSourceIsActive && platform.eventSourceIsActive(es));
   };
 

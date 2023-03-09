@@ -4,7 +4,7 @@ function EventEmitter(logger) {
 
   const listeningTo = event => !!events[event];
 
-  emitter.on = function(event, handler, context) {
+  emitter.on = function (event, handler, context) {
     events[event] = events[event] || [];
     events[event] = events[event].concat({
       handler: handler,
@@ -12,7 +12,7 @@ function EventEmitter(logger) {
     });
   };
 
-  emitter.off = function(event, handler, context) {
+  emitter.off = function (event, handler, context) {
     if (!events[event]) {
       return;
     }
@@ -23,7 +23,7 @@ function EventEmitter(logger) {
     }
   };
 
-  emitter.emit = function(event) {
+  emitter.emit = function (event) {
     if (!events[event]) {
       return;
     }
@@ -36,15 +36,15 @@ function EventEmitter(logger) {
     }
   };
 
-  emitter.getEvents = function() {
+  emitter.getEvents = function () {
     return Object.keys(events);
   };
 
-  emitter.getEventListenerCount = function(event) {
+  emitter.getEventListenerCount = function (event) {
     return events[event] ? events[event].length : 0;
   };
 
-  emitter.maybeReportError = function(error) {
+  emitter.maybeReportError = function (error) {
     if (!error) {
       return;
     }

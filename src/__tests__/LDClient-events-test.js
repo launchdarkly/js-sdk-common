@@ -26,10 +26,10 @@ describe('LDClient events', () => {
 
   function stubEventProcessor() {
     const ep = { events: [] };
-    ep.start = function() {};
-    ep.flush = function() {};
-    ep.stop = function() {};
-    ep.enqueue = function(e) {
+    ep.start = function () {};
+    ep.flush = function () {};
+    ep.stop = function () {};
+    ep.enqueue = function (e) {
       ep.events.push(e);
     };
     return ep;

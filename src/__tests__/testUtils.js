@@ -18,7 +18,7 @@ export const numericUser = {
 export function promiseListener() {
   let cb;
   const p = new Promise(resolve => {
-    cb = function(value) {
+    cb = function (value) {
       if (arguments.length > 1) {
         resolve(Array.prototype.slice.call(arguments));
       } else {

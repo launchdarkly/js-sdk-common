@@ -5,13 +5,18 @@ jobs:
       - image: cimg/node:12.22
     steps:
       - checkout
-
+    name: Install dependencies
       - run: npm install
+    name: Lint (Eslint)
       - run: npm run lint:all
+    name: Format (Prettier)
+      - run: npm run format
+    name: Tests
       - run:
           command: npm test
           environment:
             JEST_JUNIT_OUTPUT: "reports/junit/js-test-results.xml"
+    name: Check TypeScript
       - run: npm run check-typescript
       - run:
           name: dependency audit
