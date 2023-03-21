@@ -345,8 +345,9 @@ declare module 'launchdarkly-js-sdk-common' {
 
     /**
      * A unique string identifying a context.
+     * This value must be set unless the context is anonymous.
      */
-    key: string;
+    key?: string;
 
     /**
      * The context's name.
