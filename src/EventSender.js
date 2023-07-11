@@ -63,7 +63,7 @@ function EventSender(platform, environmentId, options) {
     }
   };
 
-  sender.sendEvents = function(events, url, isDiagnostic) {
+  sender.sendEvents = function (events, url, isDiagnostic) {
     if (!platform.httpRequest) {
       return Promise.resolve();
     }

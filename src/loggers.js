@@ -11,7 +11,7 @@ function commonBasicLogger(options, formatFn) {
   function toConsole(methodName) {
     // The global console variable is not guaranteed to be defined at all times in all browsers:
     // https://www.beyondjava.net/console-log-surprises-with-internet-explorer-11-and-edge
-    return function(line) {
+    return function (line) {
       if (console && console[methodName]) {
         console[methodName].call(console, line);
       }
@@ -64,7 +64,7 @@ function commonBasicLogger(options, formatFn) {
         logger[levelName] = () => {};
       } else {
         const levelIndex = i;
-        logger[levelName] = function() {
+        logger[levelName] = function () {
           // can't use arrow function with "arguments"
           write(levelIndex, levelName, arguments);
         };

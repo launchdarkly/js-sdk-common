@@ -410,7 +410,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
       }
     };
     stream.connect(ident.getContext(), hash, {
-      ping: function() {
+      ping: function () {
         logger.debug(messages.debugStreamPing());
         const contextAtTimeOfPingEvent = ident.getContext();
         requestor
@@ -426,7 +426,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
             emitter.maybeReportError(new errors.LDFlagFetchError(messages.errorFetchingFlags(err)));
           });
       },
-      put: function(e) {
+      put: function (e) {
         const data = tryParseData(e.data);
         if (!data) {
           return;
@@ -436,7 +436,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
         // Don't wait for this Promise to be resolved; note that replaceAllFlags is guaranteed
         // never to have an unhandled rejection
       },
-      patch: function(e) {
+      patch: function (e) {
         const data = tryParseData(e.data);
         if (!data) {
           return;
@@ -463,7 +463,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
           logger.debug(messages.debugStreamPatchIgnored(data.key));
         }
       },
-      delete: function(e) {
+      delete: function (e) {
         const data = tryParseData(e.data);
         if (!data) {
           return;

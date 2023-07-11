@@ -4,14 +4,14 @@ function Identity(initialContext, onChange) {
   const ident = {};
   let context;
 
-  ident.setContext = function(c) {
+  ident.setContext = function (c) {
     context = utils.sanitizeContext(c);
     if (context && onChange) {
       onChange(utils.clone(context));
     }
   };
 
-  ident.getContext = function() {
+  ident.getContext = function () {
     return context ? utils.clone(context) : null;
   };
 

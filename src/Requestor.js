@@ -75,13 +75,13 @@ function Requestor(platform, options, environment) {
 
   // Performs a GET request to an arbitrary path under baseUrl. Returns a Promise which will resolve
   // with the parsed JSON response, or will be rejected if the request failed.
-  requestor.fetchJSON = function(path) {
+  requestor.fetchJSON = function (path) {
     return fetchJSON(utils.appendUrlPath(baseUrl, path), null);
   };
 
   // Requests the current state of all flags for the given context from LaunchDarkly. Returns a Promise
   // which will resolve with the parsed JSON response, or will be rejected if the request failed.
-  requestor.fetchFlagSettings = function(context, hash) {
+  requestor.fetchFlagSettings = function (context, hash) {
     let data;
     let endpoint;
     let query = '';

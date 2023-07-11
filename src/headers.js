@@ -17,8 +17,8 @@ function getLDHeaders(platform, options) {
   if (tagKeys.length) {
     h['x-launchdarkly-tags'] = tagKeys
       .sort()
-      .map(
-        key => (Array.isArray(tags[key]) ? tags[key].sort().map(value => `${key}/${value}`) : [`${key}/${tags[key]}`])
+      .map(key =>
+        Array.isArray(tags[key]) ? tags[key].sort().map(value => `${key}/${value}`) : [`${key}/${tags[key]}`]
       )
       .reduce((flattened, item) => flattened.concat(item), [])
       .join(' ');

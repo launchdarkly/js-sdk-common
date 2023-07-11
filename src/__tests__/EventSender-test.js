@@ -21,7 +21,7 @@ describe('EventSender', () => {
   });
 
   function fakeImageCreator() {
-    const ret = function(url) {
+    const ret = function (url) {
       ret.urls.push(url);
     };
     ret.urls = [];

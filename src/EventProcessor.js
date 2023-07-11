@@ -81,7 +81,7 @@ function EventProcessor(
     }
   }
 
-  processor.enqueue = function(event) {
+  processor.enqueue = function (event) {
     if (disabled) {
       return;
     }
@@ -114,7 +114,7 @@ function EventProcessor(
     }
   };
 
-  processor.flush = function() {
+  processor.flush = function () {
     if (disabled) {
       return Promise.resolve();
     }
@@ -158,7 +158,7 @@ function EventProcessor(
     });
   };
 
-  processor.start = function() {
+  processor.start = function () {
     const flushTick = () => {
       processor.flush();
       flushTimer = setTimeout(flushTick, flushInterval);
@@ -166,7 +166,7 @@ function EventProcessor(
     flushTimer = setTimeout(flushTick, flushInterval);
   };
 
-  processor.stop = function() {
+  processor.stop = function () {
     clearTimeout(flushTimer);
   };
 
