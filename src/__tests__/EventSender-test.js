@@ -1,8 +1,6 @@
 import EventSender from '../EventSender';
 import * as utils from '../utils';
 
-import * as base64 from 'base64-js';
-
 import { respond, networkError } from './mockHttp';
 import * as stubPlatform from './stubPlatform';
 
@@ -18,74 +16,6 @@ describe('EventSender', () => {
 
   beforeEach(() => {
     platform = stubPlatform.defaults();
-  });
-
-  function fakeImageCreator() {
-    const ret = function(url) {
-      ret.urls.push(url);
-    };
-    ret.urls = [];
-    return ret;
-  }
-
-  function base64URLDecode(str) {
-    let s = str;
-    while (s.length % 4 !== 0) {
-      s = s + '=';
-    }
-    s = s.replace(/_/g, '/').replace(/-/g, '+');
-    const decodedBytes = base64.toByteArray(s);
-    const decodedStr = String.fromCharCode.apply(String, decodedBytes);
-    return decodeURIComponent(escape(decodedStr));
-  }
-
-  function decodeOutputFromUrl(url, baseUrl) {
-    const prefix = baseUrl + '/a/' + envId + '.gif?d=';
-    if (!url.startsWith(prefix)) {
-      throw 'URL "' + url + '" did not have expected prefix "' + prefix + '"';
-    }
-    return JSON.parse(base64URLDecode(url.substring(prefix.length)));
-  }
-
-  describe('using image endpoint when CORS is not available', () => {
-    it('should encode events in a single chunk if they fit', async () => {
-      const server = platform.testing.http.newServer();
-      const imageCreator = fakeImageCreator();
-      const platformWithoutCors = { ...platform, httpAllowsPost: () => false, httpFallbackPing: imageCreator };
-      const sender = EventSender(platformWithoutCors, envId);
-      const event1 = { kind: 'identify', key: 'userKey1' };
-      const event2 = { kind: 'identify', key: 'userKey2' };
-      const events = [event1, event2];
-
-      await sender.sendEvents(events, server.url);
-
-      const urls = imageCreator.urls;
-      expect(urls.length).toEqual(1);
-      expect(decodeOutputFromUrl(urls[0], server.url)).toEqual(events);
-
-      expect(server.requests.length()).toEqual(0);
-    });
-
-    it('should send events in multiple chunks if necessary', async () => {
-      const server = platform.testing.http.newServer();
-      const imageCreator = fakeImageCreator();
-      const platformWithoutCors = { ...platform, httpAllowsPost: () => false, httpFallbackPing: imageCreator };
-      const sender = EventSender(platformWithoutCors, envId);
-      const events = [];
-      for (let i = 0; i < 80; i++) {
-        events.push({ kind: 'identify', key: 'thisIsALongUserKey' + i });
-      }
-
-      await sender.sendEvents(events, server.url);
-
-      const urls = imageCreator.urls;
-      expect(urls.length).toEqual(3);
-      expect(decodeOutputFromUrl(urls[0], server.url)).toEqual(events.slice(0, 31));
-      expect(decodeOutputFromUrl(urls[1], server.url)).toEqual(events.slice(31, 61));
-      expect(decodeOutputFromUrl(urls[2], server.url)).toEqual(events.slice(61, 80));
-
-      expect(server.requests.length()).toEqual(0);
-    });
   });
 
   describe('using POST when CORS is available', () => {
