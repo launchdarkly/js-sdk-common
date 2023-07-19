@@ -1,4 +1,4 @@
-import { appendUrlPath, base64URLEncode, chunkEventsForUrl, getLDUserAgentString, wrapPromiseCallback } from '../utils';
+import { appendUrlPath, getLDUserAgentString, wrapPromiseCallback } from '../utils';
 
 import * as stubPlatform from './stubPlatform';
 
@@ -61,17 +61,6 @@ describe('utils', () => {
       platform.version = '7.8.9';
       const ua = getLDUserAgentString(platform);
       expect(ua).toEqual('stubClient/7.8.9');
-    });
-  });
-
-  describe('chunkEventsForUrl', () => {
-    it('should properly chunk the list of events', () => {
-      const context = { key: 'foo', kind: 'user' };
-      const event = { kind: 'identify', key: context.key };
-      const eventLength = base64URLEncode(JSON.stringify(event)).length;
-      const events = [event, event, event, event, event];
-      const chunks = chunkEventsForUrl(eventLength * 2, events);
-      expect(chunks).toEqual([[event, event], [event, event], [event]]);
     });
   });
 });
