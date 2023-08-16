@@ -855,7 +855,7 @@ declare module 'launchdarkly-js-sdk-common' {
      * events that do not currently have metrics.
      *
      * @param key
-     *   The name of the event, which may correspond to a metric in Experimentation.
+     *   The name of the event, which may correspond to a metric in experiments.
      * @param data
      *   Additional information to associate with the event.
      * @param metricValue
