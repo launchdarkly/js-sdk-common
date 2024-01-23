@@ -169,6 +169,20 @@ describe('EventSender', () => {
     });
   });
 
+  describe('verify sendEvents response format', () => {
+    it('includes date header', async () => {
+      const options = { sendLDHeaders: true };
+      const server = platform.testing.http.newServer();
+      server.byDefault(respond(202, { date: 'Wed, 21 Oct 2015 07:28:00 GMT' }, '{}'));
+
+      const sender = EventSender(platform, envId, options);
+      const event = { kind: 'identify', key: 'userKey' };
+      const responseInfo = await sender.sendEvents([event], server.url);
+
+      expect(responseInfo.serverTime).toEqual(1445412480000);
+    });
+  });
+
   describe('When HTTP requests are not available at all', () => {
     it('should silently discard events', async () => {
       const server = platform.testing.http.newServer();

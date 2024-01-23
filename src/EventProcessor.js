@@ -136,8 +136,7 @@ function EventProcessor(
     }
     queue = [];
     logger.debug(messages.debugPostingEvents(eventsToSend.length));
-    return eventSender.sendEvents(eventsToSend, mainEventsUrl).then(responses => {
-      const responseInfo = responses && responses[0];
+    return eventSender.sendEvents(eventsToSend, mainEventsUrl).then(responseInfo => {
       if (responseInfo) {
         if (responseInfo.serverTime) {
           lastKnownPastTime = responseInfo.serverTime;
