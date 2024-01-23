@@ -50,6 +50,9 @@ function EventProcessor(
     if (e.kind === 'identify') {
       // identify events always have an inline context
       ret.context = contextFilter.filter(e.context);
+    } else if (e.kind === 'feature') {
+      // feature events always have an inline context
+      ret.context = contextFilter.filter(e.context);
     } else {
       ret.contextKeys = getContextKeysFromEvent(e);
       delete ret['context'];
