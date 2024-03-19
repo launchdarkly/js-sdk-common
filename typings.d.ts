@@ -848,14 +848,14 @@ declare module 'launchdarkly-js-sdk-common' {
     off(key: string, callback: (...args: any[]) => void, context?: any): void;
 
     /**
-     * Track page events to use in goals or A/B tests.
+     * Track page events to use in metrics (goals) or Experimentation.
      *
      * LaunchDarkly automatically tracks pageviews and clicks that are specified in the
-     * Goals section of their dashboard. This can be used to track custom goals or other
-     * events that do not currently have goals.
+     * Metrics section of their dashboard. This can be used to track custom metrics or other
+     * events that do not currently have metrics.
      *
      * @param key
-     *   The name of the event, which may correspond to a goal in A/B tests.
+     *   The name of the event, which may correspond to a metric in experiments.
      * @param data
      *   Additional information to associate with the event.
      * @param metricValue
