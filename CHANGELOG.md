@@ -2,6 +2,17 @@
 
 All notable changes to the `launchdarkly-js-sdk-common` package will be documented in this file. Changes that affect the dependent SDKs such as `launchdarkly-js-client-sdk` should also be logged in those projects, in the next release that uses the updated version of this package. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [5.1.0] - 2024-03-19
+### Changed:
+- Redact anonymous attributes within feature events
+- Always inline contexts for feature events
+
+### Fixed:
+- Pin dev version of node to compatible types.
+
+### Removed:
+- HTTP fallback ping
+
 ## [5.0.3] - 2023-03-21
 ### Changed:
 - Update `LDContext` to allow for key to be optional. This is used when making an anonymous context with a generated key.
