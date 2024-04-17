@@ -16,6 +16,7 @@ const errors = require('./errors');
 const messages = require('./messages');
 const { checkContext, getContextKeys } = require('./context');
 const { InspectorTypes, InspectorManager } = require('./InspectorManager');
+const timedPromise = require('./timedPromise');
 
 const changeEvent = 'change';
 const internalChangeEvent = 'internal-change';
@@ -771,10 +772,36 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
     // used by Electron integration
     return flags;
   }
+  
+  function waitForInitialization () {
+    const timeout = 5;
+    const slow = initializationStateTracker.getInitializationPromise();
+    const timed = timedPromise(timeout, 'waitForInitialization');
+    
+    return Promise.race([timed, slow]).catch((e) => {
+      if (e.message.includes('timed out')) {
+        this.logger.error(`waitForInitialization error: ${e}`);
+      }
+      throw e;
+    });
+  }  
+  
+  function waitUntilReady () {
+    const timeout = 5;
+    const slow = initializationStateTracker.getReadyPromise();
+    const timed = timedPromise(timeout, 'waitUntilReady');
+    
+    return Promise.race([timed, slow]).catch((e) => {
+      if (e.message.includes('timed out')) {
+        this.logger.error(`waitUntilReady error: ${e}`);
+      }
+      throw e;
+    });
+  }
 
   const client = {
-    waitForInitialization: () => initializationStateTracker.getInitializationPromise(),
-    waitUntilReady: () => initializationStateTracker.getReadyPromise(),
+    waitForInitialization,
+    waitUntilReady,
     identify: identify,
     getContext: getContext,
     variation: variation,
