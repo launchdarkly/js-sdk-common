@@ -772,26 +772,26 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
     // used by Electron integration
     return flags;
   }
-  
-  function waitForInitialization () {
+
+  function waitForInitialization() {
     const timeout = 5;
     const slow = initializationStateTracker.getInitializationPromise();
     const timed = timedPromise(timeout, 'waitForInitialization');
-    
-    return Promise.race([timed, slow]).catch((e) => {
+
+    return Promise.race([timed, slow]).catch(e => {
       if (e.message.includes('timed out')) {
         this.logger.error(`waitForInitialization error: ${e}`);
       }
       throw e;
     });
-  }  
-  
-  function waitUntilReady () {
+  }
+
+  function waitUntilReady() {
     const timeout = 5;
     const slow = initializationStateTracker.getReadyPromise();
     const timed = timedPromise(timeout, 'waitUntilReady');
-    
-    return Promise.race([timed, slow]).catch((e) => {
+
+    return Promise.race([timed, slow]).catch(e => {
       if (e.message.includes('timed out')) {
         this.logger.error(`waitUntilReady error: ${e}`);
       }

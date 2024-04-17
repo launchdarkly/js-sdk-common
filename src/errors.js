@@ -37,5 +37,5 @@ module.exports = {
   LDInvalidDataError,
   LDFlagFetchError,
   LDTimeoutError,
-  isHttpErrorRecoverable
+  isHttpErrorRecoverable,
 };

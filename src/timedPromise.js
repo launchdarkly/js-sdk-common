@@ -11,7 +11,6 @@ const timedPromise = (t, taskName) =>
     setTimeout(() => {
       const e = `${taskName} timed out after ${t} seconds.`;
       reject(new LDTimeoutError(e));
-      
     }, t * 1000);
   });
 
