@@ -14,4 +14,4 @@ const timedPromise = (t, taskName) =>
     }, t * 1000);
   });
 
-export default timedPromise;
+module.exports = timedPromise;

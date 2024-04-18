@@ -16,7 +16,7 @@ const errors = require('./errors');
 const messages = require('./messages');
 const { checkContext, getContextKeys } = require('./context');
 const { InspectorTypes, InspectorManager } = require('./InspectorManager');
-const timedPromise = require('./timedPromise').default;
+const timedPromise = require('./timedPromise');
 
 const changeEvent = 'change';
 const internalChangeEvent = 'internal-change';
@@ -780,7 +780,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
 
     return Promise.race([timed, slow]).catch(e => {
       if (e.message.includes('timed out')) {
-        this.logger.error(`waitForInitialization error: ${e}`);
+        logger.error(`waitForInitialization error: ${e}`);
       }
       throw e;
     });
@@ -792,7 +792,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
 
     return Promise.race([timed, slow]).catch(e => {
       if (e.message.includes('timed out')) {
-        this.logger.error(`waitUntilReady error: ${e}`);
+        logger.error(`waitUntilReady error: ${e}`);
       }
       throw e;
     });
