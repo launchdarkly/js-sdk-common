@@ -774,9 +774,9 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
     return flags;
   }
 
-  function waitForInitialization() {
+  function waitForInitialization(timeout = waitTimeout) {
     const slow = initializationStateTracker.getInitializationPromise();
-    const timed = timedPromise(waitTimeout, 'waitForInitialization');
+    const timed = timedPromise(timeout, 'waitForInitialization');
 
     return Promise.race([timed, slow]).catch(e => {
       if (e.message.includes('timed out')) {
@@ -786,7 +786,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
     });
   }
 
-  function waitUntilReady() {
+  function waitUntilReady(timeout = waitTimeout) {
     const slow = initializationStateTracker.getReadyPromise();
     const timed = timedPromise(waitTimeout, 'waitUntilReady');
 
