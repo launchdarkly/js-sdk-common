@@ -16,10 +16,11 @@ const errors = require('./errors');
 const messages = require('./messages');
 const { checkContext, getContextKeys } = require('./context');
 const { InspectorTypes, InspectorManager } = require('./InspectorManager');
-const timedPromise = require('./timedPromise');
+const timedPromise = require('./timedPromise').default;
 
 const changeEvent = 'change';
 const internalChangeEvent = 'internal-change';
+const waitTimeout = 5;
 
 // This is called by the per-platform initialize functions to create the base client object that we
 // may also extend with additional behavior. It returns an object with these properties:
@@ -774,9 +775,8 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
   }
 
   function waitForInitialization() {
-    const timeout = 5;
     const slow = initializationStateTracker.getInitializationPromise();
-    const timed = timedPromise(timeout, 'waitForInitialization');
+    const timed = timedPromise(waitTimeout, 'waitForInitialization');
 
     return Promise.race([timed, slow]).catch(e => {
       if (e.message.includes('timed out')) {
@@ -787,9 +787,8 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
   }
 
   function waitUntilReady() {
-    const timeout = 5;
     const slow = initializationStateTracker.getReadyPromise();
-    const timed = timedPromise(timeout, 'waitUntilReady');
+    const timed = timedPromise(waitTimeout, 'waitUntilReady');
 
     return Promise.race([timed, slow]).catch(e => {
       if (e.message.includes('timed out')) {
