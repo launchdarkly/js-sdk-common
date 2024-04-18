@@ -10,7 +10,10 @@ import { MockEventSender } from './testUtils';
 // tests; here, we use a mock EventSender.
 
 describe.each([
-  [{ key: 'userKey', name: 'Red' }, { key: 'userKey', kind: 'user', _meta: { redactedAttributes: ['/name'] } }],
+  [
+    { key: 'userKey', name: 'Red' },
+    { key: 'userKey', kind: 'user', _meta: { redactedAttributes: ['/name'] } },
+  ],
   [
     { kind: 'user', key: 'userKey', name: 'Red' },
     { key: 'userKey', kind: 'user', _meta: { redactedAttributes: ['/name'] } },

@@ -117,7 +117,10 @@ describe('DiagnosticsManager', () => {
   const expectedStatsForPeriodicEvent1 = {
     droppedEvents: 1,
     eventsInLastBatch: 2,
-    streamInits: [{ timestamp: 1001, durationMillis: 100 }, { timestamp: 1002, failed: true, durationMillis: 500 }],
+    streamInits: [
+      { timestamp: 1001, durationMillis: 100 },
+      { timestamp: 1002, failed: true, durationMillis: 500 },
+    ],
   };
   const expectedStatsForPeriodicEvent2 = {
     droppedEvents: 0,
@@ -392,7 +395,10 @@ describe('DiagnosticsManager', () => {
           dataSinceDate: storedStats.dataSinceDate,
           droppedEvents: 2,
           eventsInLastBatch: 3,
-          streamInits: [{ timestamp: 1000, durationMillis: 500 }, { timestamp: 1001, durationMillis: 501 }],
+          streamInits: [
+            { timestamp: 1000, durationMillis: 500 },
+            { timestamp: 1001, durationMillis: 501 },
+          ],
         });
         expect(firstEvent.creationDate).toBeGreaterThanOrEqual(timeBeforeStart);
       });
