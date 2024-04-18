@@ -1,10 +1,6 @@
-import { initialize } from '../index';
-
 jest.mock('../InitializationState', () => jest.fn());
 
-import InitializationState from '../InitializationState';
 describe('timeout', () => {
-  let ldc;
   let mockGetInitializationPromise;
   let mockGetReadyPromise;
 
@@ -16,11 +12,6 @@ describe('timeout', () => {
     mockGetInitializationPromise = jest.fn();
     mockGetReadyPromise = jest.fn();
 
-    InitializationState.mockImplementation(() => ({
-      getInitializationPromise: mockGetInitializationPromise,
-      getReadyPromise: mockGetReadyPromise,
-      signalFailure: jest.fn(),
-    }));
     mockGetInitializationPromise.mockImplementation(
       () =>
         new Promise(() => {
@@ -33,8 +24,6 @@ describe('timeout', () => {
           // mock a ready promise never resolves
         })
     );
-
-    ({ client: ldc } = initialize('abc', { kind: 'user', key: 'test-user' }, undefined, {}));
   });
 
   afterEach(() => {
@@ -42,17 +31,74 @@ describe('timeout', () => {
   });
 
   it('waitForInitialization timeout', async () => {
-    const p = ldc.waitForInitialization();
-    jest.runAllTimers();
+    jest.isolateModules(async () => {
+      jest.doMock('../InitializationState', () =>
+        jest.fn(() => ({
+          getInitializationPromise: mockGetInitializationPromise,
+          getReadyPromise: mockGetReadyPromise,
+          signalFailure: jest.fn(),
+        }))
+      );
+      const { initialize } = require('../index');
+      const { client } = initialize('abc', { kind: 'user', key: 'test-user' }, undefined, {});
+      const p = client.waitForInitialization();
+      jest.runAllTimers();
 
-    await expect(p).rejects.toThrow(/waitForInitialization timed out/);
+      await expect(p).rejects.toThrow(/waitForInitialization timed out/);
+    });
   });
 
-  // TODO: this fails if the above test is active
-  it('waitUntilReady timeout', async () => {
-    const p = ldc.waitUntilReady();
-    jest.runAllTimers();
+  it('waitForInitialization success', async () => {
+    jest.isolateModules(async () => {
+      jest.doMock('../InitializationState', () =>
+        jest.fn(() => ({
+          getInitializationPromise: () => Promise.resolve('waitForInitialization success'),
+          getReadyPromise: mockGetReadyPromise,
+          signalFailure: jest.fn(),
+        }))
+      );
+      const { initialize } = require('../index');
+      const { client } = initialize('abc', { kind: 'user', key: 'test-user' }, undefined, {});
+      const p = client.waitForInitialization();
+      jest.runAllTimers();
 
-    await expect(p).rejects.toThrow(/waitUntilReady timed out/);
+      await expect(p).resolves.toEqual('waitForInitialization success');
+    });
+  });
+
+  it('waitUntilReady timeout', async () => {
+    jest.isolateModules(async () => {
+      jest.doMock('../InitializationState', () =>
+        jest.fn(() => ({
+          getInitializationPromise: mockGetInitializationPromise,
+          getReadyPromise: mockGetReadyPromise,
+          signalFailure: jest.fn(),
+        }))
+      );
+      const { initialize } = require('../index');
+      const { client } = initialize('abc', { kind: 'user', key: 'test-user' }, undefined, {});
+      const p = client.waitUntilReady();
+      jest.runAllTimers();
+
+      await expect(p).rejects.toThrow(/waitUntilReady timed out/);
+    });
+  });
+
+  it('waitUntilReady success', async () => {
+    jest.isolateModules(async () => {
+      jest.doMock('../InitializationState', () =>
+        jest.fn(() => ({
+          getInitializationPromise: mockGetInitializationPromise,
+          getReadyPromise: () => Promise.resolve('waitUntilReady success'),
+          signalFailure: jest.fn(),
+        }))
+      );
+      const { initialize } = require('../index');
+      const { client } = initialize('abc', { kind: 'user', key: 'test-user' }, undefined, {});
+      const p = client.waitUntilReady();
+      jest.runAllTimers();
+
+      await expect(p).resolves.toEqual('waitUntilReady success');
+    });
   });
 });
