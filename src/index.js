@@ -788,7 +788,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
 
   function waitUntilReady(timeout = waitTimeout) {
     const slow = initializationStateTracker.getReadyPromise();
-    const timed = timedPromise(waitTimeout, 'waitUntilReady');
+    const timed = timedPromise(timeout, 'waitUntilReady');
 
     return Promise.race([timed, slow]).catch(e => {
       if (e.message.includes('timed out')) {
