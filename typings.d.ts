@@ -689,11 +689,19 @@ declare module 'launchdarkly-js-sdk-common' {
      * Note that you can also use event listeners ({@link on}) for the same purpose: the event `"initialized"`
      * indicates success, and `"failed"` indicates failure.
      *
+     * @param timeout
+     *  In seconds. Determines when the promise resolves if no flags have been
+     *  returned from the network. If you use a large timeout and await it, then
+     *  any network delays will cause your application to wait a long time before
+     *  continuing execution.
+     *  
+     *  Defaults to 5 seconds.
+     *  
      * @returns
      *   A Promise that will be resolved if the client initializes successfully, or rejected if it
      *   fails.
      */
-    waitForInitialization(): Promise<void>;
+    waitForInitialization(timeout: number): Promise<void>;
 
     /**
      * Identifies a context to LaunchDarkly.
