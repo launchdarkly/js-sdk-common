@@ -786,21 +786,9 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
     });
   }
 
-  function waitUntilReady(timeout = waitTimeout) {
-    const slow = initializationStateTracker.getReadyPromise();
-    const timed = timedPromise(timeout, 'waitUntilReady');
-
-    return Promise.race([timed, slow]).catch(e => {
-      if (e.message.includes('timed out')) {
-        logger.error(`waitUntilReady error: ${e}`);
-      }
-      throw e;
-    });
-  }
-
   const client = {
     waitForInitialization,
-    waitUntilReady,
+    waitUntilReady: () => initializationStateTracker.getReadyPromise(),
     identify: identify,
     getContext: getContext,
     variation: variation,

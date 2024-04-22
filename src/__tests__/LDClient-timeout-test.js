@@ -56,28 +56,4 @@ describe('timeout', () => {
     await expect(p).resolves.toEqual('success');
     expect(timedPromise).toBeCalledWith(10, 'waitForInitialization');
   });
-
-  it('waitUntilReady timeout', async () => {
-    const p = ldc.waitUntilReady();
-    await expect(p).rejects.toThrow(/timed out/);
-  });
-
-  it('waitUntilReady succeeds', async () => {
-    timedPromise.mockImplementation(createHangingPromise);
-    mockGetReadyPromise.mockImplementation(() => Promise.resolve('success'));
-
-    const p = ldc.waitUntilReady();
-
-    await expect(p).resolves.toEqual('success');
-  });
-
-  it('waitUntilReady succeeds with custom timeout', async () => {
-    timedPromise.mockImplementation(createHangingPromise);
-    mockGetReadyPromise.mockImplementation(() => Promise.resolve('success'));
-
-    const p = ldc.waitUntilReady(10);
-
-    await expect(p).resolves.toEqual('success');
-    expect(timedPromise).toBeCalledWith(10, 'waitUntilReady');
-  });
 });
