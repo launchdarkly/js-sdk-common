@@ -487,6 +487,18 @@ describe('LDClient events', () => {
     });
   });
 
+  it('does warn when a metric value is non-numeric', async () => {
+    await withClientAndEventProcessor(user, {}, async client => {
+      await client.waitForInitialization();
+
+      client.track('known', undefined, '12');
+      expect(platform.testing.logger.output.warn).toEqual([
+        'The track function was called with a non-numeric "metricValue" (string), ' +
+          'only numeric metric values are supported.',
+      ]);
+    });
+  });
+
   it('emits an error when tracking a non-string custom event', async () => {
     await withClientAndEventProcessor(user, {}, async client => {
       await client.waitForInitialization();

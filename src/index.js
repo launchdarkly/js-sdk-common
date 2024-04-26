@@ -365,6 +365,9 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
       emitter.maybeReportError(new errors.LDInvalidEventKeyError(messages.unknownCustomEventKey(key)));
       return;
     }
+    if (metricValue !== undefined && typeof metricValue !== 'number') {
+      logger.warn(messages.invalidMetricValue(typeof metricValue));
+    }
 
     // The following logic was used only for the JS browser SDK (js-client-sdk) and
     // is no longer needed as of version 2.9.13 of that SDK. The other client-side
