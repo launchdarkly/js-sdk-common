@@ -688,7 +688,7 @@ declare module 'launchdarkly-js-sdk-common' {
      * indicates success, and `"failed"` indicates failure.
      *
      * @param timeout
-     *  The amount of time, in seconds, to wait initialization before rejecting the promise.
+     *  The amount of time, in seconds, to wait for initialization before rejecting the promise.
      *  Using a large timeout is not recommended. If you use a large timeout and await it, then
      *  any network delays will cause your application to wait a long time before
      *  continuing execution.
