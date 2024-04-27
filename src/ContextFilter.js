@@ -118,8 +118,8 @@ function ContextFilter(config) {
       filtered._meta = filtered._meta || {};
       // If any private attributes started with '/' we need to convert them to references, otherwise the '/' will
       // cause the literal to incorrectly be treated as a reference.
-      filtered._meta.privateAttributes = user.privateAttributeNames.map(
-        literal => (literal.startsWith('/') ? AttributeReference.literalToReference(literal) : literal)
+      filtered._meta.privateAttributes = user.privateAttributeNames.map(literal =>
+        literal.startsWith('/') ? AttributeReference.literalToReference(literal) : literal
       );
     }
 
