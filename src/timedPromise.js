@@ -1,4 +1,4 @@
-import { LDTimeoutError } from './errors';
+const { LDTimeoutError } = require('./errors');
 
 /**
  * Returns a promise which errors after t seconds.
@@ -6,12 +6,12 @@ import { LDTimeoutError } from './errors';
  * @param t Timeout in seconds.
  * @param taskName Name of task being timed for logging and error reporting.
  */
-const timedPromise = (t, taskName) =>
-  new Promise((_res, reject) => {
+function timedPromise(t, taskName) {
+  return new Promise((_res, reject) => {
     setTimeout(() => {
       const e = `${taskName} timed out after ${t} seconds.`;
       reject(new LDTimeoutError(e));
     }, t * 1000);
   });
-
+}
 module.exports = timedPromise;
