@@ -4,6 +4,7 @@ jest.mock('../timedPromise', () => jest.fn());
 import { initialize } from '../index';
 import InitializationState from '../InitializationState';
 import timedPromise from '../timedPromise';
+import * as stubPlatform from './stubPlatform';
 
 const createHangingPromise = () =>
   new Promise(() => {
@@ -26,7 +27,14 @@ describe('timeout', () => {
     }));
     mockGetInitializationPromise.mockImplementation(createHangingPromise);
     mockGetReadyPromise.mockImplementation(createHangingPromise);
-    ({ client: ldc } = initialize('abc', { kind: 'user', key: 'test-user' }, undefined, {}));
+    ({ client: ldc } = initialize(
+      'abc',
+      { kind: 'user', key: 'test-user' },
+      {
+        logger: stubPlatform.logger(),
+      },
+      {}
+    ));
   });
 
   afterEach(() => {
