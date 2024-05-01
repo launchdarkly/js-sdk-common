@@ -54,7 +54,7 @@ var allBaseOptions: ld.LDOptionsBase = {
 var client: ld.LDClientBase = {} as ld.LDClientBase;  // wouldn't do this in real life, it's just so the following statements will compile
 
 client.waitUntilReady().then(() => {});
-client.waitForInitialization().then(() => {});
+client.waitForInitialization(5).then(() => {});
 
 client.identify(user).then(() => {});
 client.identify(user, undefined, () => {});

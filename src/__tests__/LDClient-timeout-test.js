@@ -1,9 +1,7 @@
 jest.mock('../InitializationState', () => jest.fn());
-jest.mock('../timedPromise', () => jest.fn());
 
 import { initialize } from '../index';
 import InitializationState from '../InitializationState';
-import timedPromise from '../timedPromise';
 import * as stubPlatform from './stubPlatform';
 
 const createHangingPromise = () =>
@@ -15,11 +13,12 @@ describe('timeout', () => {
   let ldc;
   let mockGetInitializationPromise;
   let mockGetReadyPromise;
+  let logger;
 
   beforeEach(() => {
     mockGetInitializationPromise = jest.fn();
     mockGetReadyPromise = jest.fn();
-    timedPromise.mockImplementation(() => Promise.reject(new Error('timed out')));
+    logger = stubPlatform.logger();
     InitializationState.mockImplementation(() => ({
       getInitializationPromise: mockGetInitializationPromise,
       getReadyPromise: mockGetReadyPromise,
@@ -31,7 +30,7 @@ describe('timeout', () => {
       'abc',
       { kind: 'user', key: 'test-user' },
       {
-        logger: stubPlatform.logger(),
+        logger: logger,
       },
       {}
     ));
@@ -41,27 +40,51 @@ describe('timeout', () => {
     jest.resetAllMocks();
   });
 
-  it('waitForInitialization timeout', async () => {
-    const p = ldc.waitForInitialization();
+  it('waitForInitialization times out if initialization does not resolve', async () => {
+    const p = ldc.waitForInitialization(1);
     await expect(p).rejects.toThrow(/timed out/);
+
+    // No warnings in this configuration.
+    expect(logger.output.warn).toEqual([]);
+    expect(logger.output.error).toEqual([
+      'waitForInitialization error: LaunchDarklyTimeoutError: waitForInitialization timed out after 1 seconds.',
+    ]);
   });
 
-  it('waitForInitialization succeeds', async () => {
-    timedPromise.mockImplementation(createHangingPromise);
-    mockGetInitializationPromise.mockImplementation(() => Promise.resolve('success'));
+  it('waitForInitialization warns if no timeout is provided', async () => {
+    ldc.waitForInitialization();
 
-    const p = ldc.waitForInitialization();
-
-    await expect(p).resolves.toEqual('success');
+    expect(logger.output.warn).toEqual([
+      'The waitForInitialization function was called without a timeout specified. In a future version a default timeout will be applied.',
+    ]);
   });
 
-  it('waitForInitialization succeeds with custom timeout', async () => {
-    timedPromise.mockImplementation(createHangingPromise);
+  it('waitForInitialization warns if timeout is not a number', async () => {
+    ldc.waitForInitialization('10');
+
+    // You get two warnings in this case. Which should be fine as you have to go our of your way to get into this situation.
+    expect(logger.output.warn).toEqual([
+      'The waitForInitialization method was provided with a non-numeric timeout.',
+      'The waitForInitialization function was called without a timeout specified. In a future version a default timeout will be applied.',
+    ]);
+  });
+
+  it('waitForInitialization warns if timeout provided is too high', async () => {
+    ldc.waitForInitialization(10);
+
+    expect(logger.output.warn).toEqual([
+      'The waitForInitialization function was called with a timeout greater than 5 seconds. We recommend a timeout of 5 seconds or less.',
+    ]);
+  });
+
+  it('waitForInitialization does not timeout if the initialization promise resolves in the timeout', async () => {
     mockGetInitializationPromise.mockImplementation(() => Promise.resolve('success'));
 
-    const p = ldc.waitForInitialization(10);
+    const p = ldc.waitForInitialization(5);
 
     await expect(p).resolves.toEqual('success');
-    expect(timedPromise).toBeCalledWith(10, 'waitForInitialization');
+
+    // No warnings in this configuration.
+    expect(logger.output.warn).toEqual([]);
   });
 });

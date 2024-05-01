@@ -20,7 +20,7 @@ const timedPromise = require('./timedPromise');
 
 const changeEvent = 'change';
 const internalChangeEvent = 'internal-change';
-const waitTimeout = 5;
+const highTimeoutThreshold = 5;
 
 // This is called by the per-platform initialize functions to create the base client object that we
 // may also extend with additional behavior. It returns an object with these properties:
@@ -777,16 +777,38 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
     return flags;
   }
 
-  function waitForInitialization(timeout = waitTimeout) {
-    const slow = initializationStateTracker.getInitializationPromise();
-    const timed = timedPromise(timeout, 'waitForInitialization');
+  function waitForInitializationWithTimeout(timeout) {
+    if (timeout > highTimeoutThreshold) {
+      logger.warn(
+        'The waitForInitialization function was called with a timeout greater than ' +
+          `${highTimeoutThreshold} seconds. We recommend a timeout of ` +
+          `${highTimeoutThreshold} seconds or less.`
+      );
+    }
 
-    return Promise.race([timed, slow]).catch(e => {
-      if (e.message.includes('timed out')) {
+    const initPromise = initializationStateTracker.getInitializationPromise();
+    const timeoutPromise = timedPromise(timeout, 'waitForInitialization');
+
+    return Promise.race([timeoutPromise, initPromise]).catch(e => {
+      if (e instanceof errors.LDTimeoutError) {
         logger.error(`waitForInitialization error: ${e}`);
       }
       throw e;
     });
+  }
+
+  function waitForInitialization(timeout = undefined) {
+    if (timeout !== undefined && timeout !== null) {
+      if (typeof timeout === 'number') {
+        return waitForInitializationWithTimeout(timeout);
+      }
+      logger.warn('The waitForInitialization method was provided with a non-numeric timeout.');
+    }
+    logger.warn(
+      'The waitForInitialization function was called without a timeout specified.' +
+        ' In a future version a default timeout will be applied.'
+    );
+    return initializationStateTracker.getInitializationPromise();
   }
 
   const client = {

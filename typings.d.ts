@@ -664,7 +664,7 @@ declare module 'launchdarkly-js-sdk-common' {
      *
      * ```
      *     // using Promise then() and catch() handlers
-     *     client.waitForInitialization().then(() => {
+     *     client.waitForInitialization(5).then(() => {
      *         doSomethingWithSuccessfullyInitializedClient();
      *     }).catch(err => {
      *         doSomethingForFailedStartup(err);
@@ -672,7 +672,7 @@ declare module 'launchdarkly-js-sdk-common' {
      *
      *     // using async/await
      *     try {
-     *         await client.waitForInitialization();
+     *         await client.waitForInitialization(5);
      *         doSomethingWithSuccessfullyInitializedClient();
      *     } catch (err) {
      *         doSomethingForFailedStartup(err);
@@ -693,11 +693,12 @@ declare module 'launchdarkly-js-sdk-common' {
      *  any network delays will cause your application to wait a long time before
      *  continuing execution.
      *
-     *  Defaults to 5 seconds.
+     *  If no timeout is specified, then the returned promise will only be resolved when the client
+     *  successfully initializes or initialization fails.
      *
      * @returns
      *   A Promise that will be resolved if the client initializes successfully, or rejected if it
-     *   fails.
+     *   fails or the specified timeout elapses.
      */
     waitForInitialization(timeout?: number): Promise<void>;
 
