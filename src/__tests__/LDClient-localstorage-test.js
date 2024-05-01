@@ -38,7 +38,7 @@ describe('LDClient local storage', () => {
 
       await withServer(async server => {
         await withClient(user, { baseUrl: server.url }, async client => {
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
 
           // should see a flag request to the server right away, as if bootstrap was not specified
           expect(server.requests.length()).toEqual(1);
@@ -58,7 +58,7 @@ describe('LDClient local storage', () => {
         server.byDefault(() => {});
 
         await withClient(user, { baseUrl: server.url }, async client => {
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
 
           expect(client.variation('flag-key')).toEqual(1);
 
@@ -79,7 +79,7 @@ describe('LDClient local storage', () => {
           expect(client.variation('flag-key', 0)).toEqual(0);
 
           // verify that the flags get requested from LD
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
           expect(client.variation('flag-key')).toEqual(1);
         });
       });
@@ -93,7 +93,7 @@ describe('LDClient local storage', () => {
       await withServer(async server => {
         server.byDefault(respondJson(flags));
         await withClient(user, { baseUrl: server.url }, async client => {
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
           expect(platform.testing.logger.output.warn).toEqual([messages.localStorageUnavailable(myError)]);
         });
       });
@@ -107,7 +107,7 @@ describe('LDClient local storage', () => {
       await withServer(async server => {
         server.byDefault(respondJson(flags));
         await withClient(user, { baseUrl: server.url }, async client => {
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
 
           await sleepAsync(0); // allow any pending async tasks to complete
 
@@ -123,7 +123,7 @@ describe('LDClient local storage', () => {
       await withServer(async server => {
         server.byDefault(respond(503));
         await withClient(user, { baseUrl: server.url }, async client => {
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
 
           await sleepAsync(0); // allow any pending async tasks to complete
 
@@ -141,7 +141,7 @@ describe('LDClient local storage', () => {
       await withServer(async server => {
         server.byDefault(respondJson(flags));
         await withClient(user, { baseUrl: server.url, hash }, async client => {
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
           const value = platform.testing.getLocalStorageImmediately(lsKeyHash);
           expect(JSON.parse(value)).toEqual({
             $schema: 1,
@@ -159,7 +159,7 @@ describe('LDClient local storage', () => {
       await withServer(async server => {
         server.byDefault(respondJson(flags));
         await withClient(user, { baseUrl: server.url }, async client => {
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
 
           await sleepAsync(0); // allow any pending async tasks to complete
 
