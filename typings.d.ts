@@ -271,7 +271,7 @@ declare module 'launchdarkly-js-sdk-common' {
        * Example: `1.0.0` (standard version string) or `abcdef` (sha prefix)
        */
       version?: string;
-    }
+    };
 
     /**
      * Inspectors can be used for collecting information for monitoring, analytics, and debugging.
@@ -284,7 +284,6 @@ declare module 'launchdarkly-js-sdk-common' {
    * They cannot be addressed in targeting rules.
    */
   export interface LDContextMeta {
-
     /**
      *
      * Designate any number of Context attributes, or properties within them, as private: that is,
@@ -370,7 +369,6 @@ declare module 'launchdarkly-js-sdk-common' {
     [attribute: string]: any;
   }
 
-
   /**
    * A context which represents a single kind.
    *
@@ -429,7 +427,7 @@ declare module 'launchdarkly-js-sdk-common' {
     /**
      * The kind of the context.
      */
-    kind: "multi",
+    kind: 'multi';
 
     /**
      * The contexts which compose this multi-kind context.
@@ -437,7 +435,7 @@ declare module 'launchdarkly-js-sdk-common' {
      * These should be of type LDContextCommon. "multi" is to allow
      * for the top level "kind" attribute.
      */
-    [kind: string]: "multi" | LDContextCommon;
+    [kind: string]: 'multi' | LDContextCommon;
   }
 
   /**
@@ -666,7 +664,7 @@ declare module 'launchdarkly-js-sdk-common' {
      *
      * ```
      *     // using Promise then() and catch() handlers
-     *     client.waitForInitialization().then(() => {
+     *     client.waitForInitialization(5).then(() => {
      *         doSomethingWithSuccessfullyInitializedClient();
      *     }).catch(err => {
      *         doSomethingForFailedStartup(err);
@@ -674,7 +672,7 @@ declare module 'launchdarkly-js-sdk-common' {
      *
      *     // using async/await
      *     try {
-     *         await client.waitForInitialization();
+     *         await client.waitForInitialization(5);
      *         doSomethingWithSuccessfullyInitializedClient();
      *     } catch (err) {
      *         doSomethingForFailedStartup(err);
@@ -689,11 +687,20 @@ declare module 'launchdarkly-js-sdk-common' {
      * Note that you can also use event listeners ({@link on}) for the same purpose: the event `"initialized"`
      * indicates success, and `"failed"` indicates failure.
      *
+     * @param timeout
+     *  The amount of time, in seconds, to wait for initialization before rejecting the promise.
+     *  Using a large timeout is not recommended. If you use a large timeout and await it, then
+     *  any network delays will cause your application to wait a long time before
+     *  continuing execution.
+     *
+     *  If no timeout is specified, then the returned promise will only be resolved when the client
+     *  successfully initializes or initialization fails.
+     *
      * @returns
      *   A Promise that will be resolved if the client initializes successfully, or rejected if it
-     *   fails.
+     *   fails or the specified timeout elapses.
      */
-    waitForInitialization(): Promise<void>;
+    waitForInitialization(timeout?: number): Promise<void>;
 
     /**
      * Identifies a context to LaunchDarkly.
@@ -720,7 +727,11 @@ declare module 'launchdarkly-js-sdk-common' {
      *   values for the new context are available, providing an {@link LDFlagSet} containing the new values
      *   (which can also be obtained by calling {@link variation}).
      */
-    identify(context: LDContext, hash?: string, onDone?: (err: Error | null, flags: LDFlagSet | null) => void): Promise<LDFlagSet>;
+    identify(
+      context: LDContext,
+      hash?: string,
+      onDone?: (err: Error | null, flags: LDFlagSet | null) => void
+    ): Promise<LDFlagSet>;
 
     /**
      * Returns the client's current context.
@@ -766,7 +777,7 @@ declare module 'launchdarkly-js-sdk-common' {
      * Determines the variation of a feature flag for a context, along with information about how it was
      * calculated.
      *
-     * Note that this will only work if you have set `evaluationExplanations` to true in {@link LDOptions}.
+     * Note that this will only work if you have set `evaluationReasons` to true in {@link LDOptions}.
      * Otherwise, the `reason` property of the result will be null.
      *
      * The `reason` property of the result will also be included in analytics events, if you are
@@ -848,14 +859,14 @@ declare module 'launchdarkly-js-sdk-common' {
     off(key: string, callback: (...args: any[]) => void, context?: any): void;
 
     /**
-     * Track page events to use in goals or A/B tests.
+     * Track page events to use in metrics (goals) or Experimentation.
      *
      * LaunchDarkly automatically tracks pageviews and clicks that are specified in the
-     * Goals section of their dashboard. This can be used to track custom goals or other
-     * events that do not currently have goals.
+     * Metrics section of their dashboard. This can be used to track custom metrics or other
+     * events that do not currently have metrics.
      *
      * @param key
-     *   The name of the event, which may correspond to a goal in A/B tests.
+     *   The name of the event, which may correspond to a metric in experiments.
      * @param data
      *   Additional information to associate with the event.
      * @param metricValue
@@ -971,7 +982,7 @@ declare module 'launchdarkly-js-sdk-common' {
      * Setting this property to anything other than a function will cause SDK
      * initialization to fail.
      */
-    destination?: (line: string) => void,
+    destination?: (line: string) => void;
   }
 
   /**
@@ -984,10 +995,7 @@ declare module 'launchdarkly-js-sdk-common' {
    */
   export type LDLogLevel = 'debug' | 'info' | 'warn' | 'error' | 'none';
 
-  export function getContextKeys(
-    context: LDContext,
-    logger?: LDLogger,
-  ): {[attribute: string]: string} | undefined;
+  export function getContextKeys(context: LDContext, logger?: LDLogger): { [attribute: string]: string } | undefined;
 
   /**
    * Callback interface for collecting information about the SDK at runtime.
@@ -998,12 +1006,12 @@ declare module 'launchdarkly-js-sdk-common' {
    * flow. It is intended for monitoring, analytics, or debugging purposes.
    */
   export interface LDInspectionFlagUsedHandler {
-    type: 'flag-used',
+    type: 'flag-used';
 
     /**
      * Name of the inspector. Will be used for logging issues with the inspector.
      */
-    name: string,
+    name: string;
 
     /**
      * If `true`, then the inspector will be ran synchronously with evaluation.
@@ -1032,12 +1040,12 @@ declare module 'launchdarkly-js-sdk-common' {
    * flow. It is intended for monitoring, analytics, or debugging purposes.
    */
   export interface LDInspectionFlagDetailsChangedHandler {
-    type: 'flag-details-changed',
+    type: 'flag-details-changed';
 
     /**
      * Name of the inspector. Will be used for logging issues with the inspector.
      */
-    name: string,
+    name: string;
 
     /**
      * If `true`, then the inspector will be ran synchronously with flag updates.
@@ -1051,7 +1059,6 @@ declare module 'launchdarkly-js-sdk-common' {
     method: (details: Record<string, LDEvaluationDetail>) => void;
   }
 
-
   /**
    * Callback interface for collecting information about the SDK at runtime.
    *
@@ -1063,12 +1070,12 @@ declare module 'launchdarkly-js-sdk-common' {
    * flow. It is intended for monitoring, analytics, or debugging purposes.
    */
   export interface LDInspectionFlagDetailChangedHandler {
-    type: 'flag-detail-changed',
+    type: 'flag-detail-changed';
 
     /**
      * Name of the inspector. Will be used for logging issues with the inspector.
      */
-    name: string,
+    name: string;
 
     /**
      * If `true`, then the inspector will be ran synchronously with flag updates.
@@ -1091,12 +1098,12 @@ declare module 'launchdarkly-js-sdk-common' {
    * flow. It is intended for monitoring, analytics, or debugging purposes.
    */
   export interface LDInspectionIdentifyHandler {
-    type: 'client-identity-changed',
+    type: 'client-identity-changed';
 
     /**
      * Name of the inspector. Will be used for logging issues with the inspector.
      */
-    name: string,
+    name: string;
 
     /**
      * If `true`, then the inspector will be ran synchronously with identification.
@@ -1109,6 +1116,9 @@ declare module 'launchdarkly-js-sdk-common' {
     method: (context: LDContext) => void;
   }
 
-  export type LDInspection = LDInspectionFlagUsedHandler | LDInspectionFlagDetailsChangedHandler
-    | LDInspectionFlagDetailChangedHandler | LDInspectionIdentifyHandler;
+  export type LDInspection =
+    | LDInspectionFlagUsedHandler
+    | LDInspectionFlagDetailsChangedHandler
+    | LDInspectionFlagDetailChangedHandler
+    | LDInspectionIdentifyHandler;
 }

@@ -64,7 +64,7 @@ describe('LDClient', () => {
     it('resolves waitForInitialization promise', async () => {
       await withServers(async baseConfig => {
         await withClient(user, baseConfig, async client => {
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
         });
       });
     });
@@ -82,7 +82,7 @@ describe('LDClient', () => {
       await withServers(async (baseConfig, pollServer) => {
         pollServer.byDefault(respondJson(flags));
         await withClient(user, baseConfig, async client => {
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
 
           const req = await pollServer.nextRequest();
           expect(req.path).toMatch(/sdk\/eval/);
@@ -96,7 +96,7 @@ describe('LDClient', () => {
       await withServers(async (baseConfig, pollServer) => {
         pollServer.byDefault(respondJson(flags));
         await withClient(user, { ...baseConfig, evaluationReasons: true }, async client => {
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
 
           const req = await pollServer.nextRequest();
           expect(req.path).toMatch(/sdk\/eval/);
@@ -108,7 +108,7 @@ describe('LDClient', () => {
     async function verifyCustomHeader(sendLDHeaders, shouldGetHeaders) {
       await withServers(async (baseConfig, pollServer) => {
         await withClient(user, { ...baseConfig, sendLDHeaders }, async client => {
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
           const request = await pollServer.nextRequest();
           expect(request.headers['user-agent']).toEqual(
             shouldGetHeaders ? utils.getLDUserAgentString(platform) : undefined
@@ -126,7 +126,7 @@ describe('LDClient', () => {
     it('sanitizes the user', async () => {
       await withServers(async baseConfig => {
         await withClient(numericUser, baseConfig, async client => {
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
           expect(client.getContext()).toEqual(stringifiedNumericUser);
         });
       });
@@ -137,14 +137,14 @@ describe('LDClient', () => {
       await withServers(async baseConfig => {
         let generatedUser;
         await withClient(anonUser, baseConfig, async client0 => {
-          await client0.waitForInitialization();
+          await client0.waitForInitialization(5);
 
           generatedUser = client0.getContext();
           expect(generatedUser.key).toEqual(expect.anything());
           expect(generatedUser).toMatchObject(anonUser);
         });
         await withClient(anonUser, baseConfig, async client1 => {
-          await client1.waitForInitialization();
+          await client1.waitForInitialization(5);
 
           const newUser1 = client1.getContext();
           expect(newUser1).toEqual(generatedUser);
@@ -159,7 +159,7 @@ describe('LDClient', () => {
       await withServers(async baseConfig => {
         let generatedUser;
         await withClient(anonUser, baseConfig, async client0 => {
-          await client0.waitForInitialization();
+          await client0.waitForInitialization(5);
 
           generatedUser = client0.getContext();
           expect(generatedUser.key).toEqual(expect.anything());
@@ -167,7 +167,7 @@ describe('LDClient', () => {
         });
         await sleepAsync(100); // so that the time-based UUID algorithm will produce a different result below
         await withClient(anonUser, baseConfig, async client1 => {
-          await client1.waitForInitialization();
+          await client1.waitForInitialization(5);
 
           const newUser1 = client1.getContext();
           expect(newUser1.key).toEqual(expect.anything());
@@ -192,7 +192,7 @@ describe('LDClient', () => {
 
       it('rejects waitForInitialization promise', async () => {
         await runTest(async client => {
-          await expect(client.waitForInitialization()).rejects.toThrow();
+          await expect(client.waitForInitialization(5)).rejects.toThrow();
         });
       });
 
@@ -263,7 +263,7 @@ describe('LDClient', () => {
     it('should not fetch flag settings', async () => {
       await withServers(async (baseConfig, pollServer) => {
         await withClient(user, { ...baseConfig, bootstrap: {} }, async client => {
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
 
           expect(pollServer.requests.length()).toEqual(0);
         });
@@ -282,7 +282,7 @@ describe('LDClient', () => {
     it('logs warning when bootstrap object uses old format', async () => {
       const initData = { foo: 'bar' };
       await withClient(user, { bootstrap: initData, sendEvents: false }, async client => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
 
         expect(platform.testing.logger.output.warn).toEqual([messages.bootstrapOldFormat()]);
       });
@@ -291,7 +291,7 @@ describe('LDClient', () => {
     it('does not log warning when bootstrap object uses new format', async () => {
       const initData = makeBootstrap({ foo: { value: 'bar', version: 1 } });
       await withClient(user, { bootstrap: initData, sendEvents: false }, async client => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
 
         expect(platform.testing.logger.output.warn).toEqual([]);
         expect(client.variation('foo')).toEqual('bar');
@@ -306,7 +306,7 @@ describe('LDClient', () => {
         sendEvents: false,
       };
       await withClient(user, config, async client => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
 
         expect(client.variation('foo')).toEqual('bar');
       });
@@ -318,7 +318,7 @@ describe('LDClient', () => {
         sendEvents: false,
       };
       await withClient(user, config, async client => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
 
         expect(client.variation('foo')).toEqual('bar');
       });
@@ -329,7 +329,7 @@ describe('LDClient', () => {
       await withServers(async (baseConfig, pollServer) => {
         pollServer.byDefault(respondJson(flags));
         await withClient(user, baseConfig, async client => {
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
 
           expect(client.variation('enable-foo', 1)).toEqual(true);
         });
@@ -341,7 +341,7 @@ describe('LDClient', () => {
       await withServers(async (baseConfig, pollServer) => {
         pollServer.byDefault(respondJson(flags));
         await withClient(user, baseConfig, async client => {
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
 
           expect(client.variation('foo', 'default')).toEqual('default');
         });
@@ -352,7 +352,7 @@ describe('LDClient', () => {
       await withServers(async (baseConfig, pollServer) => {
         pollServer.byDefault(respondJson({}));
         await withClient(user, baseConfig, async client => {
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
 
           expect(client.variation('foo', 'default')).toEqual('default');
         });
@@ -367,7 +367,7 @@ describe('LDClient', () => {
         bootstrap: makeBootstrap({ foo: { value: 'bar', version: 1, variation: 2, reason: reason } }),
       };
       await withClient(user, config, async client => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
 
         expect(client.variationDetail('foo')).toEqual({ value: 'bar', variationIndex: 2, reason: reason });
       });
@@ -376,7 +376,7 @@ describe('LDClient', () => {
     it('returns details for an existing flag - from bootstrap with old format', async () => {
       const config = { bootstrap: { foo: 'bar' } };
       await withClient(user, config, async client => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
 
         expect(client.variationDetail('foo')).toEqual({ value: 'bar', variationIndex: null, reason: null });
       });
@@ -387,7 +387,7 @@ describe('LDClient', () => {
       await withServers(async (baseConfig, pollServer) => {
         pollServer.byDefault(respondJson(flags));
         await withClient(user, baseConfig, async client => {
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
 
           expect(client.variationDetail('foo', 'default')).toEqual({ value: 'bar', variationIndex: 2, reason: reason });
         });
@@ -399,7 +399,7 @@ describe('LDClient', () => {
       await withServers(async (baseConfig, pollServer) => {
         pollServer.byDefault(respondJson(flags));
         await withClient(user, baseConfig, async client => {
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
 
           expect(client.variationDetail('foo', 'default')).toEqual({
             value: 'default',
@@ -430,7 +430,7 @@ describe('LDClient', () => {
       await withServers(async (baseConfig, pollServer) => {
         pollServer.byDefault(respondJson(flags));
         await withClient(user, baseConfig, async client => {
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
 
           expect(client.allFlags()).toEqual({ key1: 'value1', key2: 'value2' });
         });
@@ -455,7 +455,7 @@ describe('LDClient', () => {
         await withClient(user, baseConfig, async client => {
           const signal = new AsyncQueue();
           const user2 = { key: 'user2' };
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
 
           // Make the server wait until signaled to return the next response
           pollServer.byDefault((req, res) => {
@@ -483,7 +483,7 @@ describe('LDClient', () => {
       await withServers(async (baseConfig, pollServer) => {
         pollServer.byDefault(respondJson(flags0));
         await withClient(user, baseConfig, async client => {
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
 
           expect(client.variation('enable-foo')).toBe(false);
 
@@ -508,7 +508,7 @@ describe('LDClient', () => {
       await withServers(async (baseConfig, pollServer) => {
         pollServer.byDefault(respondJson(flags0));
         await withClient(user, baseConfig, async client => {
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
 
           expect(client.variation('enable-foo')).toBe(false);
           expect(pollServer.requests.length()).toEqual(1);
@@ -531,7 +531,7 @@ describe('LDClient', () => {
     it('provides a persistent key for an anonymous user with no key', async () => {
       await withServers(async baseConfig => {
         await withClient(user, baseConfig, async client => {
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
 
           const anonUser = { anonymous: true, country: 'US' };
           await client.identify(anonUser);
@@ -556,7 +556,7 @@ describe('LDClient', () => {
 
       await withServers(async (baseConfig, pollServer) => {
         await withClient(null, { ...baseConfig, stateProvider: sp }, async client => {
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
 
           expect(client.variation('flagkey')).toEqual('value');
           expect(pollServer.requests.length()).toEqual(0);
@@ -586,7 +586,7 @@ describe('LDClient', () => {
       await withClient(null, { stateProvider: sp, sendEvents: false }, async client => {
         sp.emit('init', state);
 
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
         expect(client.variation('flagkey')).toEqual('value');
       });
     });
@@ -601,7 +601,7 @@ describe('LDClient', () => {
       const sp = stubPlatform.mockStateProvider(state0);
 
       await withClient(null, { stateProvider: sp, sendEvents: false }, async client => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
 
         expect(client.variation('flagkey')).toEqual('value0');
 
@@ -628,7 +628,7 @@ describe('LDClient', () => {
         await withClient(null, { ...baseConfig, stateProvider: sp }, async client => {
           sp.emit('init', state);
 
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
           const newFlags = await client.identify(user1);
 
           expect(newFlags).toEqual({ flagkey: 'value' });
@@ -650,7 +650,7 @@ describe('LDClient', () => {
       await withClient(null, { stateProvider: sp, sendEvents: false }, async client => {
         sp.emit('init', state);
 
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
         expect(client.variation('flagkey')).toEqual('value');
 
         state.flags.flagkey = { value: 'secondValue' };
@@ -669,7 +669,7 @@ describe('LDClient', () => {
     it('flushes events', async () => {
       await withServers(async (baseConfig, pollServer, eventsServer) => {
         await withClient(user, { ...baseConfig, flushInterval: 100000 }, async client => {
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
         });
 
         expect(eventsServer.requests.length()).toEqual(1);
@@ -683,7 +683,7 @@ describe('LDClient', () => {
     it('does nothing if called twice', async () => {
       await withServers(async (baseConfig, pollServer, eventsServer) => {
         await withClient(user, { ...baseConfig, flushInterval: 100000 }, async client => {
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
 
           await client.close();
 
@@ -700,7 +700,7 @@ describe('LDClient', () => {
       await withServers(async (baseConfig, pollServer, eventsServer) => {
         eventsServer.byDefault(respond(404));
         await withClient(user, { ...baseConfig, flushInterval: 100000 }, async client => {
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
 
           await client.close(); // shouldn't throw or have an unhandled rejection
         });
@@ -710,7 +710,7 @@ describe('LDClient', () => {
     it('can take a callback instead of returning a promise', async () => {
       await withServers(async (baseConfig, pollServer, eventsServer) => {
         await withClient(user, { ...baseConfig }, async client => {
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
 
           await promisifySingle(client.close)();
 
@@ -730,7 +730,7 @@ describe('LDClient', () => {
     it('sends diagnostic init event if not opted out', async () => {
       await withServers(async (baseConfig, pollServer, eventsServer) => {
         await withDiagnosticsEnabledClient(user, baseConfig, async client => {
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
           await client.flush();
 
           // We can't be sure which will be posted first, the regular events or the diagnostic event

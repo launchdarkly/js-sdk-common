@@ -61,7 +61,7 @@ describe('LDClient streaming', () => {
 
     it('does not connect to the stream by default', async () => {
       await withClientAndServer({}, async client => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
 
         expectNoStreamIsOpen();
       });
@@ -69,7 +69,7 @@ describe('LDClient streaming', () => {
 
     it('connects to the stream if options.streaming is true', async () => {
       await withClientAndServer({ streaming: true }, async client => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
 
         await platform.testing.expectStream(fullStreamUrlWithUser);
       });
@@ -78,7 +78,7 @@ describe('LDClient streaming', () => {
     describe('setStreaming()', () => {
       it('can connect to the stream', async () => {
         await withClientAndServer({}, async client => {
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
 
           client.setStreaming(true);
           await expectStreamConnecting(fullStreamUrlWithUser);
@@ -87,7 +87,7 @@ describe('LDClient streaming', () => {
 
       it('can disconnect from the stream', async () => {
         await withClientAndServer({}, async client => {
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
 
           client.setStreaming(true);
           const stream = await expectStreamConnecting(fullStreamUrlWithUser);
@@ -100,7 +100,7 @@ describe('LDClient streaming', () => {
     describe('on("change")', () => {
       it('connects to the stream if not otherwise overridden', async () => {
         await withClientAndServer({}, async client => {
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
           client.on('change', () => {});
 
           await expectStreamConnecting(fullStreamUrlWithUser);
@@ -109,7 +109,7 @@ describe('LDClient streaming', () => {
 
       it('also connects if listening for a specific flag', async () => {
         await withClientAndServer({}, async client => {
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
           client.on('change:flagkey', () => {});
 
           await expectStreamConnecting(fullStreamUrlWithUser);
@@ -118,7 +118,7 @@ describe('LDClient streaming', () => {
 
       it('does not connect if some other kind of event was specified', async () => {
         await withClientAndServer({}, async client => {
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
           client.on('error', () => {});
 
           expectNoStreamIsOpen();
@@ -127,7 +127,7 @@ describe('LDClient streaming', () => {
 
       it('does not connect if options.streaming is explicitly set to false', async () => {
         await withClientAndServer({ streaming: false }, async client => {
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
           client.on('change', () => {});
 
           expectNoStreamIsOpen();
@@ -136,7 +136,7 @@ describe('LDClient streaming', () => {
 
       it('does not connect if setStreaming(false) was called', async () => {
         await withClientAndServer({}, async client => {
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
           client.setStreaming(false);
           client.on('change', () => {});
 
@@ -150,7 +150,7 @@ describe('LDClient streaming', () => {
         await withClientAndServer({}, async client => {
           const listener1 = () => {};
           const listener2 = () => {};
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
 
           client.on('change', listener1);
           client.on('change:flagKey', listener2);
@@ -172,7 +172,7 @@ describe('LDClient streaming', () => {
         await withClientAndServer({}, async client => {
           const listener1 = allValues => changes1.push(allValues);
           const listener2 = newValue => changes2.push(newValue);
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
 
           client.setStreaming(true);
 
@@ -212,7 +212,7 @@ describe('LDClient streaming', () => {
 
     it('passes the secure mode hash in the stream URL if provided', async () => {
       await withClientAndServer({ hash }, async client => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
         client.on('change:flagKey', () => {});
 
         await expectStreamConnecting(fullStreamUrlWithUser + '?h=' + hash);
@@ -221,7 +221,7 @@ describe('LDClient streaming', () => {
 
     it('passes withReasons parameter if provided', async () => {
       await withClientAndServer({ evaluationReasons: true }, async client => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
         client.setStreaming(true);
 
         await expectStreamConnecting(fullStreamUrlWithUser + '?withReasons=true');
@@ -230,7 +230,7 @@ describe('LDClient streaming', () => {
 
     it('passes secure mode hash and withReasons if provided', async () => {
       await withClientAndServer({ hash, evaluationReasons: true }, async client => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
         client.setStreaming(true);
 
         await expectStreamConnecting(fullStreamUrlWithUser + '?h=' + hash + '&withReasons=true');
@@ -240,7 +240,7 @@ describe('LDClient streaming', () => {
     it('handles stream ping message by getting flags', async () => {
       await withClientAndServer({}, async (client, server) => {
         server.byDefault(respondJson({ flagKey: { value: true, version: 1 } }));
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
         client.setStreaming(true);
 
         const stream = await expectStreamConnecting(fullStreamUrlWithUser);
@@ -262,7 +262,7 @@ describe('LDClient streaming', () => {
           reqRespQueue.add({ req: req, resp: resp });
         });
 
-        const initPromise = client.waitForInitialization();
+        const initPromise = client.waitForInitialization(5);
         const poll1 = await reqRespQueue.take();
         expect(poll1.req.path).toContain(initUserBase64);
         respondJson({ flagKey: { value: 1 } })(poll1.req, poll1.resp);
@@ -299,7 +299,7 @@ describe('LDClient streaming', () => {
 
     it('handles stream put message by updating flags', async () => {
       await withClientAndServer({}, async client => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
         client.setStreaming(true);
 
         const stream = await expectStreamConnecting(fullStreamUrlWithUser);
@@ -315,7 +315,7 @@ describe('LDClient streaming', () => {
       platform.testing.setLocalStorageImmediately(lsKey, '{"flagKey":false}');
 
       await withClientAndServer({ bootstrap: 'localstorage' }, async client => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
         client.setStreaming(true);
 
         const stream = await expectStreamConnecting(fullStreamUrlWithUser);
@@ -331,7 +331,7 @@ describe('LDClient streaming', () => {
 
     it('fires global change event when flags are updated from put event', async () => {
       await withClientAndServer({ bootstrap: { flagKey: false } }, async client => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
 
         const receivedChange = eventSink(client, 'change');
 
@@ -355,7 +355,7 @@ describe('LDClient streaming', () => {
         },
       };
       await withClientAndServer(config, async client => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
 
         const receivedChange = eventSink(client, 'change');
 
@@ -375,7 +375,7 @@ describe('LDClient streaming', () => {
 
     it('fires individual change event when flags are updated from put event', async () => {
       await withClientAndServer({ bootstrap: { flagKey: false } }, async client => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
 
         const receivedChange = eventSink(client, 'change:flagKey');
 
@@ -391,7 +391,7 @@ describe('LDClient streaming', () => {
 
     it('handles patch message by updating flag', async () => {
       await withClientAndServer({ bootstrap: { flagKey: false } }, async client => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
         client.setStreaming(true);
 
         const stream = await expectStreamConnecting(fullStreamUrlWithUser);
@@ -404,7 +404,7 @@ describe('LDClient streaming', () => {
     it('does not update flag if patch version < flag version', async () => {
       const initData = makeBootstrap({ flagKey: { value: 'a', version: 2 } });
       await withClientAndServer({ bootstrap: initData }, async client => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
 
         expect(client.variation('flagKey')).toEqual('a');
 
@@ -420,7 +420,7 @@ describe('LDClient streaming', () => {
     it('does not update flag if patch version == flag version', async () => {
       const initData = makeBootstrap({ flagKey: { value: 'a', version: 2 } });
       await withClientAndServer({ bootstrap: initData }, async client => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
 
         expect(client.variation('flagKey')).toEqual('a');
 
@@ -436,7 +436,7 @@ describe('LDClient streaming', () => {
     it('updates flag if patch has a version and flag has no version', async () => {
       const initData = makeBootstrap({ flagKey: { value: 'a' } });
       await withClientAndServer({ bootstrap: initData }, async client => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
 
         expect(client.variation('flagKey')).toEqual('a');
 
@@ -452,7 +452,7 @@ describe('LDClient streaming', () => {
     it('updates flag if flag has a version and patch has no version', async () => {
       const initData = makeBootstrap({ flagKey: { value: 'a', version: 2 } });
       await withClientAndServer({ bootstrap: initData }, async client => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
 
         expect(client.variation('flagKey')).toEqual('a');
 
@@ -469,7 +469,7 @@ describe('LDClient streaming', () => {
       platform.testing.setLocalStorageImmediately(lsKey, '{"flagKey":false}');
 
       await withClientAndServer({ bootstrap: 'localstorage' }, async client => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
         client.setStreaming(true);
 
         const stream = await expectStreamConnecting(fullStreamUrlWithUser);
@@ -485,7 +485,7 @@ describe('LDClient streaming', () => {
 
     it('fires global change event when flag is updated from patch event', async () => {
       await withClientAndServer({ bootstrap: { flagKey: false } }, async client => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
 
         const receivedChange = eventSink(client, 'change');
 
@@ -503,7 +503,7 @@ describe('LDClient streaming', () => {
 
     it('fires individual change event when flag is updated from patch event', async () => {
       await withClientAndServer({ bootstrap: { flagKey: false } }, async client => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
 
         const receivedChange = eventSink(client, 'change:flagKey');
 
@@ -519,7 +519,7 @@ describe('LDClient streaming', () => {
 
     it('fires global change event when flag is newly created from patch event', async () => {
       await withClientAndServer({}, async client => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
 
         const receivedChange = eventSink(client, 'change');
 
@@ -537,7 +537,7 @@ describe('LDClient streaming', () => {
 
     it('fires individual change event when flag is newly created from patch event', async () => {
       await withClientAndServer({}, async client => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
 
         const receivedChange = eventSink(client, 'change:flagKey');
 
@@ -553,7 +553,7 @@ describe('LDClient streaming', () => {
 
     it('handles delete message by deleting flag', async () => {
       await withClientAndServer({ bootstrap: { flagKey: false } }, async client => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
         client.setStreaming(true);
 
         const stream = await expectStreamConnecting(fullStreamUrlWithUser);
@@ -567,7 +567,7 @@ describe('LDClient streaming', () => {
 
     it('handles delete message for unknown flag by storing placeholder', async () => {
       await withClientAndServer({}, async client => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
         client.setStreaming(true);
 
         const stream = await expectStreamConnecting(fullStreamUrlWithUser);
@@ -587,7 +587,7 @@ describe('LDClient streaming', () => {
     it('ignores delete message with lower version', async () => {
       const initData = makeBootstrap({ flagKey: { value: 'yes', version: 3 } });
       await withClientAndServer({ bootstrap: initData }, async client => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
         client.setStreaming(true);
 
         const stream = await expectStreamConnecting(fullStreamUrlWithUser);
@@ -601,7 +601,7 @@ describe('LDClient streaming', () => {
 
     it('fires global change event when flag is deleted', async () => {
       await withClientAndServer({ bootstrap: { flagKey: true } }, async client => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
 
         const receivedChange = eventSink(client, 'change');
 
@@ -619,7 +619,7 @@ describe('LDClient streaming', () => {
 
     it('fires individual change event when flag is deleted', async () => {
       await withClientAndServer({ bootstrap: { flagKey: true } }, async client => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
 
         const receivedChange = eventSink(client, 'change:flagKey');
 
@@ -637,7 +637,7 @@ describe('LDClient streaming', () => {
       platform.testing.setLocalStorageImmediately(lsKey, '{"flagKey":false}');
 
       await withClientAndServer({ bootstrap: 'localstorage' }, async client => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
         client.setStreaming(true);
 
         const stream = await expectStreamConnecting(fullStreamUrlWithUser);
@@ -655,7 +655,7 @@ describe('LDClient streaming', () => {
       const doMalformedJsonEventTest = async (eventName, eventData) => {
         // First, verify that there isn't an unhandled rejection if we're not listening for an error
         await withClientAndServer({}, async client => {
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
           client.setStreaming(true);
 
           const stream = await expectStreamConnecting(fullStreamUrlWithUser);
@@ -667,7 +667,7 @@ describe('LDClient streaming', () => {
           const errorEvents = new AsyncQueue();
           client.on('error', e => errorEvents.add(e));
 
-          await client.waitForInitialization();
+          await client.waitForInitialization(5);
           client.setStreaming(true);
 
           const stream = await expectStreamConnecting(fullStreamUrlWithUser);
@@ -687,7 +687,7 @@ describe('LDClient streaming', () => {
       const user2 = { key: 'user2' };
       const encodedUser2 = 'eyJrZXkiOiJ1c2VyMiJ9';
       await withClientAndServer({}, async client => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
         client.setStreaming(true);
 
         await expectStreamConnecting(makeExpectedStreamUrl(encodedUser));
@@ -703,7 +703,7 @@ describe('LDClient streaming', () => {
       const newHash = hash + 'xxx';
 
       await withClientAndServer({ hash }, async client => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
         client.setStreaming(true);
 
         await expectStreamConnecting(makeExpectedStreamUrl(encodedUser, hash));

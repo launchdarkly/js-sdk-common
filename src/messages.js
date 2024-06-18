@@ -15,7 +15,7 @@ const clientInitialized = function() {
 };
 
 const docLink =
-  ' Please see https://docs.launchdarkly.com/sdk/client-side/javascript#initializing-the-client for instructions on SDK initialization.';
+  ' Please see https://docs.launchdarkly.com/sdk/client-side/javascript#initialize-the-client for instructions on SDK initialization.';
 
 const clientNotReady = function() {
   return 'LaunchDarkly client is not ready';
@@ -190,6 +190,9 @@ const invalidTagValue = name => `Config option "${name}" must only contain lette
 
 const tagValueTooLong = name => `Value of "${name}" was longer than 64 characters and was discarded.`;
 
+const invalidMetricValue = badType =>
+  `The track function was called with a non-numeric "metricValue" (${badType}), only numeric metric values are supported.`;
+
 module.exports = {
   bootstrapInvalid,
   bootstrapOldFormat,
@@ -219,6 +222,7 @@ module.exports = {
   invalidData,
   invalidInspector,
   invalidKey,
+  invalidMetricValue,
   invalidContext,
   invalidTagValue,
   localStorageUnavailable,

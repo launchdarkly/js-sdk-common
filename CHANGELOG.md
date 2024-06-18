@@ -2,6 +2,27 @@
 
 All notable changes to the `launchdarkly-js-sdk-common` package will be documented in this file. Changes that affect the dependent SDKs such as `launchdarkly-js-client-sdk` should also be logged in those projects, in the next release that uses the updated version of this package. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [5.2.0] - 2024-05-01
+### Added:
+- Added an optional timeout to the `waitForInitialization` method. When a timeout is specified the returned promise will be rejected after the timeout elapses if the client has not finished initializing within that time. When no timeout is specified the returned promise will not be resolved or rejected until the initialization either completes or fails.
+
+### Changed:
+- The track method now validates that the provided metricValue is a number. If a metric value is provided, and it is not a number, then a warning will be logged.
+
+### Fixed:
+- Fixed the documentation for `evaluationReasons` for the `identify` method.
+
+## [5.1.0] - 2024-03-19
+### Changed:
+- Redact anonymous attributes within feature events
+- Always inline contexts for feature events
+
+### Fixed:
+- Pin dev version of node to compatible types.
+
+### Removed:
+- HTTP fallback ping
+
 ## [5.0.3] - 2023-03-21
 ### Changed:
 - Update `LDContext` to allow for key to be optional. This is used when making an anonymous context with a generated key.

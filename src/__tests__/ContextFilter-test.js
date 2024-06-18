@@ -283,6 +283,11 @@ describe('when handling single kind contexts', () => {
     expect(uf.filter(anonymousContext)).toEqual(contextWithAllAttrsHidden);
   });
 
+  it('all attributes are redacted when anonymous', () => {
+    const uf = ContextFilter({});
+    expect(uf.filter(anonymousContext, true)).toEqual(contextWithAllAttrsHidden);
+  });
+
   it('converts non-boolean anonymous to boolean.', () => {
     const uf = ContextFilter({});
     expect(uf.filter({ kind: 'user', key: 'user', anonymous: 'string' })).toEqual({
@@ -330,6 +335,7 @@ describe('when handling mult-kind contexts', () => {
     user: {
       key: 'abc',
       name: 'alphabet',
+      anonymous: true,
       letters: ['a', 'b', 'c'],
       order: 3,
       object: {
@@ -338,6 +344,25 @@ describe('when handling mult-kind contexts', () => {
       },
       _meta: {
         privateAttributes: ['letters', '/object/b'],
+      },
+    },
+  };
+
+  const orgAndUserContextWithAnonymousRedaction = {
+    kind: 'multi',
+    organization: {
+      key: 'LD',
+      rocks: true,
+      name: 'name',
+      department: {
+        name: 'sdk',
+      },
+    },
+    user: {
+      key: 'abc',
+      anonymous: true,
+      _meta: {
+        redactedAttributes: ['/letters', '/name', '/object', '/order'],
       },
     },
   };
@@ -352,6 +377,7 @@ describe('when handling mult-kind contexts', () => {
     },
     user: {
       key: 'abc',
+      anonymous: true,
       _meta: {
         redactedAttributes: ['/letters', '/name', '/object', '/order'],
       },
@@ -373,6 +399,7 @@ describe('when handling mult-kind contexts', () => {
     user: {
       key: 'abc',
       order: 3,
+      anonymous: true,
       object: {
         a: 'a',
       },
@@ -395,6 +422,7 @@ describe('when handling mult-kind contexts', () => {
     user: {
       key: 'abc',
       name: 'alphabet',
+      anonymous: true,
       order: 3,
       object: {
         a: 'a',
@@ -413,6 +441,11 @@ describe('when handling mult-kind contexts', () => {
   it('it should remove attributes from all contexts when all attributes are private.', () => {
     const uf = ContextFilter({ allAttributesPrivate: true });
     expect(uf.filter(orgAndUserContext)).toEqual(orgAndUserContextAllPrivate);
+  });
+
+  it('it should remove attributes from all anonymous contexts', () => {
+    const uf = ContextFilter({});
+    expect(uf.filter(orgAndUserContext, true)).toEqual(orgAndUserContextWithAnonymousRedaction);
   });
 
   it('it should apply private attributes from the context to the context.', () => {
