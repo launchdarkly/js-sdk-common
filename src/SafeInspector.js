@@ -9,6 +9,7 @@ function SafeInspector(inspector, logger) {
   const wrapper = {
     type: inspector.type,
     name: inspector.name,
+    synchronous: inspector.synchronous,
   };
 
   wrapper.method = (...args) => {
