@@ -77,7 +77,7 @@ describe('LDClient events', () => {
 
   it('sends an identify event at startup', async () => {
     await withClientAndEventProcessor(user, {}, async (client, ep) => {
-      await client.waitForInitialization();
+      await client.waitForInitialization(5);
 
       expect(ep.events.length).toEqual(1);
       expectIdentifyEvent(ep.events[0], user);
@@ -87,7 +87,7 @@ describe('LDClient events', () => {
   it('stringifies user attributes in the identify event at startup', async () => {
     // This just verifies that the event is being sent with the sanitized user, not the user that was passed in
     await withClientAndEventProcessor(numericUser, {}, async (client, ep) => {
-      await client.waitForInitialization();
+      await client.waitForInitialization(5);
 
       expect(ep.events.length).toEqual(1);
       expectIdentifyEvent(ep.events[0], stringifiedNumericUser);
@@ -99,7 +99,7 @@ describe('LDClient events', () => {
     await withServer(async server => {
       await withClientAndEventProcessor(user, { baseUrl: server.url }, async (client, ep) => {
         const user1 = { key: 'user1' };
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
 
         expect(ep.events.length).toEqual(1);
         await client.identify(user1);
@@ -114,7 +114,7 @@ describe('LDClient events', () => {
     // This just verifies that the event is being sent with the sanitized user, not the user that was passed in
     await withServer(async server => {
       await withClientAndEventProcessor(user, { baseUrl: server.url }, async (client, ep) => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
 
         expect(ep.events.length).toEqual(1);
         await client.identify(numericUser);
@@ -131,7 +131,7 @@ describe('LDClient events', () => {
       await withClientAndEventProcessor(user, { baseUrl: server.url }, async (client, ep) => {
         const user1 = { key: 'user1' };
 
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
         await client.identify(user1);
 
         expect(ep.events.length).toEqual(0);
@@ -142,7 +142,7 @@ describe('LDClient events', () => {
   it('sends a feature event for variation()', async () => {
     const initData = makeBootstrap({ foo: { value: 'a', variation: 1, version: 2, flagVersion: 2000 } });
     await withClientAndEventProcessor(user, { bootstrap: initData }, async (client, ep) => {
-      await client.waitForInitialization();
+      await client.waitForInitialization(5);
 
       client.variation('foo', 'x');
 
@@ -165,7 +165,7 @@ describe('LDClient events', () => {
     await withServer(async server => {
       const anonUser = { key: 'anon-user', anonymous: true };
       await withClientAndEventProcessor(anonUser, { baseUrl: server.url, bootstrap: initData }, async (client, ep) => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
 
         client.variation('foo', 'x');
 
@@ -189,7 +189,7 @@ describe('LDClient events', () => {
       foo: { value: 'a', variation: 1, version: 2, flagVersion: 2000, reason: { kind: 'OFF' } },
     });
     await withClientAndEventProcessor(user, { bootstrap: initData }, async (client, ep) => {
-      await client.waitForInitialization();
+      await client.waitForInitialization(5);
       client.variationDetail('foo', 'x');
 
       expect(ep.events.length).toEqual(2);
@@ -212,7 +212,7 @@ describe('LDClient events', () => {
       foo: { value: 'a', variation: 1, version: 2, flagVersion: 2000, reason: { kind: 'OFF' } },
     });
     await withClientAndEventProcessor(user, { bootstrap: initData }, async (client, ep) => {
-      await client.waitForInitialization();
+      await client.waitForInitialization(5);
       client.variation('foo', 'x');
 
       expect(ep.events.length).toEqual(2);
@@ -235,7 +235,7 @@ describe('LDClient events', () => {
       foo: { value: 'a', variation: 1, version: 2, flagVersion: 2000, reason: { kind: 'OFF' }, trackReason: true },
     });
     await withClientAndEventProcessor(user, { bootstrap: initData }, async (client, ep) => {
-      await client.waitForInitialization();
+      await client.waitForInitialization(5);
       client.variation('foo', 'x');
 
       expect(ep.events.length).toEqual(2);
@@ -260,7 +260,7 @@ describe('LDClient events', () => {
     await withServer(async server => {
       server.byDefault(respondJson(newFlags));
       await withClientAndEventProcessor(user, { baseUrl: server.url, bootstrap: initData }, async (client, ep) => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
 
         const user1 = { key: 'user1' };
         await client.identify(user1);
@@ -281,7 +281,7 @@ describe('LDClient events', () => {
       server.byDefault(respondJson(newFlags));
       const extraConfig = { sendEventsOnlyForVariation: true, baseUrl: server.url, bootstrap: initData };
       await withClientAndEventProcessor(user, extraConfig, async (client, ep) => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
 
         const user1 = { key: 'user1' };
         await client.identify(user1);
@@ -301,7 +301,7 @@ describe('LDClient events', () => {
       server.byDefault(respondJson(newFlags));
       const extraConfig = { stateProvider: sp, baseUrl: server.url };
       await withClientAndEventProcessor(user, extraConfig, async (client, ep) => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
 
         sp.emit('update', { flags: newFlags });
 
@@ -317,7 +317,7 @@ describe('LDClient events', () => {
       bar: { value: 'b', variation: 1, version: 3 },
     });
     await withClientAndEventProcessor(user, { bootstrap: initData }, async (client, ep) => {
-      await client.waitForInitialization();
+      await client.waitForInitialization(5);
       client.allFlags();
 
       expect(ep.events.length).toEqual(3);
@@ -334,7 +334,7 @@ describe('LDClient events', () => {
     });
     const extraConfig = { sendEventsOnlyForVariation: true, bootstrap: initData };
     await withClientAndEventProcessor(user, extraConfig, async (client, ep) => {
-      await client.waitForInitialization();
+      await client.waitForInitialization(5);
       client.allFlags();
 
       expect(ep.events.length).toEqual(1);
@@ -345,7 +345,7 @@ describe('LDClient events', () => {
   it('uses "version" instead of "flagVersion" in event if "flagVersion" is absent', async () => {
     const initData = makeBootstrap({ foo: { value: 'a', variation: 1, version: 2 } });
     await withClientAndEventProcessor(user, { bootstrap: initData }, async (client, ep) => {
-      await client.waitForInitialization();
+      await client.waitForInitialization(5);
       client.variation('foo', 'x');
 
       expect(ep.events.length).toEqual(2);
@@ -356,7 +356,7 @@ describe('LDClient events', () => {
 
   it('omits event version if flag does not exist', async () => {
     await withClientAndEventProcessor(user, {}, async (client, ep) => {
-      await client.waitForInitialization();
+      await client.waitForInitialization(5);
       client.variation('foo', 'x');
 
       expect(ep.events.length).toEqual(2);
@@ -377,7 +377,7 @@ describe('LDClient events', () => {
     });
     await withClientAndEventProcessor(user, { bootstrap: initData }, async (client, ep) => {
       await withCloseable(client, async () => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
         client.variation('foo', 'x');
 
         expect(ep.events.length).toEqual(2);
@@ -399,7 +399,7 @@ describe('LDClient events', () => {
 
   it('sends an event for track()', async () => {
     await withClientAndEventProcessor(user, {}, async (client, ep) => {
-      await client.waitForInitialization();
+      await client.waitForInitialization(5);
       client.track('eventkey');
 
       expect(ep.events.length).toEqual(2);
@@ -417,7 +417,7 @@ describe('LDClient events', () => {
     await withServer(async server => {
       const anonUser = { key: 'anon-user', anonymous: true };
       await withClientAndEventProcessor(anonUser, { baseUrl: server.url }, async (client, ep) => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
         client.track('eventkey');
 
         expect(ep.events.length).toEqual(2);
@@ -435,7 +435,7 @@ describe('LDClient events', () => {
   it('sends an event for track() with data', async () => {
     await withClientAndEventProcessor(user, {}, async (client, ep) => {
       const eventData = { thing: 'stuff' };
-      await client.waitForInitialization();
+      await client.waitForInitialization(5);
       client.track('eventkey', eventData);
 
       expect(ep.events.length).toEqual(2);
@@ -453,7 +453,7 @@ describe('LDClient events', () => {
     await withClientAndEventProcessor(user, {}, async (client, ep) => {
       const eventData = { thing: 'stuff' };
       const metricValue = 1.5;
-      await client.waitForInitialization();
+      await client.waitForInitialization(5);
       client.track('eventkey', eventData, metricValue);
 
       expect(ep.events.length).toEqual(2);
@@ -472,7 +472,7 @@ describe('LDClient events', () => {
     platform.testing.setDoNotTrack(true);
     await withClientAndEventProcessor(user, {}, async (client, ep) => {
       const eventData = { thing: 'stuff' };
-      await client.waitForInitialization();
+      await client.waitForInitialization(5);
       client.track('eventkey', eventData);
       expect(ep.events.length).toEqual(0);
     });
@@ -480,16 +480,28 @@ describe('LDClient events', () => {
 
   it('does not warn by default when tracking a custom event', async () => {
     await withClientAndEventProcessor(user, {}, async client => {
-      await client.waitForInitialization();
+      await client.waitForInitialization(5);
 
       client.track('known');
       expect(platform.testing.logger.output.warn).toEqual([]);
     });
   });
 
+  it('does warn when a metric value is non-numeric', async () => {
+    await withClientAndEventProcessor(user, {}, async client => {
+      await client.waitForInitialization(5);
+
+      client.track('known', undefined, '12');
+      expect(platform.testing.logger.output.warn).toEqual([
+        'The track function was called with a non-numeric "metricValue" (string), ' +
+          'only numeric metric values are supported.',
+      ]);
+    });
+  });
+
   it('emits an error when tracking a non-string custom event', async () => {
     await withClientAndEventProcessor(user, {}, async client => {
-      await client.waitForInitialization();
+      await client.waitForInitialization(5);
 
       const badCustomEventKeys = [123, [], {}, null, undefined];
       badCustomEventKeys.forEach(key => {
@@ -513,7 +525,7 @@ describe('LDClient events', () => {
     sp.enqueueEvent = event => divertedEvents.push(event);
 
     await withClientAndEventProcessor(user, { stateProvider: sp }, async (client, ep) => {
-      await client.waitForInitialization();
+      await client.waitForInitialization(5);
 
       client.track('eventkey');
       expect(ep.events.length).toEqual(0);
@@ -555,7 +567,7 @@ describe('LDClient events', () => {
       };
       const client = platform.testing.makeClient(envName, user, config);
       await withCloseable(client, async () => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
         await client.flush();
         const data = await expectDiagnosticEventAndDiscardRegularEvent(server);
         expect(data.kind).toEqual('diagnostic-init');
@@ -579,7 +591,7 @@ describe('LDClient events', () => {
       };
       const client = platform1.testing.makeClient(envName, user, config);
       await withCloseable(client, async () => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
         await client.flush();
         const data = await expectDiagnosticEventAndDiscardRegularEvent(server);
         expect(data.kind).toEqual('diagnostic-combined');
@@ -602,7 +614,7 @@ describe('LDClient events', () => {
       };
       const client = platform.testing.makeClient(envName, user, config);
       await withCloseable(client, async () => {
-        await client.waitForInitialization();
+        await client.waitForInitialization(5);
         await client.flush();
         expect(server.requests.length()).toEqual(1);
         const req = await server.nextRequest();

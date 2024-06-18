@@ -13,8 +13,6 @@ import { MockHttpState } from './mockHttp';
 // httpRequest?: (method, url, headers, body, sync) => requestProperties
 //   requestProperties.promise: Promise     // resolves to { status, header: (name) => value, body } or rejects for a network error
 //   requestProperties.cancel?: () => void  // provided if it's possible to cancel requests in this implementation
-// httpAllowsPost: boolean        // true if we can do cross-origin POST requests
-// httpFallbackPing?: (url) => {} // method for doing an HTTP GET without awaiting the result (i.e. browser image mechanism)
 // getCurrentUrl: () => string    // returns null if we're not in a browser
 // isDoNotTrack: () => boolean
 // localStorage: {
@@ -45,8 +43,6 @@ export function defaults() {
     httpRequest: mockHttpState.doRequest,
     diagnosticSdkData: { name: 'stub-sdk' },
     diagnosticPlatformData: { name: 'stub-platform' },
-    httpAllowsPost: () => true,
-    httpAllowsSync: () => true,
     getCurrentUrl: () => currentUrl,
     isDoNotTrack: () => doNotTrack,
     eventSourceFactory: (url, options) => {

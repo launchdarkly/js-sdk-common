@@ -50,6 +50,9 @@ function EventProcessor(
     if (e.kind === 'identify') {
       // identify events always have an inline context
       ret.context = contextFilter.filter(e.context);
+    } else if (e.kind === 'feature') {
+      // feature events always have an inline context
+      ret.context = contextFilter.filter(e.context, true);
     } else {
       ret.contextKeys = getContextKeysFromEvent(e);
       delete ret['context'];
@@ -136,8 +139,7 @@ function EventProcessor(
     }
     queue = [];
     logger.debug(messages.debugPostingEvents(eventsToSend.length));
-    return eventSender.sendEvents(eventsToSend, mainEventsUrl).then(responses => {
-      const responseInfo = responses && responses[0];
+    return eventSender.sendEvents(eventsToSend, mainEventsUrl).then(responseInfo => {
       if (responseInfo) {
         if (responseInfo.serverTime) {
           lastKnownPastTime = responseInfo.serverTime;

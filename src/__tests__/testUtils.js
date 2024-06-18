@@ -62,7 +62,7 @@ export function MockEventSender() {
     calls,
     sendEvents: (events, url) => {
       calls.add({ events, url });
-      return Promise.resolve([{ serverTime, status }]);
+      return Promise.resolve({ serverTime, status });
     },
     setServerTime: time => {
       serverTime = time;

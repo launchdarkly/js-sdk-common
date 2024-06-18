@@ -16,9 +16,11 @@ const errors = require('./errors');
 const messages = require('./messages');
 const { checkContext, getContextKeys } = require('./context');
 const { InspectorTypes, InspectorManager } = require('./InspectorManager');
+const timedPromise = require('./timedPromise');
 
 const changeEvent = 'change';
 const internalChangeEvent = 'internal-change';
+const highTimeoutThreshold = 5;
 
 // This is called by the per-platform initialize functions to create the base client object that we
 // may also extend with additional behavior. It returns an object with these properties:
@@ -364,6 +366,9 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
     if (typeof key !== 'string') {
       emitter.maybeReportError(new errors.LDInvalidEventKeyError(messages.unknownCustomEventKey(key)));
       return;
+    }
+    if (metricValue !== undefined && typeof metricValue !== 'number') {
+      logger.warn(messages.invalidMetricValue(typeof metricValue));
     }
 
     // The following logic was used only for the JS browser SDK (js-client-sdk) and
@@ -772,8 +777,42 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
     return flags;
   }
 
+  function waitForInitializationWithTimeout(timeout) {
+    if (timeout > highTimeoutThreshold) {
+      logger.warn(
+        'The waitForInitialization function was called with a timeout greater than ' +
+          `${highTimeoutThreshold} seconds. We recommend a timeout of ` +
+          `${highTimeoutThreshold} seconds or less.`
+      );
+    }
+
+    const initPromise = initializationStateTracker.getInitializationPromise();
+    const timeoutPromise = timedPromise(timeout, 'waitForInitialization');
+
+    return Promise.race([timeoutPromise, initPromise]).catch(e => {
+      if (e instanceof errors.LDTimeoutError) {
+        logger.error(`waitForInitialization error: ${e}`);
+      }
+      throw e;
+    });
+  }
+
+  function waitForInitialization(timeout = undefined) {
+    if (timeout !== undefined && timeout !== null) {
+      if (typeof timeout === 'number') {
+        return waitForInitializationWithTimeout(timeout);
+      }
+      logger.warn('The waitForInitialization method was provided with a non-numeric timeout.');
+    }
+    logger.warn(
+      'The waitForInitialization function was called without a timeout specified.' +
+        ' In a future version a default timeout will be applied.'
+    );
+    return initializationStateTracker.getInitializationPromise();
+  }
+
   const client = {
-    waitForInitialization: () => initializationStateTracker.getInitializationPromise(),
+    waitForInitialization,
     waitUntilReady: () => initializationStateTracker.getReadyPromise(),
     identify: identify,
     getContext: getContext,
