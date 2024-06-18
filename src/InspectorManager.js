@@ -102,13 +102,13 @@ function InspectorManager(inspectors, logger) {
    */
   manager.onFlags = flags => {
     const type = InspectorTypes.flagDetailsChanged;
+    if (synchronousInspectorsByType[type].length) {
+      synchronousInspectorsByType[type].forEach(inspector => inspector.method(flags));
+    }
     if (inspectorsByType[type].length) {
       onNextTick(() => {
         inspectorsByType[type].forEach(inspector => inspector.method(flags));
       });
-    }
-    if (synchronousInspectorsByType[type].length) {
-      synchronousInspectorsByType[type].forEach(inspector => inspector.method(flags));
     }
   };
 
@@ -122,13 +122,13 @@ function InspectorManager(inspectors, logger) {
    */
   manager.onFlagChanged = (flagKey, flag) => {
     const type = InspectorTypes.flagDetailChanged;
+    if (synchronousInspectorsByType[type].length) {
+      synchronousInspectorsByType[type].forEach(inspector => inspector.method(flagKey, flag));
+    }
     if (inspectorsByType[type].length) {
       onNextTick(() => {
         inspectorsByType[type].forEach(inspector => inspector.method(flagKey, flag));
       });
-    }
-    if (synchronousInspectorsByType[type].length) {
-      synchronousInspectorsByType[type].forEach(inspector => inspector.method(flagKey, flag));
     }
   };
 
@@ -141,13 +141,13 @@ function InspectorManager(inspectors, logger) {
    */
   manager.onIdentityChanged = context => {
     const type = InspectorTypes.clientIdentityChanged;
+    if (synchronousInspectorsByType[type].length) {
+      synchronousInspectorsByType[type].forEach(inspector => inspector.method(context));
+    }
     if (inspectorsByType[type].length) {
       onNextTick(() => {
         inspectorsByType[type].forEach(inspector => inspector.method(context));
       });
-    }
-    if (synchronousInspectorsByType[type].length) {
-      synchronousInspectorsByType[type].forEach(inspector => inspector.method(context));
     }
   };
 
