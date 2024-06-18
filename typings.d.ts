@@ -1014,6 +1014,13 @@ declare module 'launchdarkly-js-sdk-common' {
     name: string;
 
     /**
+     * If `true`, then the inspector will be ran synchronously with evaluation.
+     * Synchronous inspectors execute inline with evaluation and care should be taken to ensure
+     * they have minimal performance overhead.
+     */
+    synchronous?: boolean,
+
+    /**
      * This method is called when a flag is accessed via a variation method, or it can be called based on actions in
      * wrapper SDKs which have different methods of tracking when a flag was accessed. It is not called when a call is made
      * to allFlags.
@@ -1041,6 +1048,11 @@ declare module 'launchdarkly-js-sdk-common' {
     name: string;
 
     /**
+     * If `true`, then the inspector will be ran synchronously with flag updates.
+     */
+    synchronous?: boolean,
+
+    /**
      * This method is called when the flags in the store are replaced with new flags. It will contain all flags
      * regardless of if they have been evaluated.
      */
@@ -1066,6 +1078,11 @@ declare module 'launchdarkly-js-sdk-common' {
     name: string;
 
     /**
+     * If `true`, then the inspector will be ran synchronously with flag updates.
+     */
+    synchronous?: boolean,
+
+    /**
      * This method is called when a flag is updated. It will not be called
      * when all flags are updated.
      */
@@ -1087,6 +1104,11 @@ declare module 'launchdarkly-js-sdk-common' {
      * Name of the inspector. Will be used for logging issues with the inspector.
      */
     name: string;
+
+    /**
+     * If `true`, then the inspector will be ran synchronously with identification.
+     */
+    synchronous?: boolean,
 
     /**
      * This method will be called when an identify operation completes.

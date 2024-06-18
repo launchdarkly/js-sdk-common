@@ -22,9 +22,23 @@ function InspectorManager(inspectors, logger) {
 
   /**
    * Collection of inspectors keyed by type.
+   *
+   * Inspectors are async by default.
+   *
    * @type {{[type: string]: object[]}}
    */
   const inspectorsByType = {
+    [InspectorTypes.flagUsed]: [],
+    [InspectorTypes.flagDetailsChanged]: [],
+    [InspectorTypes.flagDetailChanged]: [],
+    [InspectorTypes.clientIdentityChanged]: [],
+  };
+  /**
+   * Collection synchronous of inspectors keyed by type.
+   *
+   * @type {{[type: string]: object[]}}
+   */
+  const synchronousInspectorsByType = {
     [InspectorTypes.flagUsed]: [],
     [InspectorTypes.flagDetailsChanged]: [],
     [InspectorTypes.flagDetailChanged]: [],
@@ -36,8 +50,13 @@ function InspectorManager(inspectors, logger) {
   safeInspectors &&
     safeInspectors.forEach(safeInspector => {
       // Only add inspectors of supported types.
-      if (Object.prototype.hasOwnProperty.call(inspectorsByType, safeInspector.type)) {
+      if (Object.prototype.hasOwnProperty.call(inspectorsByType, safeInspector.type) && !safeInspector.synchronous) {
         inspectorsByType[safeInspector.type].push(safeInspector);
+      } else if (
+        Object.prototype.hasOwnProperty.call(synchronousInspectorsByType, safeInspector.type) &&
+        safeInspector.synchronous
+      ) {
+        synchronousInspectorsByType[safeInspector.type].push(safeInspector);
       } else {
         logger.warn(messages.invalidInspector(safeInspector.type, safeInspector.name));
       }
@@ -49,7 +68,9 @@ function InspectorManager(inspectors, logger) {
    * @param {string} type The type of the inspector to check.
    * @returns True if there are any inspectors of that type registered.
    */
-  manager.hasListeners = type => inspectorsByType[type] && inspectorsByType[type].length;
+  manager.hasListeners = type =>
+    (inspectorsByType[type] && inspectorsByType[type].length) ||
+    (synchronousInspectorsByType[type] && synchronousInspectorsByType[type].length);
 
   /**
    * Notify registered inspectors of a flag being used.
@@ -61,9 +82,13 @@ function InspectorManager(inspectors, logger) {
    * @param {Object} context The LDContext for the flag.
    */
   manager.onFlagUsed = (flagKey, detail, context) => {
-    if (inspectorsByType[InspectorTypes.flagUsed].length) {
+    const type = InspectorTypes.flagUsed;
+    if (synchronousInspectorsByType[type].length) {
+      synchronousInspectorsByType[type].forEach(inspector => inspector.method(flagKey, detail, context));
+    }
+    if (inspectorsByType[type].length) {
       onNextTick(() => {
-        inspectorsByType[InspectorTypes.flagUsed].forEach(inspector => inspector.method(flagKey, detail, context));
+        inspectorsByType[type].forEach(inspector => inspector.method(flagKey, detail, context));
       });
     }
   };
@@ -76,9 +101,13 @@ function InspectorManager(inspectors, logger) {
    * @param {Record<string, Object>} flags The current flags as a Record<string, LDEvaluationDetail>.
    */
   manager.onFlags = flags => {
-    if (inspectorsByType[InspectorTypes.flagDetailsChanged].length) {
+    const type = InspectorTypes.flagDetailsChanged;
+    if (synchronousInspectorsByType[type].length) {
+      synchronousInspectorsByType[type].forEach(inspector => inspector.method(flags));
+    }
+    if (inspectorsByType[type].length) {
       onNextTick(() => {
-        inspectorsByType[InspectorTypes.flagDetailsChanged].forEach(inspector => inspector.method(flags));
+        inspectorsByType[type].forEach(inspector => inspector.method(flags));
       });
     }
   };
@@ -92,9 +121,13 @@ function InspectorManager(inspectors, logger) {
    * @param {Object} flag An `LDEvaluationDetail` for the flag.
    */
   manager.onFlagChanged = (flagKey, flag) => {
-    if (inspectorsByType[InspectorTypes.flagDetailChanged].length) {
+    const type = InspectorTypes.flagDetailChanged;
+    if (synchronousInspectorsByType[type].length) {
+      synchronousInspectorsByType[type].forEach(inspector => inspector.method(flagKey, flag));
+    }
+    if (inspectorsByType[type].length) {
       onNextTick(() => {
-        inspectorsByType[InspectorTypes.flagDetailChanged].forEach(inspector => inspector.method(flagKey, flag));
+        inspectorsByType[type].forEach(inspector => inspector.method(flagKey, flag));
       });
     }
   };
@@ -107,9 +140,13 @@ function InspectorManager(inspectors, logger) {
    * @param {Object} context The `LDContext` which is now identified.
    */
   manager.onIdentityChanged = context => {
-    if (inspectorsByType[InspectorTypes.clientIdentityChanged].length) {
+    const type = InspectorTypes.clientIdentityChanged;
+    if (synchronousInspectorsByType[type].length) {
+      synchronousInspectorsByType[type].forEach(inspector => inspector.method(context));
+    }
+    if (inspectorsByType[type].length) {
       onNextTick(() => {
-        inspectorsByType[InspectorTypes.clientIdentityChanged].forEach(inspector => inspector.method(context));
+        inspectorsByType[type].forEach(inspector => inspector.method(context));
       });
     }
   };

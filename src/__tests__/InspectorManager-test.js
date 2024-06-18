@@ -28,7 +28,7 @@ describe('given an inspector manager with no registered inspectors', () => {
   });
 });
 
-describe('given an inspector with callbacks of every type', () => {
+describe.each([true, false])('given an inspector with callbacks of every type: synchronous: %p', synchronous => {
   /**
    * @type {AsyncQueue}
    */
@@ -39,6 +39,7 @@ describe('given an inspector with callbacks of every type', () => {
       {
         type: 'flag-used',
         name: 'my-flag-used-inspector',
+        synchronous,
         method: (flagKey, flagDetail, context) => {
           eventQueue.add({ type: 'flag-used', flagKey, flagDetail, context });
         },
@@ -47,6 +48,7 @@ describe('given an inspector with callbacks of every type', () => {
       {
         type: 'flag-used',
         name: 'my-other-flag-used-inspector',
+        synchronous,
         method: (flagKey, flagDetail, context) => {
           eventQueue.add({ type: 'flag-used', flagKey, flagDetail, context });
         },
@@ -54,6 +56,7 @@ describe('given an inspector with callbacks of every type', () => {
       {
         type: 'flag-details-changed',
         name: 'my-flag-details-inspector',
+        synchronous,
         method: details => {
           eventQueue.add({
             type: 'flag-details-changed',
@@ -64,6 +67,7 @@ describe('given an inspector with callbacks of every type', () => {
       {
         type: 'flag-detail-changed',
         name: 'my-flag-detail-inspector',
+        synchronous,
         method: (flagKey, flagDetail) => {
           eventQueue.add({
             type: 'flag-detail-changed',
@@ -75,6 +79,7 @@ describe('given an inspector with callbacks of every type', () => {
       {
         type: 'client-identity-changed',
         name: 'my-identity-inspector',
+        synchronous,
         method: context => {
           eventQueue.add({
             type: 'client-identity-changed',
@@ -85,6 +90,7 @@ describe('given an inspector with callbacks of every type', () => {
       // Invalid inspector shouldn't have an effect.
       {
         type: 'potato',
+        synchronous,
         name: 'my-potato-inspector',
         method: () => {},
       },

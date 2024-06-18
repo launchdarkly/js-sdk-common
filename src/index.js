@@ -462,8 +462,8 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
           } else {
             mods[data.key] = { current: newDetail };
           }
-          handleFlagChanges(mods); // don't wait for this Promise to be resolved
           notifyInspectionFlagChanged(data, newFlag);
+          handleFlagChanges(mods); // don't wait for this Promise to be resolved
         } else {
           logger.debug(messages.debugStreamPatchIgnored(data.key));
         }

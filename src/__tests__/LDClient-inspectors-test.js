@@ -5,12 +5,13 @@ const stubPlatform = require('./stubPlatform');
 const envName = 'UNKNOWN_ENVIRONMENT_ID';
 const context = { key: 'context-key' };
 
-describe('given a streaming client with registered inspectors', () => {
+describe.each([true, false])('given a streaming client with registered inspectors, synchronous: %p', synchronous => {
   const eventQueue = new AsyncQueue();
 
   const inspectors = [
     {
       type: 'flag-used',
+      synchronous,
       method: (flagKey, flagDetail, context) => {
         eventQueue.add({ type: 'flag-used', flagKey, flagDetail, context });
       },
@@ -18,12 +19,14 @@ describe('given a streaming client with registered inspectors', () => {
     // 'flag-used registered twice.
     {
       type: 'flag-used',
+      synchronous,
       method: (flagKey, flagDetail, context) => {
         eventQueue.add({ type: 'flag-used', flagKey, flagDetail, context });
       },
     },
     {
       type: 'flag-details-changed',
+      synchronous,
       method: details => {
         eventQueue.add({
           type: 'flag-details-changed',
@@ -33,6 +36,7 @@ describe('given a streaming client with registered inspectors', () => {
     },
     {
       type: 'flag-detail-changed',
+      synchronous,
       method: (flagKey, flagDetail) => {
         eventQueue.add({
           type: 'flag-detail-changed',
@@ -43,6 +47,7 @@ describe('given a streaming client with registered inspectors', () => {
     },
     {
       type: 'client-identity-changed',
+      synchronous,
       method: context => {
         eventQueue.add({
           type: 'client-identity-changed',
