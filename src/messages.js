@@ -15,7 +15,7 @@ const clientInitialized = function() {
 };
 
 const docLink =
-  ' Please see https://docs.launchdarkly.com/sdk/client-side/javascript#initializing-the-client for instructions on SDK initialization.';
+  ' Please see https://docs.launchdarkly.com/sdk/client-side/javascript#initialize-the-client for instructions on SDK initialization.';
 
 const clientNotReady = function() {
   return 'LaunchDarkly client is not ready';
