@@ -16,23 +16,27 @@ function ContextFilter(config) {
    * @param {Object} context
    * @returns {string[]} A list of the attributes to filter.
    */
-  const getAttributesToFilter = context =>
-    (allAttributesPrivate
+  const getAttributesToFilter = (context, redactAnonymous) =>
+    (allAttributesPrivate || (redactAnonymous && context.anonymous)
       ? Object.keys(context)
       : [...privateAttributes, ...((context._meta && context._meta.privateAttributes) || [])]
     ).filter(attr => !protectedAttributes.some(protectedAttr => AttributeReference.compare(attr, protectedAttr)));
 
   /**
    * @param {Object} context
+   * @param {boolean} redactAnonymous
    * @returns {Object} A copy of the context with private attributes removed,
    * and the redactedAttributes meta populated.
    */
-  const filterSingleKind = context => {
+  const filterSingleKind = (context, redactAnonymous) => {
     if (typeof context !== 'object' || context === null || Array.isArray(context)) {
       return undefined;
     }
 
-    const { cloned, excluded } = AttributeReference.cloneExcluding(context, getAttributesToFilter(context));
+    const { cloned, excluded } = AttributeReference.cloneExcluding(
+      context,
+      getAttributesToFilter(context, redactAnonymous)
+    );
     cloned.key = String(cloned.key);
     if (excluded.length) {
       if (!cloned._meta) {
@@ -57,10 +61,11 @@ function ContextFilter(config) {
 
   /**
    * @param {Object} context
+   * @param {boolean} redactAnonymous
    * @returns {Object} A copy of the context with the private attributes removed,
    * and the redactedAttributes meta populated for each sub-context.
    */
-  const filterMultiKind = context => {
+  const filterMultiKind = (context, redactAnonymous) => {
     const filtered = {
       kind: context.kind,
     };
@@ -68,7 +73,7 @@ function ContextFilter(config) {
 
     for (const contextKey of contextKeys) {
       if (contextKey !== 'kind') {
-        const filteredContext = filterSingleKind(context[contextKey]);
+        const filteredContext = filterSingleKind(context[contextKey], redactAnonymous);
         if (filteredContext) {
           filtered[contextKey] = filteredContext;
         }
@@ -113,21 +118,21 @@ function ContextFilter(config) {
       filtered._meta = filtered._meta || {};
       // If any private attributes started with '/' we need to convert them to references, otherwise the '/' will
       // cause the literal to incorrectly be treated as a reference.
-      filtered._meta.privateAttributes = user.privateAttributeNames.map(
-        literal => (literal.startsWith('/') ? AttributeReference.literalToReference(literal) : literal)
+      filtered._meta.privateAttributes = user.privateAttributeNames.map(literal =>
+        literal.startsWith('/') ? AttributeReference.literalToReference(literal) : literal
       );
     }
 
     return filtered;
   };
 
-  filter.filter = context => {
+  filter.filter = (context, redactAnonymous = false) => {
     if (context.kind === undefined || context.kind === null) {
-      return filterSingleKind(legacyToSingleKind(context));
+      return filterSingleKind(legacyToSingleKind(context), redactAnonymous);
     } else if (context.kind === 'multi') {
-      return filterMultiKind(context);
+      return filterMultiKind(context, redactAnonymous);
     } else {
-      return filterSingleKind(context);
+      return filterSingleKind(context, redactAnonymous);
     }
   };
 

@@ -19,6 +19,7 @@ const LDInvalidEventKeyError = createCustomError('LaunchDarklyInvalidEventKeyErr
 const LDInvalidArgumentError = createCustomError('LaunchDarklyInvalidArgumentError');
 const LDFlagFetchError = createCustomError('LaunchDarklyFlagFetchError');
 const LDInvalidDataError = createCustomError('LaunchDarklyInvalidDataError');
+const LDTimeoutError = createCustomError('LaunchDarklyTimeoutError');
 
 function isHttpErrorRecoverable(status) {
   if (status >= 400 && status < 500) {
@@ -35,5 +36,6 @@ module.exports = {
   LDInvalidArgumentError,
   LDInvalidDataError,
   LDFlagFetchError,
+  LDTimeoutError,
   isHttpErrorRecoverable,
 };

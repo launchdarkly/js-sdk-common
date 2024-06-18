@@ -10,7 +10,10 @@ import { MockEventSender } from './testUtils';
 // tests; here, we use a mock EventSender.
 
 describe.each([
-  [{ key: 'userKey', name: 'Red' }, { key: 'userKey', kind: 'user', _meta: { redactedAttributes: ['/name'] } }],
+  [
+    { key: 'userKey', name: 'Red' },
+    { key: 'userKey', kind: 'user', _meta: { redactedAttributes: ['/name'] } },
+  ],
   [
     { kind: 'user', key: 'userKey', name: 'Red' },
     { key: 'userKey', kind: 'user', _meta: { redactedAttributes: ['/name'] } },
@@ -75,7 +78,7 @@ describe.each([
     expect(e.value).toEqual(source.value);
     expect(e.default).toEqual(source.default);
     expect(e.reason).toEqual(source.reason);
-    checkUserInline(e, source, inlineUser);
+    expect(e.context).toEqual(inlineUser);
   }
 
   function checkCustomEvent(e, source) {
@@ -136,7 +139,7 @@ describe.each([
       expect(mockEventSender.calls.length()).toEqual(1);
       const output = (await mockEventSender.calls.take()).events;
       expect(output.length).toEqual(2);
-      checkFeatureEvent(output[0], event, false);
+      checkFeatureEvent(output[0], event, false, eventContext);
       checkSummaryEvent(output[1]);
     });
   });
@@ -159,7 +162,7 @@ describe.each([
       expect(mockEventSender.calls.length()).toEqual(1);
       const output = (await mockEventSender.calls.take()).events;
       expect(output.length).toEqual(2);
-      checkFeatureEvent(output[0], event, false);
+      checkFeatureEvent(output[0], event, false, eventContext);
       checkSummaryEvent(output[1]);
     });
   });
@@ -236,7 +239,7 @@ describe.each([
       expect(mockEventSender.calls.length()).toEqual(1);
       const output = (await mockEventSender.calls.take()).events;
       expect(output.length).toEqual(3);
-      checkFeatureEvent(output[0], e, false);
+      checkFeatureEvent(output[0], e, false, { ...context, kind: context.kind || 'user' });
       checkFeatureEvent(output[1], e, true, { ...context, kind: context.kind || 'user' });
       checkSummaryEvent(output[2]);
     });

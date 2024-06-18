@@ -99,7 +99,10 @@ describe('EventSummarizer', () => {
       key1: {
         contextKinds: ['user'],
         default: 111,
-        counters: [{ variation: 0, value: 100, version: 11, count: 1 }, { value: 111, version: 11, count: 2 }],
+        counters: [
+          { variation: 0, value: 100, version: 11, count: 1 },
+          { value: 111, version: 11, count: 2 },
+        ],
       },
     };
     expect(data.features).toEqual(expectedFeatures);
