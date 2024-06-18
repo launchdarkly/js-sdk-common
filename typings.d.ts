@@ -588,6 +588,14 @@ declare module 'launchdarkly-js-sdk-common' {
      * The key of the failed prerequisite flag, if the kind was `'PREREQUISITE_FAILED'`.
      */
     prerequisiteKey?: string;
+
+    /**
+     * Whether the evaluation was part of an experiment.
+     *
+     * This is true if the evaluation resulted in an experiment rollout and served one of
+     * the variations in the experiment. Otherwise it is false or undefined.
+     */
+    inExperiment?: boolean;
   }
 
   /**
