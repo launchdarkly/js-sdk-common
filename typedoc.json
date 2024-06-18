@@ -1,0 +1,8 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "name": "launchdarkly-js-sdk-common",
+  "includeVersion": true,
+  "entryPoints": [
+      "typings.d.ts",
+  ]
+}
