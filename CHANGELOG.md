@@ -2,6 +2,14 @@
 
 All notable changes to the `launchdarkly-js-sdk-common` package will be documented in this file. Changes that affect the dependent SDKs such as `launchdarkly-js-client-sdk` should also be logged in those projects, in the next release that uses the updated version of this package. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [5.3.0](https://github.com/launchdarkly/js-sdk-common/compare/launchdarkly-js-sdk-common-v5.2.0...launchdarkly-js-sdk-common-v5.3.0) (2024-06-18)
+
+
+### Features
+
+* Add inExperiment to evaluation reason. ([#105](https://github.com/launchdarkly/js-sdk-common/issues/105)) ([cf69770](https://github.com/launchdarkly/js-sdk-common/commit/cf6977080e67e4e54f773df410a671764dbcb304))
+* Allow for synchronous inspectors. ([#103](https://github.com/launchdarkly/js-sdk-common/issues/103)) ([7e490f4](https://github.com/launchdarkly/js-sdk-common/commit/7e490f479299f772a9db78efd1c2235645785250))
+
 ## [5.2.0] - 2024-05-01
 ### Added:
 - Added an optional timeout to the `waitForInitialization` method. When a timeout is specified the returned promise will be rejected after the timeout elapses if the client has not finished initializing within that time. When no timeout is specified the returned promise will not be resolved or rejected until the initialization either completes or fails.
