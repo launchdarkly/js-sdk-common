@@ -1,3 +1,4 @@
+// @ts-nocheck
 import * as messages from '../messages';
 
 import { withCloseable, sleepAsync } from 'launchdarkly-js-test-helpers';
@@ -250,6 +251,81 @@ describe('LDClient events', () => {
         defaultVal: 'x',
       });
       expect(ep.events[1].reason).toEqual({ kind: 'OFF' });
+    });
+  });
+
+  it('sends events for prerequisites', async () => {
+    const initData = makeBootstrap({
+      'is-prereq': {
+        value: true,
+        variation: 1,
+        reason: {
+          kind: 'FALLTHROUGH',
+        },
+        version: 1,
+        trackEvents: true,
+        trackReason: true,
+      },
+      'has-prereq-depth-1': {
+        value: true,
+        variation: 0,
+        prerequisites: ['is-prereq'],
+        reason: {
+          kind: 'FALLTHROUGH',
+        },
+        version: 4,
+        trackEvents: true,
+        trackReason: true,
+      },
+      'has-prereq-depth-2': {
+        value: true,
+        variation: 0,
+        prerequisites: ['has-prereq-depth-1'],
+        reason: {
+          kind: 'FALLTHROUGH',
+        },
+        version: 5,
+        trackEvents: true,
+        trackReason: true,
+      },
+    });
+    await withClientAndEventProcessor(user, { bootstrap: initData }, async (client, ep) => {
+      await client.waitForInitialization(5);
+      client.variation('has-prereq-depth-2', false);
+
+      // An identify event and 3 feature events.
+      expect(ep.events.length).toEqual(4);
+      expectIdentifyEvent(ep.events[0], user);
+      expect(ep.events[1]).toMatchObject({
+        kind: 'feature',
+        key: 'is-prereq',
+        variation: 1,
+        value: true,
+        version: 1,
+        reason: {
+          kind: 'FALLTHROUGH',
+        },
+      });
+      expect(ep.events[2]).toMatchObject({
+        kind: 'feature',
+        key: 'has-prereq-depth-1',
+        variation: 0,
+        value: true,
+        version: 4,
+        reason: {
+          kind: 'FALLTHROUGH',
+        },
+      });
+      expect(ep.events[3]).toMatchObject({
+        kind: 'feature',
+        key: 'has-prereq-depth-2',
+        variation: 0,
+        value: true,
+        version: 5,
+        reason: {
+          kind: 'FALLTHROUGH',
+        },
+      });
     });
   });
 

@@ -308,9 +308,10 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
 
   function variationDetailInternal(key, defaultValue, sendEvent, includeReasonInEvent, isAllFlags) {
     let detail;
+    let flag;
 
     if (flags && utils.objectHasOwnProperty(flags, key) && flags[key] && !flags[key].deleted) {
-      const flag = flags[key];
+      flag = flags[key];
       detail = getFlagDetail(flag);
       if (flag.value === null || flag.value === undefined) {
         detail.value = defaultValue;
@@ -320,6 +321,12 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
     }
 
     if (sendEvent) {
+      // An event will be send for each of these by virtue of sending events for all flags.
+      if (!isAllFlags) {
+        flag?.prerequisites?.forEach(key => {
+          variation(key, undefined);
+        });
+      }
       sendFlagEvent(key, detail, defaultValue, includeReasonInEvent);
     }
 
