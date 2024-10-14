@@ -552,7 +552,7 @@ declare module 'launchdarkly-js-sdk-common' {
 
   /**
    * Describes the reason that a flag evaluation produced a particular value. This is
-   * part of the {@link LDEvaluationDetail} object returned by {@link LDClient.variationDetail]].
+   * part of the {@link LDEvaluationDetail} object returned by {@link LDClient.variationDetail}.
    */
   export interface LDEvaluationReason {
     /**
