@@ -2,6 +2,13 @@
 
 All notable changes to the `launchdarkly-js-sdk-common` package will be documented in this file. Changes that affect the dependent SDKs such as `launchdarkly-js-client-sdk` should also be logged in those projects, in the next release that uses the updated version of this package. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [5.4.0](https://github.com/launchdarkly/js-sdk-common/compare/5.3.0...5.4.0) (2024-10-18)
+
+
+### Features
+
+* Add support for client-side prerequisite events. ([#112](https://github.com/launchdarkly/js-sdk-common/issues/112)) ([9d1708b](https://github.com/launchdarkly/js-sdk-common/commit/9d1708b212246c5650794af99f79cd6a95cfbcd1))
+
 ## [5.3.0](https://github.com/launchdarkly/js-sdk-common/compare/launchdarkly-js-sdk-common-v5.2.0...launchdarkly-js-sdk-common-v5.3.0) (2024-06-18)
 
 
