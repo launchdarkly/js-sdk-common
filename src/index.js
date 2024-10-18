@@ -299,18 +299,19 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
   }
 
   function variation(key, defaultValue) {
-    return variationDetailInternal(key, defaultValue, true, false, false).value;
+    return variationDetailInternal(key, defaultValue, true, false, false, true).value;
   }
 
   function variationDetail(key, defaultValue) {
-    return variationDetailInternal(key, defaultValue, true, true, false);
+    return variationDetailInternal(key, defaultValue, true, true, false, true);
   }
 
-  function variationDetailInternal(key, defaultValue, sendEvent, includeReasonInEvent, isAllFlags) {
+  function variationDetailInternal(key, defaultValue, sendEvent, includeReasonInEvent, isAllFlags, notifyInspection) {
     let detail;
+    let flag;
 
     if (flags && utils.objectHasOwnProperty(flags, key) && flags[key] && !flags[key].deleted) {
-      const flag = flags[key];
+      flag = flags[key];
       detail = getFlagDetail(flag);
       if (flag.value === null || flag.value === undefined) {
         detail.value = defaultValue;
@@ -320,11 +321,18 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
     }
 
     if (sendEvent) {
+      // For an all-flags evaluation, with events enabled, each flag will get an event, so we do not
+      // need to duplicate the prerequisites.
+      if (!isAllFlags) {
+        flag?.prerequisites?.forEach(key => {
+          variationDetailInternal(key, undefined, sendEvent, false, false, false);
+        });
+      }
       sendFlagEvent(key, detail, defaultValue, includeReasonInEvent);
     }
 
     // For the all flags case `onFlags` will be called instead.
-    if (!isAllFlags) {
+    if (!isAllFlags && notifyInspection) {
       notifyInspectionFlagUsed(key, detail);
     }
 
@@ -351,7 +359,14 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
 
     for (const key in flags) {
       if (utils.objectHasOwnProperty(flags, key) && !flags[key].deleted) {
-        results[key] = variationDetailInternal(key, null, !options.sendEventsOnlyForVariation, false, true).value;
+        results[key] = variationDetailInternal(
+          key,
+          null,
+          !options.sendEventsOnlyForVariation,
+          false,
+          true,
+          false
+        ).value;
       }
     }
 

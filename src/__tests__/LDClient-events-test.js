@@ -1,3 +1,4 @@
+// @ts-nocheck
 import * as messages from '../messages';
 
 import { withCloseable, sleepAsync } from 'launchdarkly-js-test-helpers';
@@ -253,6 +254,81 @@ describe('LDClient events', () => {
     });
   });
 
+  it('sends events for prerequisites', async () => {
+    const initData = makeBootstrap({
+      'is-prereq': {
+        value: true,
+        variation: 1,
+        reason: {
+          kind: 'FALLTHROUGH',
+        },
+        version: 1,
+        trackEvents: true,
+        trackReason: true,
+      },
+      'has-prereq-depth-1': {
+        value: true,
+        variation: 0,
+        prerequisites: ['is-prereq'],
+        reason: {
+          kind: 'FALLTHROUGH',
+        },
+        version: 4,
+        trackEvents: true,
+        trackReason: true,
+      },
+      'has-prereq-depth-2': {
+        value: true,
+        variation: 0,
+        prerequisites: ['has-prereq-depth-1'],
+        reason: {
+          kind: 'FALLTHROUGH',
+        },
+        version: 5,
+        trackEvents: true,
+        trackReason: true,
+      },
+    });
+    await withClientAndEventProcessor(user, { bootstrap: initData }, async (client, ep) => {
+      await client.waitForInitialization(5);
+      client.variation('has-prereq-depth-2', false);
+
+      // An identify event and 3 feature events.
+      expect(ep.events.length).toEqual(4);
+      expectIdentifyEvent(ep.events[0], user);
+      expect(ep.events[1]).toMatchObject({
+        kind: 'feature',
+        key: 'is-prereq',
+        variation: 1,
+        value: true,
+        version: 1,
+        reason: {
+          kind: 'FALLTHROUGH',
+        },
+      });
+      expect(ep.events[2]).toMatchObject({
+        kind: 'feature',
+        key: 'has-prereq-depth-1',
+        variation: 0,
+        value: true,
+        version: 4,
+        reason: {
+          kind: 'FALLTHROUGH',
+        },
+      });
+      expect(ep.events[3]).toMatchObject({
+        kind: 'feature',
+        key: 'has-prereq-depth-2',
+        variation: 0,
+        value: true,
+        version: 5,
+        reason: {
+          kind: 'FALLTHROUGH',
+        },
+      });
+    });
+  });
+
   it('sends a feature event on receiving a new flag value', async () => {
     const oldFlags = { foo: { value: 'a', variation: 1, version: 2, flagVersion: 2000 } };
     const newFlags = { foo: { value: 'b', variation: 2, version: 3, flagVersion: 2001 } };
@@ -315,6 +391,22 @@ describe('LDClient events', () => {
     const initData = makeBootstrap({
       foo: { value: 'a', variation: 1, version: 2 },
       bar: { value: 'b', variation: 1, version: 3 },
+    });
+    await withClientAndEventProcessor(user, { bootstrap: initData }, async (client, ep) => {
+      await client.waitForInitialization(5);
+      client.allFlags();
+
+      expect(ep.events.length).toEqual(3);
+      expectIdentifyEvent(ep.events[0], user);
+      expectFeatureEvent({ e: ep.events[1], key: 'foo', user, value: 'a', variation: 1, version: 2, defaultVal: null });
+      expectFeatureEvent({ e: ep.events[2], key: 'bar', user, value: 'b', variation: 1, version: 3, defaultVal: null });
+    });
+  });
+
+  it('does not send duplicate events for prerequisites with all flags.', async () => {
+    const initData = makeBootstrap({
+      foo: { value: 'a', variation: 1, version: 2 },
+      bar: { value: 'b', variation: 1, version: 3, prerequisites: ['foo'] },
     });
     await withClientAndEventProcessor(user, { bootstrap: initData }, async (client, ep) => {
       await client.waitForInitialization(5);
