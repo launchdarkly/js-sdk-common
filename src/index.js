@@ -299,14 +299,14 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
   }
 
   function variation(key, defaultValue) {
-    return variationDetailInternal(key, defaultValue, true, false, false).value;
+    return variationDetailInternal(key, defaultValue, true, false, true).value;
   }
 
   function variationDetail(key, defaultValue) {
-    return variationDetailInternal(key, defaultValue, true, true, false);
+    return variationDetailInternal(key, defaultValue, true, true, true);
   }
 
-  function variationDetailInternal(key, defaultValue, sendEvent, includeReasonInEvent, isAllFlags) {
+  function variationDetailInternal(key, defaultValue, sendEvent, includeReasonInEvent, notifyInspectionUsed) {
     let detail;
     let flag;
 
@@ -321,17 +321,14 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
     }
 
     if (sendEvent) {
-      // An event will be send for each of these by virtue of sending events for all flags.
-      if (!isAllFlags) {
-        flag?.prerequisites?.forEach(key => {
-          variation(key, undefined);
-        });
-      }
+      flag?.prerequisites?.forEach(key => {
+        variationDetailInternal(key, undefined, sendEvent, false, false);
+      });
       sendFlagEvent(key, detail, defaultValue, includeReasonInEvent);
     }
 
     // For the all flags case `onFlags` will be called instead.
-    if (!isAllFlags) {
+    if (notifyInspectionUsed) {
       notifyInspectionFlagUsed(key, detail);
     }
 
@@ -358,7 +355,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
 
     for (const key in flags) {
       if (utils.objectHasOwnProperty(flags, key) && !flags[key].deleted) {
-        results[key] = variationDetailInternal(key, null, !options.sendEventsOnlyForVariation, false, true).value;
+        results[key] = variationDetailInternal(key, null, !options.sendEventsOnlyForVariation, false, false).value;
       }
     }
 

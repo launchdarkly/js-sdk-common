@@ -5,6 +5,41 @@ const stubPlatform = require('./stubPlatform');
 const envName = 'UNKNOWN_ENVIRONMENT_ID';
 const context = { key: 'context-key' };
 
+const flagPayload = {
+  'is-prereq': {
+    value: true,
+    variation: 1,
+    reason: {
+      kind: 'FALLTHROUGH',
+    },
+    version: 1,
+    trackEvents: true,
+    trackReason: true,
+  },
+  'has-prereq-depth-1': {
+    value: true,
+    variation: 0,
+    prerequisites: ['is-prereq'],
+    reason: {
+      kind: 'FALLTHROUGH',
+    },
+    version: 4,
+    trackEvents: true,
+    trackReason: true,
+  },
+  'has-prereq-depth-2': {
+    value: true,
+    variation: 0,
+    prerequisites: ['has-prereq-depth-1'],
+    reason: {
+      kind: 'FALLTHROUGH',
+    },
+    version: 5,
+    trackEvents: true,
+    trackReason: true,
+  },
+};
+
 describe.each([true, false])('given a streaming client with registered inspectors, synchronous: %p', synchronous => {
   const eventQueue = new AsyncQueue();
 
@@ -63,7 +98,7 @@ describe.each([true, false])('given a streaming client with registered inspector
   beforeEach(async () => {
     platform = stubPlatform.defaults();
     const server = platform.testing.http.newServer();
-    server.byDefault(respondJson({}));
+    server.byDefault(respondJson(flagPayload));
     const config = { streaming: true, baseUrl: server.url, inspectors, sendEvents: false };
     client = platform.testing.makeClient(envName, context, config);
     await client.waitUntilReady();
@@ -91,7 +126,29 @@ describe.each([true, false])('given a streaming client with registered inspector
     const flagsEvent = await eventQueue.take();
     expect(flagsEvent).toMatchObject({
       type: 'flag-details-changed',
-      details: {},
+      details: {
+        'is-prereq': {
+          value: true,
+          variationIndex: 1,
+          reason: {
+            kind: 'FALLTHROUGH',
+          },
+        },
+        'has-prereq-depth-1': {
+          value: true,
+          variationIndex: 0,
+          reason: {
+            kind: 'FALLTHROUGH',
+          },
+        },
+        'has-prereq-depth-2': {
+          value: true,
+          variationIndex: 0,
+          reason: {
+            kind: 'FALLTHROUGH',
+          },
+        },
+      },
     });
   });
 
@@ -128,5 +185,52 @@ describe.each([true, false])('given a streaming client with registered inspector
       flagKey: 'flagKey',
       flagDetail: { value: false },
     });
+  });
+
+  it('emits an event when a flag is used', async () => {
+    // Take initial events.
+    eventQueue.take();
+    eventQueue.take();
+
+    await platform.testing.eventSourcesCreated.take();
+    client.variation('is-prereq', false);
+    const updateEvent = await eventQueue.take();
+    expect(updateEvent).toMatchObject({
+      type: 'flag-used',
+      flagKey: 'is-prereq',
+      flagDetail: { value: true },
+    });
+    // Two inspectors are handling this
+    const updateEvent2 = await eventQueue.take();
+    expect(updateEvent2).toMatchObject({
+      type: 'flag-used',
+      flagKey: 'is-prereq',
+      flagDetail: { value: true },
+    });
+  });
+
+  it('does not execute flag-used for prerequisites', async () => {
+    // Take initial events.
+    eventQueue.take();
+    eventQueue.take();
+
+    await platform.testing.eventSourcesCreated.take();
+    client.variation('has-prereq-depth-2', false);
+    // There would be many more than 2 events if prerequisites were inspected.
+    const updateEvent = await eventQueue.take();
+    expect(updateEvent).toMatchObject({
+      type: 'flag-used',
+      flagKey: 'has-prereq-depth-2',
+      flagDetail: { value: true },
+    });
+    // Two inspectors are handling this
+    const updateEvent2 = await eventQueue.take();
+    expect(updateEvent2).toMatchObject({
+      type: 'flag-used',
+      flagKey: 'has-prereq-depth-2',
+      flagDetail: { value: true },
+    });
+
+    expect(eventQueue.length()).toEqual(0);
   });
 });
