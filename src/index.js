@@ -50,14 +50,14 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
   const diagnosticsAccumulator = diagnosticsEnabled ? diagnostics.DiagnosticsAccumulator(new Date().getTime()) : null;
   const diagnosticsManager = diagnosticsEnabled
     ? diagnostics.DiagnosticsManager(
-      platform,
-      persistentStorage,
-      diagnosticsAccumulator,
-      eventSender,
-      environment,
-      options,
-      diagnosticId
-    )
+        platform,
+        persistentStorage,
+        diagnosticsAccumulator,
+        eventSender,
+        environment,
+        options,
+        diagnosticId
+      )
     : null;
 
   const stream = Stream(platform, options, environment, diagnosticsAccumulator);
@@ -430,7 +430,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
       }
     };
     stream.connect(ident.getContext(), hash, {
-      ping: function () {
+      ping: function() {
         logger.debug(messages.debugStreamPing());
         const contextAtTimeOfPingEvent = ident.getContext();
         requestor
@@ -446,7 +446,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
             emitter.maybeReportError(new errors.LDFlagFetchError(messages.errorFetchingFlags(err)));
           });
       },
-      put: function (e) {
+      put: function(e) {
         const data = tryParseData(e.data);
         if (!data) {
           return;
@@ -456,7 +456,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
         // Don't wait for this Promise to be resolved; note that replaceAllFlags is guaranteed
         // never to have an unhandled rejection
       },
-      patch: function (e) {
+      patch: function(e) {
         const data = tryParseData(e.data);
         if (!data) {
           return;
@@ -483,7 +483,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
           logger.debug(messages.debugStreamPatchIgnored(data.key));
         }
       },
-      delete: function (e) {
+      delete: function(e) {
         const data = tryParseData(e.data);
         if (!data) {
           return;
@@ -540,7 +540,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
 
     notifyInspectionFlagsChanged();
 
-    return handleFlagChanges(changes).catch(() => { }); // swallow any exceptions from this Promise
+    return handleFlagChanges(changes).catch(() => {}); // swallow any exceptions from this Promise
   }
 
   // Returns a Promise which will be resolved when we have dispatched all change events and updated
@@ -796,8 +796,8 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
     if (timeout > highTimeoutThreshold) {
       logger.warn(
         'The waitForInitialization function was called with a timeout greater than ' +
-        `${highTimeoutThreshold} seconds. We recommend a timeout of ` +
-        `${highTimeoutThreshold} seconds or less.`
+          `${highTimeoutThreshold} seconds. We recommend a timeout of ` +
+          `${highTimeoutThreshold} seconds or less.`
       );
     }
 
@@ -821,7 +821,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
     }
     logger.warn(
       'The waitForInitialization function was called without a timeout specified.' +
-      ' In a future version a default timeout will be applied.'
+        ' In a future version a default timeout will be applied.'
     );
     return initializationStateTracker.getInitializationPromise();
   }
