@@ -50,14 +50,14 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
   const diagnosticsAccumulator = diagnosticsEnabled ? diagnostics.DiagnosticsAccumulator(new Date().getTime()) : null;
   const diagnosticsManager = diagnosticsEnabled
     ? diagnostics.DiagnosticsManager(
-        platform,
-        persistentStorage,
-        diagnosticsAccumulator,
-        eventSender,
-        environment,
-        options,
-        diagnosticId
-      )
+      platform,
+      persistentStorage,
+      diagnosticsAccumulator,
+      eventSender,
+      environment,
+      options,
+      diagnosticId
+    )
     : null;
 
   const stream = Stream(platform, options, environment, diagnosticsAccumulator);
@@ -299,14 +299,14 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
   }
 
   function variation(key, defaultValue) {
-    return variationDetailInternal(key, defaultValue, true, false, true).value;
+    return variationDetailInternal(key, defaultValue, true, false, false, true).value;
   }
 
   function variationDetail(key, defaultValue) {
-    return variationDetailInternal(key, defaultValue, true, true, true);
+    return variationDetailInternal(key, defaultValue, true, true, false, true);
   }
 
-  function variationDetailInternal(key, defaultValue, sendEvent, includeReasonInEvent, notifyInspectionUsed) {
+  function variationDetailInternal(key, defaultValue, sendEvent, includeReasonInEvent, isAllFlags, notifyInspection) {
     let detail;
     let flag;
 
@@ -321,14 +321,18 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
     }
 
     if (sendEvent) {
-      flag?.prerequisites?.forEach(key => {
-        variationDetailInternal(key, undefined, sendEvent, false, false);
-      });
+      // For an all-flags evaluation, with events enabled, each flag will get an event, so we do not
+      // need to duplicate the prerequisites.
+      if (!isAllFlags) {
+        flag?.prerequisites?.forEach(key => {
+          variationDetailInternal(key, undefined, sendEvent, false, false, false);
+        });
+      }
       sendFlagEvent(key, detail, defaultValue, includeReasonInEvent);
     }
 
     // For the all flags case `onFlags` will be called instead.
-    if (notifyInspectionUsed) {
+    if (!isAllFlags && notifyInspection) {
       notifyInspectionFlagUsed(key, detail);
     }
 
@@ -355,7 +359,14 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
 
     for (const key in flags) {
       if (utils.objectHasOwnProperty(flags, key) && !flags[key].deleted) {
-        results[key] = variationDetailInternal(key, null, !options.sendEventsOnlyForVariation, false, false).value;
+        results[key] = variationDetailInternal(
+          key,
+          null,
+          !options.sendEventsOnlyForVariation,
+          false,
+          true,
+          false
+        ).value;
       }
     }
 
@@ -419,7 +430,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
       }
     };
     stream.connect(ident.getContext(), hash, {
-      ping: function() {
+      ping: function () {
         logger.debug(messages.debugStreamPing());
         const contextAtTimeOfPingEvent = ident.getContext();
         requestor
@@ -435,7 +446,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
             emitter.maybeReportError(new errors.LDFlagFetchError(messages.errorFetchingFlags(err)));
           });
       },
-      put: function(e) {
+      put: function (e) {
         const data = tryParseData(e.data);
         if (!data) {
           return;
@@ -445,7 +456,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
         // Don't wait for this Promise to be resolved; note that replaceAllFlags is guaranteed
         // never to have an unhandled rejection
       },
-      patch: function(e) {
+      patch: function (e) {
         const data = tryParseData(e.data);
         if (!data) {
           return;
@@ -472,7 +483,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
           logger.debug(messages.debugStreamPatchIgnored(data.key));
         }
       },
-      delete: function(e) {
+      delete: function (e) {
         const data = tryParseData(e.data);
         if (!data) {
           return;
@@ -529,7 +540,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
 
     notifyInspectionFlagsChanged();
 
-    return handleFlagChanges(changes).catch(() => {}); // swallow any exceptions from this Promise
+    return handleFlagChanges(changes).catch(() => { }); // swallow any exceptions from this Promise
   }
 
   // Returns a Promise which will be resolved when we have dispatched all change events and updated
@@ -785,8 +796,8 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
     if (timeout > highTimeoutThreshold) {
       logger.warn(
         'The waitForInitialization function was called with a timeout greater than ' +
-          `${highTimeoutThreshold} seconds. We recommend a timeout of ` +
-          `${highTimeoutThreshold} seconds or less.`
+        `${highTimeoutThreshold} seconds. We recommend a timeout of ` +
+        `${highTimeoutThreshold} seconds or less.`
       );
     }
 
@@ -810,7 +821,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
     }
     logger.warn(
       'The waitForInitialization function was called without a timeout specified.' +
-        ' In a future version a default timeout will be applied.'
+      ' In a future version a default timeout will be applied.'
     );
     return initializationStateTracker.getInitializationPromise();
   }

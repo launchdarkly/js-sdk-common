@@ -403,6 +403,22 @@ describe('LDClient events', () => {
     });
   });
 
+  it('does not send duplicate events for prerequisites with all flags.', async () => {
+    const initData = makeBootstrap({
+      foo: { value: 'a', variation: 1, version: 2 },
+      bar: { value: 'b', variation: 1, version: 3, prerequisites: ['foo'] },
+    });
+    await withClientAndEventProcessor(user, { bootstrap: initData }, async (client, ep) => {
+      await client.waitForInitialization(5);
+      client.allFlags();
+
+      expect(ep.events.length).toEqual(3);
+      expectIdentifyEvent(ep.events[0], user);
+      expectFeatureEvent({ e: ep.events[1], key: 'foo', user, value: 'a', variation: 1, version: 2, defaultVal: null });
+      expectFeatureEvent({ e: ep.events[2], key: 'bar', user, value: 'b', variation: 1, version: 3, defaultVal: null });
+    });
+  });
+
   it('does not send feature events for allFlags() if sendEventsOnlyForVariation is set', async () => {
     const initData = makeBootstrap({
       foo: { value: 'a', variation: 1, version: 2 },
