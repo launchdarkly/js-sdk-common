@@ -618,6 +618,73 @@ describe('LDClient', () => {
       });
     });
 
+    it('emits change event, even for flag that has not changed, if that flag is part of an experiment', async () => {
+      const user = { key: 'user' };
+      const state0 = {
+        environment: 'env',
+        context: user,
+        flags: { flagkey: { value: 'value0' } },
+      };
+      const sp = stubPlatform.mockStateProvider(state0);
+
+      await withClient(null, { stateProvider: sp, sendEvents: false }, async client => {
+        await client.waitForInitialization(5);
+
+        expect(client.variation('flagkey')).toEqual('value0');
+
+        const state1 = {
+          flags: { flagkey: { value: 'value1' } },
+        };
+
+        const state2 = {
+          flags: { flagkey: { value: 'value1', reason: { inExperiment: true } } },
+        };
+
+        const gotChange = eventSink(client, 'change:flagkey');
+
+        sp.emit('update', state1);
+
+        const args = await gotChange.take();
+        expect(args).toEqual(['value1', 'value0']);
+
+        sp.emit('update', state2);
+
+        const args2 = await gotChange.take();
+        expect(args2).toEqual(['value1', 'value1']);
+      });
+    });
+
+    it('does not emit a change event if the flag value did not change and the value is not part of an experiment', async () => {
+      const user = { key: 'user' };
+      const state0 = {
+        environment: 'env',
+        context: user,
+        flags: { flagkey: { value: 'value0' } },
+      };
+      const sp = stubPlatform.mockStateProvider(state0);
+
+      await withClient(null, { stateProvider: sp, sendEvents: false }, async client => {
+        await client.waitForInitialization(5);
+
+        expect(client.variation('flagkey')).toEqual('value0');
+
+        const state1 = {
+          flags: { flagkey: { value: 'value1' } },
+        };
+
+        const gotChange = eventSink(client, 'change:flagkey');
+
+        sp.emit('update', state1);
+
+        const args = await gotChange.take();
+        expect(args).toEqual(['value1', 'value0']);
+
+        sp.emit('update', state1);
+
+        expect(gotChange.isEmpty()).toBeTruthy();
+      });
+    });
+
     it('disables identify()', async () => {
       const user = { key: 'user' };
       const user1 = { key: 'user1' };
