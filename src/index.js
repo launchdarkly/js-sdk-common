@@ -682,10 +682,16 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
     if (!env) {
       return Promise.reject(new errors.LDInvalidEnvironmentIdError(messages.environmentNotSpecified()));
     }
+    let afterIdentify;
     return anonymousContextProcessor
       .processContext(context)
       .then(verifyContext)
+      .then(context => {
+        afterIdentify = hookRunner.identify(context, undefined);
+        return context;
+      })
       .then(validatedContext => {
+        afterIdentify?.({ status: 'completed' });
         ident.setContext(validatedContext);
         if (typeof options.bootstrap === 'object') {
           // flags have already been set earlier
@@ -695,6 +701,10 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
         } else {
           return finishInitWithPolling();
         }
+      })
+      .catch(err => {
+        afterIdentify?.({ status: 'error' });
+        throw err;
       });
   }
 
