@@ -41,6 +41,85 @@ declare module 'launchdarkly-js-sdk-common' {
   }
 
   /**
+ * Contextual information provided to evaluation stages.
+ */
+export interface EvaluationSeriesContext {
+  readonly flagKey: string;
+  readonly context: LDContext;
+  readonly defaultValue: unknown;
+  readonly method: string;
+}
+
+  /**
+   * Implementation specific hook data for evaluation stages.
+   *
+   * Hook implementations can use this to store data needed between stages.
+   */
+  export interface EvaluationSeriesData {
+    readonly [index: string]: unknown;
+  }
+
+  /**
+   * Meta-data about a hook implementation.
+   */
+  export interface HookMetadata {
+    readonly name: string;
+  }
+
+  /**
+   * Interface for extending SDK functionality via hooks.
+   */
+  export interface Hook {
+    /**
+     * Get metadata about the hook implementation.
+     */
+    getMetadata(): HookMetadata;
+
+    /**
+     * The before method is called during the execution of a variation method
+     * before the flag value has been determined. The method is executed synchronously.
+     *
+     * @param hookContext Contains information about the evaluation being performed. This is not
+     *  mutable.
+     * @param data A record associated with each stage of hook invocations. Each stage is called with
+     * the data of the previous stage for a series. The input record should not be modified.
+     * @returns Data to use when executing the next state of the hook in the evaluation series. It is
+     * recommended to expand the previous input into the return. This helps ensure your stage remains
+     * compatible moving forward as more stages are added.
+     * ```js
+     * return {...data, "my-new-field": /*my data/*}
+     * ```
+     */
+    beforeEvaluation?(
+      hookContext: EvaluationSeriesContext,
+      data: EvaluationSeriesData,
+    ): EvaluationSeriesData;
+
+    /**
+     * The after method is called during the execution of the variation method
+     * after the flag value has been determined. The method is executed synchronously.
+     *
+     * @param hookContext Contains read-only information about the evaluation
+     * being performed.
+     * @param data A record associated with each stage of hook invocations. Each
+     *  stage is called with the data of the previous stage for a series.
+     * @param detail The result of the evaluation. This value should not be
+     * modified.
+     * @returns Data to use when executing the next state of the hook in the evaluation series. It is
+     * recommended to expand the previous input into the return. This helps ensure your stage remains
+     * compatible moving forward as more stages are added.
+     * ```js
+     * return {...data, "my-new-field": /*my data/*}
+     * ```
+     */
+    afterEvaluation?(
+      hookContext: EvaluationSeriesContext,
+      data: EvaluationSeriesData,
+      detail: LDEvaluationDetail,
+    ): EvaluationSeriesData;
+  }
+
+  /**
    * LaunchDarkly initialization options that are supported by all variants of the JS client.
    * The browser SDK and Electron SDK may support additional options.
    *
@@ -277,6 +356,25 @@ declare module 'launchdarkly-js-sdk-common' {
      * Inspectors can be used for collecting information for monitoring, analytics, and debugging.
      */
     inspectors?: LDInspection[];
+
+    /**
+     * Initial set of hooks for the client.
+     *
+     * Hooks provide entrypoints which allow for observation of SDK functions.
+     *
+     * LaunchDarkly provides integration packages, and most applications will not
+     * need to implement their own hooks. Refer to the `@launchdarkly/node-server-sdk-otel`
+     * for instrumentation for the `@launchdarkly/node-server-sdk`.
+     *
+     * Example:
+     * ```typescript
+     * import { init } from '@launchdarkly/node-server-sdk';
+     * import { TheHook } from '@launchdarkly/some-hook';
+     *
+     * const client = init('my-sdk-key', { hooks: [new TheHook()] });
+     * ```
+     */
+    hooks?: Hook[];
   }
 
   /**
@@ -909,6 +1007,16 @@ declare module 'launchdarkly-js-sdk-common' {
      *   closing is finished. It will never be rejected.
      */
     close(onDone?: () => void): Promise<void>;
+
+    /**
+     * Add a hook to the client. In order to register a hook before the client
+     * starts, please use the `hooks` property of {@link LDOptions}.
+     *
+     * Hooks provide entrypoints which allow for observation of SDK functions.
+     *
+     * @param Hook The hook to add.
+     */
+    addHook(hook: Hook): void;
   }
 
   /**

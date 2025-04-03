@@ -17,6 +17,7 @@ const messages = require('./messages');
 const { checkContext, getContextKeys } = require('./context');
 const { InspectorTypes, InspectorManager } = require('./InspectorManager');
 const timedPromise = require('./timedPromise');
+const HookRunner = require('./HookRunner');
 
 const changeEvent = 'change';
 const internalChangeEvent = 'internal-change';
@@ -40,6 +41,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
   const sendEvents = options.sendEvents;
   let environment = env;
   let hash = options.hash;
+  const hookRunner = new HookRunner(logger, options.hooks);
 
   const persistentStorage = PersistentStorage(platform.localStorage, logger);
 
@@ -256,11 +258,16 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
       logger.warn(messages.identifyDisabled());
       return utils.wrapPromiseCallback(Promise.resolve(utils.transformVersionedValuesToValues(flags)), onDone);
     }
+    let afterIdentify;
     const clearFirst = useLocalStorage && persistentFlagStore ? persistentFlagStore.clearFlags() : Promise.resolve();
     return utils.wrapPromiseCallback(
       clearFirst
         .then(() => anonymousContextProcessor.processContext(context))
         .then(verifyContext)
+        .then(context => {
+          afterIdentify = hookRunner.identify(context, undefined);
+          return context;
+        })
         .then(validatedContext =>
           requestor
             .fetchFlagSettings(validatedContext, newHash)
@@ -277,12 +284,14 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
             })
         )
         .then(flagValueMap => {
+          afterIdentify?.({ status: 'completed' });
           if (streamActive) {
             connectStream();
           }
           return flagValueMap;
         })
         .catch(err => {
+          afterIdentify?.({ status: 'error' });
           emitter.maybeReportError(err);
           return Promise.reject(err);
         }),
@@ -299,11 +308,16 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
   }
 
   function variation(key, defaultValue) {
-    return variationDetailInternal(key, defaultValue, true, false, false, true).value;
+    const { value } = hookRunner.withEvaluation(key, ident.getContext(), defaultValue, () =>
+      variationDetailInternal(key, defaultValue, true, false, false, true)
+    );
+    return value;
   }
 
   function variationDetail(key, defaultValue) {
-    return variationDetailInternal(key, defaultValue, true, true, false, true);
+    return hookRunner.withEvaluation(key, ident.getContext(), defaultValue, () =>
+      variationDetailInternal(key, defaultValue, true, true, false, true)
+    );
   }
 
   function variationDetailInternal(key, defaultValue, sendEvent, includeReasonInEvent, isAllFlags, notifyInspection) {
@@ -826,6 +840,10 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
     return initializationStateTracker.getInitializationPromise();
   }
 
+  function addHook(hook) {
+    hookRunner.addHook(hook);
+  }
+
   const client = {
     waitForInitialization,
     waitUntilReady: () => initializationStateTracker.getReadyPromise(),
@@ -840,6 +858,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
     flush: flush,
     allFlags: allFlags,
     close: close,
+    addHook: addHook,
   };
 
   return {
