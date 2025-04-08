@@ -17,7 +17,7 @@ const messages = require('./messages');
 const { checkContext, getContextKeys } = require('./context');
 const { InspectorTypes, InspectorManager } = require('./InspectorManager');
 const timedPromise = require('./timedPromise');
-const HookRunner = require('./HookRunner');
+const createHookRunner = require('./HookRunner');
 
 const changeEvent = 'change';
 const internalChangeEvent = 'internal-change';
@@ -41,7 +41,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
   const sendEvents = options.sendEvents;
   let environment = env;
   let hash = options.hash;
-  const hookRunner = new HookRunner(logger, options.hooks);
+  const hookRunner = createHookRunner(logger, options.hooks);
 
   const persistentStorage = PersistentStorage(platform.localStorage, logger);
 
