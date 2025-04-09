@@ -183,7 +183,7 @@ declare module 'launchdarkly-js-sdk-common' {
      * This method is called during the execution of the identify process before the operation
      * completes, but after any context modifications are performed.
      *
-     * @param hookContext Contains information about the evaluation being performed. This is not
+     * @param hookContext Contains information about the identify operation being performed. This is not
      *  mutable.
      * @param data A record associated with each stage of hook invocations. Each stage is called with
      * the data of the previous stage for a series. The input record should not be modified.
@@ -200,7 +200,7 @@ declare module 'launchdarkly-js-sdk-common' {
      * This method is called during the execution of the identify process before the operation
      * completes, but after any context modifications are performed.
      *
-     * @param hookContext Contains information about the evaluation being performed. This is not
+     * @param hookContext Contains information about the identify operation being performed. This is not
      *  mutable.
      * @param data A record associated with each stage of hook invocations. Each stage is called with
      * the data of the previous stage for a series. The input record should not be modified.
@@ -467,7 +467,7 @@ declare module 'launchdarkly-js-sdk-common' {
      *
      * Example:
      * ```typescript
-     * import { init } from '@launchdarkly/node-server-sdk';
+     * import { initialize } from 'launchdarkly-js-client-sdk';
      * import { TheHook } from '@launchdarkly/some-hook';
      *
      * const client = init('my-sdk-key', { hooks: [new TheHook()] });

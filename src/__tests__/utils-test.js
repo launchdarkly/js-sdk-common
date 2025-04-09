@@ -1,4 +1,4 @@
-import { appendUrlPath, getLDUserAgentString, wrapPromiseCallback } from '../utils';
+import { appendUrlPath, getLDUserAgentString, wrapPromiseCallback, once } from '../utils';
 
 import * as stubPlatform from './stubPlatform';
 
@@ -62,5 +62,35 @@ describe('utils', () => {
       const ua = getLDUserAgentString(platform);
       expect(ua).toEqual('stubClient/7.8.9');
     });
+  });
+
+  it('when using once the original function is only called once', () => {
+    let count = 0;
+    const fn = once(() => {
+      count++;
+      return count;
+    });
+
+    expect(fn()).toBe(1);
+    expect(fn()).toBe(1);
+    expect(fn()).toBe(1);
+    expect(count).toBe(1);
+  });
+
+  it('once works with async functions', async () => {
+    let count = 0;
+    const fn = once(async () => {
+      count++;
+      return count;
+    });
+
+    const result1 = await fn();
+    const result2 = await fn();
+    const result3 = await fn();
+
+    expect(result1).toBe(1);
+    expect(result2).toBe(1);
+    expect(result3).toBe(1);
+    expect(count).toBe(1);
   });
 });

@@ -265,7 +265,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
         .then(() => anonymousContextProcessor.processContext(context))
         .then(verifyContext)
         .then(context => {
-          afterIdentify = hookRunner.identify(context, undefined);
+          afterIdentify = utils.once(hookRunner.identify(context, undefined));
           return context;
         })
         .then(validatedContext =>
@@ -687,7 +687,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
       .processContext(context)
       .then(verifyContext)
       .then(context => {
-        afterIdentify = hookRunner.identify(context, undefined);
+        afterIdentify = utils.once(hookRunner.identify(context, undefined));
         return context;
       })
       .then(validatedContext => {
