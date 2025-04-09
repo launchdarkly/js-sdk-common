@@ -59,16 +59,6 @@ describe.each([
     }
   }
 
-  function checkUserInline(e, source, inlineUser) {
-    if (inlineUser) {
-      expect(e.context).toEqual(inlineUser);
-      expect(e.contextKeys).toBeUndefined();
-    } else {
-      expect(e.contextKeys).toEqual({ user: source.context.key || source.context.user.key });
-      expect(e.context).toBeUndefined();
-    }
-  }
-
   function checkFeatureEvent(e, source, debug, inlineUser) {
     expect(e.kind).toEqual(debug ? 'debug' : 'feature');
     expect(e.creationDate).toEqual(source.creationDate);
@@ -87,7 +77,7 @@ describe.each([
     expect(e.key).toEqual(source.key);
     expect(e.data).toEqual(source.data);
     expect(e.metricValue).toEqual(source.metricValue);
-    checkUserInline(e, source);
+    expect(e.context).toEqual(source.context);
   }
 
   function checkSummaryEvent(e) {
@@ -215,6 +205,31 @@ describe.each([
       const output = (await mockEventSender.calls.take()).events;
       expect(output.length).toEqual(2);
       checkFeatureEvent(output[0], e, true, filteredContext);
+      checkSummaryEvent(output[1]);
+    });
+  });
+
+  it('filters context in feature event', async () => {
+    const config = { ...defaultConfig, allAttributesPrivate: true };
+    await withProcessorAndSender(config, async (ep, mockEventSender) => {
+      const e = {
+        kind: 'feature',
+        creationDate: 1000,
+        context: eventContext,
+        key: 'flagkey',
+        version: 11,
+        variation: 1,
+        value: 'value',
+        default: 'default',
+        trackEvents: true,
+      };
+      ep.enqueue(e);
+      await ep.flush();
+
+      expect(mockEventSender.calls.length()).toEqual(1);
+      const output = (await mockEventSender.calls.take()).events;
+      expect(output.length).toEqual(2);
+      checkFeatureEvent(output[0], e, false, filteredContext);
       checkSummaryEvent(output[1]);
     });
   });
@@ -377,6 +392,27 @@ describe.each([
       const output = (await mockEventSender.calls.take()).events;
       expect(output.length).toEqual(1);
       checkCustomEvent(output[0], e);
+    });
+  });
+
+  it('filters context in custom event', async () => {
+    const config = { ...defaultConfig, allAttributesPrivate: true };
+    await withProcessorAndSender(config, async (ep, mockEventSender) => {
+      const e = {
+        kind: 'custom',
+        creationDate: 1000,
+        context: eventContext,
+        key: 'eventkey',
+        data: { thing: 'stuff' },
+        metricValue: 1.5,
+      };
+      ep.enqueue(e);
+      await ep.flush();
+
+      expect(mockEventSender.calls.length()).toEqual(1);
+      const output = (await mockEventSender.calls.take()).events;
+      expect(output.length).toEqual(1);
+      checkCustomEvent(output[0], { ...e, context: filteredContext });
     });
   });
 
