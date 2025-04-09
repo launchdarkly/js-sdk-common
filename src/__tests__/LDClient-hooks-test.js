@@ -24,7 +24,7 @@ const createTestHook = (name = 'Test Hook') => ({
 async function withClient(initialContext, configOverrides = {}, hooks = [], testFn) {
   const platform = stubPlatform.defaults();
   const server = platform.testing.http.newServer();
-  
+
   const logger = mockLogger();
 
   // Disable streaming and event sending unless overridden
@@ -70,8 +70,7 @@ describe('LDClient Hooks Integration', () => {
     const testHook = createTestHook('Initial Hook');
     const initialData = {}; // Hooks start with empty data
 
-    await withClient(initialContext, {}, [testHook], async (client) => {
-
+    await withClient(initialContext, {}, [testHook], async client => {
       // Call variation
       await client.variation(flagKey, flagDefaultValue);
 
@@ -122,7 +121,7 @@ describe('LDClient Hooks Integration', () => {
     const initialData = {};
 
     // Initialize client *without* the hook initially
-    await withClient(initialContext, {}, [], async (client) => {
+    await withClient(initialContext, {}, [], async client => {
       // Add the hook dynamically
       client.addHook(addedHook);
 
@@ -165,7 +164,7 @@ describe('LDClient Hooks Integration', () => {
     const initialData = {};
 
     // Initialize client *with* the initial hook
-    await withClient(initialContext, {}, [initialHook], async (client) => {
+    await withClient(initialContext, {}, [initialHook], async client => {
       // Add the second hook dynamically
       client.addHook(addedHook);
 
@@ -198,18 +197,17 @@ describe('LDClient Hooks Integration', () => {
         { status: 'completed' }
       );
 
-        expect(addedHook.beforeIdentify).toHaveBeenCalledTimes(1);
-        expect(addedHook.beforeIdentify).toHaveBeenCalledWith(
-          expect.objectContaining({ context: identifyContext }),
-          initialData
-        );
-        expect(addedHook.afterIdentify).toHaveBeenCalledTimes(1);
-        expect(addedHook.afterIdentify).toHaveBeenCalledWith(
-          expect.objectContaining({ context: identifyContext }),
-          initialData, // Assuming pass-through
-          { status: 'completed' }
-        );
-
+      expect(addedHook.beforeIdentify).toHaveBeenCalledTimes(1);
+      expect(addedHook.beforeIdentify).toHaveBeenCalledWith(
+        expect.objectContaining({ context: identifyContext }),
+        initialData
+      );
+      expect(addedHook.afterIdentify).toHaveBeenCalledTimes(1);
+      expect(addedHook.afterIdentify).toHaveBeenCalledWith(
+        expect.objectContaining({ context: identifyContext }),
+        initialData, // Assuming pass-through
+        { status: 'completed' }
+      );
 
       // Check evaluation hooks for BOTH hooks
       [initialHook, addedHook].forEach(hook => {
@@ -227,4 +225,4 @@ describe('LDClient Hooks Integration', () => {
       });
     });
   });
-}); 
+});

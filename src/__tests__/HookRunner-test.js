@@ -108,7 +108,6 @@ describe('Given a logger, runner, and hook', () => {
 
     const errorHookRunner = createHookRunner(logger, [errorHook]);
     const method = jest.fn().mockReturnValue({ value: 'default', reason: { kind: 'FALLTHROUGH' } });
-    const initialData = {};
 
     errorHookRunner.withEvaluation('test-flag', { kind: 'user', key: 'user-123' }, false, method);
 
@@ -210,7 +209,7 @@ describe('Given a logger, runner, and hook', () => {
     expect(errorHook.afterIdentify).toHaveBeenCalledWith(expect.anything(), {}, expect.anything());
   });
 
-    it('identify: should handle errors in afterIdentify hook', () => {
+  it('identify: should handle errors in afterIdentify hook', () => {
     const errorHook = createTestHook('Error Hook');
     const testError = new Error('Hook error in after identify');
     errorHook.afterIdentify.mockImplementation(() => {
@@ -232,7 +231,6 @@ describe('Given a logger, runner, and hook', () => {
       'An error was encountered in "afterIdentify" of the "Error Hook" hook: Error: Hook error in after identify'
     );
   });
-
 
   it('identify: should pass data from beforeIdentify to afterIdentify', () => {
     const context = { kind: 'user', key: 'user-789' };
@@ -287,9 +285,7 @@ describe('Given a logger, runner, and hook', () => {
     errorRunner.withEvaluation('flag', {}, false, () => ({ value: null }));
 
     // First error: getting metadata
-    expect(logger.error).toHaveBeenCalledWith(
-      'Exception thrown getting metadata for hook. Unable to get hook name.'
-    );
+    expect(logger.error).toHaveBeenCalledWith('Exception thrown getting metadata for hook. Unable to get hook name.');
     // Second error: executing the stage with 'unknown hook' name
     expect(logger.error).toHaveBeenCalledWith(
       'An error was encountered in "beforeEvaluation" of the "unknown hook" hook: Error: Eval error'
@@ -298,15 +294,15 @@ describe('Given a logger, runner, and hook', () => {
 
   it('error handling: should log "unknown hook" when getMetadata returns empty name', () => {
     const emptyNameHook = createTestHook(''); // Create hook with empty name
-     emptyNameHook.beforeEvaluation.mockImplementation(() => {
-        throw new Error('Eval error'); // Add an error here to trigger logging
-      });
+    emptyNameHook.beforeEvaluation.mockImplementation(() => {
+      throw new Error('Eval error'); // Add an error here to trigger logging
+    });
 
     const errorRunner = createHookRunner(logger, [emptyNameHook]);
     errorRunner.withEvaluation('flag', {}, false, () => ({ value: null }));
 
     // Verify getMetadata was called (even though name is empty)
-     expect(emptyNameHook.getMetadata).toHaveBeenCalled();
+    expect(emptyNameHook.getMetadata).toHaveBeenCalled();
 
     // Verify the error uses 'unknown hook'
     expect(logger.error).toHaveBeenCalledWith(
@@ -332,4 +328,4 @@ describe('Given a logger, runner, and hook', () => {
       `An error was encountered in "beforeEvaluation" of the "${hookName}" hook: Error: Specific test error`
     );
   });
-}); 
+});
