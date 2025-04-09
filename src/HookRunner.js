@@ -203,7 +203,6 @@ function createHookRunner(logger, initialHooks) {
     hooksInternal.push(hook);
   }
 
-  // Return the public API
   return {
     withEvaluation,
     identify,
