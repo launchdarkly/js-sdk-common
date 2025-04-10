@@ -144,6 +144,26 @@ function sanitizeContext(context) {
   return newContext || context;
 }
 
+/**
+ * Creates a function that will invoke the provided function only once.
+ *
+ * If the function returns a value, then that returned value will be re-used for subsequent invocations.
+ *
+ * @param {Function} func The function to restrict.
+ * @returns {Function} Returns the new restricted function.
+ */
+function once(func) {
+  let called = false;
+  let result;
+  return function(...args) {
+    if (!called) {
+      called = true;
+      result = func.apply(this, args);
+    }
+    return result;
+  };
+}
+
 module.exports = {
   appendUrlPath,
   base64URLEncode,
@@ -158,4 +178,5 @@ module.exports = {
   transformValuesToVersionedValues,
   transformVersionedValuesToValues,
   wrapPromiseCallback,
+  once,
 };
