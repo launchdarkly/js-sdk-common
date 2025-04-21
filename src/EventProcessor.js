@@ -4,6 +4,7 @@ const ContextFilter = require('./ContextFilter');
 const errors = require('./errors');
 const messages = require('./messages');
 const utils = require('./utils');
+const { getContextKeys } = require('./context');
 
 function EventProcessor(
   platform,
@@ -47,14 +48,24 @@ function EventProcessor(
   function makeOutputEvent(e) {
     const ret = utils.extend({}, e);
 
-    // This method is used for identify, feature, and custom events, which always have an inline context.
-    ret.context = contextFilter.filter(e.context);
+    // Identify, feature, and custom events should all include the full context.
+    // Debug events do as well, but are not handled by this code path.
+    if (e.kind === 'identify' || e.kind === 'feature' || e.kind === 'custom') {
+      ret.context = contextFilter.filter(e.context);
+    } else {
+      ret.contextKeys = getContextKeysFromEvent(e);
+      delete ret['context'];
+    }
 
     if (e.kind === 'feature') {
       delete ret['trackEvents'];
       delete ret['debugEventsUntilDate'];
     }
     return ret;
+  }
+
+  function getContextKeysFromEvent(event) {
+    return getContextKeys(event.context, logger);
   }
 
   function addToOutbox(event) {
