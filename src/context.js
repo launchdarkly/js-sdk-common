@@ -1,10 +1,11 @@
+const { commonBasicLogger } = require('./loggers');
+const canonicalize = require('./canonicalize');
+
 /**
  * Validate a context kind.
  * @param {string} kind
  * @returns true if the kind is valid.
  */
-const { commonBasicLogger } = require('./loggers');
-
 function validKind(kind) {
   return typeof kind === 'string' && kind !== 'kind' && kind.match(/^(\w|\.|-)+$/);
 }
@@ -44,7 +45,7 @@ function checkContext(context, allowLegacyKey) {
 /**
  * For a given context get a list of context kinds.
  * @param {Object} context
- * @returns A list of kinds in the context.
+ * @returns {string[]} A list of kinds in the context.
  */
 function getContextKinds(context) {
   if (context) {
@@ -126,9 +127,54 @@ function getContextKeys(context, logger = commonBasicLogger()) {
   return keys;
 }
 
+function getContextForKind(context, inKind) {
+  const kind = inKind || 'user';
+  if (context.kind === 'multi') {
+    return context[kind];
+  } else if (context.kind === kind || (context.kind === undefined && kind === 'user')) {
+    return context;
+  }
+  return undefined;
+}
+
+/**
+ * Hash the given context using the provided hasher.
+ * This implementation can produce different hashes for equivalent contexts. 
+ * 
+ * For example:
+ * A legacy user and a single-kind context of user kind that are equivalent, will hash differently.
+ * A multi-context with one kind, and the single context with that kind are equivalent, but will hash differently.
+ * Two equivalent contexts, with private attributes that are defined in different orders, will hash differently.
+ * 
+ * @param {Object} context 
+ * @param {{update: (value: string) => void, digest: (format: string) => Promise<string>}} hasher 
+ * @returns {Promise<string | undefined>} The hash of the context, or undefined if the context is invalid.
+ */
+function hashContext(context, hasher) {
+  // In js-core we have legacy and non-legacy contexts hash the same. This implementation does not support that.
+  // Because this implementation directly uses the user-provided context and doesn't manipulate it.
+  // The js-core implementation is more conceptually correct, but it isn't a practical requirement.
+
+  // This implementation additionally doesn't produce the same hash for an equivalent multi-context with one kind, and
+  // the single context with that kind.
+  if(!checkContext(context)) {
+    return undefined;
+  }
+
+  try {
+    const canonicalized = canonicalize(context);
+
+    hasher.update(canonicalized);
+
+    return hasher.digest('hex');
+
+  } catch(e) {}
+}
+
 module.exports = {
   checkContext,
   getContextKeys,
   getContextKinds,
   getCanonicalKey,
+  hashContext,
 };
