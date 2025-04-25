@@ -37,6 +37,7 @@ const baseOptionDefs = {
   stateProvider: { type: 'object' }, // not a public option, used internally
   application: { validator: applicationConfigValidator },
   inspectors: { default: [] },
+  hooks: { default: [] },
 };
 
 /**
