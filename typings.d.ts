@@ -269,22 +269,22 @@ declare module 'launchdarkly-js-sdk-common' {
     /**
      * The name of the SDK.
      */
-    name: string;
+    readonly name: string;
 
     /**
      * The version of the SDK.
      */
-    version: string;
+    readonly version: string;
 
     /**
      * If this is a wrapper SDK, then this is the name of the wrapper.
      */
-    wrapperName?: string;
+    readonly wrapperName?: string;
 
     /**
      * If this is a wrapper SDK, then this is the version of the wrapper.
      */
-    wrapperVersion?: string;
+    readonly wrapperVersion?: string;
   }
 
   /**
@@ -299,7 +299,7 @@ declare module 'launchdarkly-js-sdk-common' {
      *
      * Example: `authentication-service`
      */
-    id?: string;
+    readonly id?: string;
 
     /**
      * A unique identifier representing the version of the application where the LaunchDarkly SDK is running.
@@ -309,7 +309,7 @@ declare module 'launchdarkly-js-sdk-common' {
      *
      * Example: `1.0.0` (standard version string) or `abcdef` (sha prefix)
      */
-    version?: string;
+    readonly version?: string;
   }
 
   /**
@@ -319,19 +319,19 @@ declare module 'launchdarkly-js-sdk-common' {
     /**
      * Metadata about the SDK that is running the plugin.
      */
-    sdk: LDPluginSdkMetadata;
+    readonly sdk: LDPluginSdkMetadata;
 
     /**
      * Metadata about the application where the LaunchDarkly SDK is running.
      *
      * Only present if any application information is available.
      */
-    application?: LDPluginApplicationMetadata;
+    readonly application?: LDPluginApplicationMetadata;
 
     /**
      * The client-side ID used to initialize the SDK.
      */
-    clientSideId: string;
+    readonly clientSideId: string;
   }
 
 /**
