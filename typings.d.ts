@@ -310,22 +310,6 @@ declare module 'launchdarkly-js-sdk-common' {
      * Example: `1.0.0` (standard version string) or `abcdef` (sha prefix)
      */
     version?: string;
-
-    /**
-     * A human-friendly application name representing the application where the LaunchDarkly SDK is running.
-     *
-     * This can be specified as any string value as long as it only uses the following characters: ASCII letters,
-     * ASCII digits, period, hyphen, underscore. A string containing any other characters will be ignored.
-     */
-    name?: string;
-
-    /**
-     * A human-friendly name representing the version of the application where the LaunchDarkly SDK is running.
-     *
-     * This can be specified as any string value as long as it only uses the following characters: ASCII letters,
-     * ASCII digits, period, hyphen, underscore. A string containing any other characters will be ignored.
-     */
-    versionName?: string;
   }
 
   /**
@@ -345,19 +329,9 @@ declare module 'launchdarkly-js-sdk-common' {
     application?: LDPluginApplicationMetadata;
 
     /**
-     * Present if the SDK is a client-side SDK running in a web environment.
+     * The client-side ID used to initialize the SDK.
      */
-    clientSideId?: string;
-
-    /**
-     * Present if the SDK is a client-side SDK running in a mobile environment.
-     */
-    mobileKey?: string;
-
-    /**
-     * Present if the SDK is a server-side SDK.
-     */
-    sdkKey?: string;
+    clientSideId: string;
   }
 
 /**

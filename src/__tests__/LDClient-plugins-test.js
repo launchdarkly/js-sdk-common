@@ -124,3 +124,91 @@ it('registers multiple plugins and executes all hooks', async () => {
     expect(mockHook2.afterTrack).toHaveBeenCalled();
   });
 });
+
+it('passes correct environmentMetadata to plugin getHooks and register functions', async () => {
+  const mockPlugin = createTestPlugin('test-plugin');
+  const options = {
+    wrapperName: 'test-wrapper',
+    wrapperVersion: '2.0.0',
+    application: {
+      name: 'test-app',
+      version: '3.0.0',
+    },
+  };
+
+  await withClient(
+    { key: 'user-key', kind: 'user' },
+    { ...options, plugins: [mockPlugin] },
+    [mockPlugin],
+    async (client, logger, testPlatform) => {
+      expect(testPlatform.userAgent).toBeDefined();
+      expect(testPlatform.version).toBeDefined();
+      // Verify getHooks was called with correct environmentMetadata
+      expect(mockPlugin.getHooks).toHaveBeenCalledWith({
+        sdk: {
+          name: testPlatform.userAgent,
+          version: testPlatform.version,
+          wrapperName: options.wrapperName,
+          wrapperVersion: options.wrapperVersion,
+        },
+        application: {
+          id: options.application.id,
+          version: options.application.version,
+        },
+        clientSideId: 'env',
+      });
+
+      // Verify register was called with correct environmentMetadata
+      expect(mockPlugin.register).toHaveBeenCalledWith(
+        expect.any(Object), // client
+        {
+          sdk: {
+            name: testPlatform.userAgent,
+            version: testPlatform.version,
+            wrapperName: options.wrapperName,
+            wrapperVersion: options.wrapperVersion,
+          },
+          application: {
+            id: options.application.id,
+            version: options.application.version,
+          },
+          clientSideId: 'env',
+        }
+      );
+    }
+  );
+});
+
+it('passes correct environmentMetadata without optional fields', async () => {
+  const mockPlugin = createTestPlugin('test-plugin');
+
+  await withClient(
+    { key: 'user-key', kind: 'user' },
+    { plugins: [mockPlugin] },
+    [mockPlugin],
+    async (client, logger, testPlatform) => {
+      expect(testPlatform.userAgent).toBeDefined();
+      expect(testPlatform.version).toBeDefined();
+      // Verify getHooks was called with correct environmentMetadata
+      expect(mockPlugin.getHooks).toHaveBeenCalledWith({
+        sdk: {
+          name: testPlatform.userAgent,
+          version: testPlatform.version,
+        },
+        clientSideId: 'env',
+      });
+
+      // Verify register was called with correct environmentMetadata
+      expect(mockPlugin.register).toHaveBeenCalledWith(
+        expect.any(Object), // client
+        {
+          sdk: {
+            name: testPlatform.userAgent,
+            version: testPlatform.version,
+          },
+          clientSideId: 'env',
+        }
+      );
+    }
+  );
+});

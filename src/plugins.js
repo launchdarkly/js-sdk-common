@@ -56,7 +56,54 @@ function registerPlugins(logger, environmentMetadata, client, plugins) {
   });
 }
 
+/**
+ * Creates a plugin environment object
+ * @param {{userAgent: string, version: string}} platform - The platform object
+ * @param {string} env - The environment
+ * @param {{application: {name: string, version: string}, wrapperName: string, wrapperVersion: string}} options - The options
+ * @returns {{sdk: {name: string, version: string, wrapperName: string, wrapperVersion: string}, application: {name: string, version: string}, clientSideId: string}} The plugin environment
+ */
+function createPluginEnvironment(platform, env, options) {
+  const pluginSdkMetadata = {};
+
+  if (platform.userAgent) {
+    pluginSdkMetadata.name = platform.userAgent;
+  }
+  if (platform.version) {
+    pluginSdkMetadata.version = platform.version;
+  }
+  if (options.wrapperName) {
+    pluginSdkMetadata.wrapperName = options.wrapperName;
+  }
+  if (options.wrapperVersion) {
+    pluginSdkMetadata.wrapperVersion = options.wrapperVersion;
+  }
+
+  const pluginApplicationMetadata = {};
+
+  if (options.application) {
+    if (options.application.name) {
+      pluginApplicationMetadata.name = options.application.name;
+    }
+    if (options.application.version) {
+      pluginApplicationMetadata.version = options.application.version;
+    }
+  }
+
+  const pluginEnvironment = {
+    sdk: pluginSdkMetadata,
+    clientSideId: env,
+  };
+
+  if (Object.keys(pluginApplicationMetadata).length > 0) {
+    pluginEnvironment.application = pluginApplicationMetadata;
+  }
+
+  return pluginEnvironment;
+}
+
 module.exports = {
   getPluginHooks,
   registerPlugins,
+  createPluginEnvironment,
 };

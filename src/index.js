@@ -18,7 +18,7 @@ const { checkContext, getContextKeys } = require('./context');
 const { InspectorTypes, InspectorManager } = require('./InspectorManager');
 const timedPromise = require('./timedPromise');
 const createHookRunner = require('./HookRunner');
-const { getPluginHooks, registerPlugins } = require('./plugins');
+const { getPluginHooks, registerPlugins, createPluginEnvironment } = require('./plugins');
 const changeEvent = 'change';
 const internalChangeEvent = 'internal-change';
 const highTimeoutThreshold = 5;
@@ -43,7 +43,9 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
   let hash = options.hash;
   const plugins = [...options.plugins];
 
-  const pluginHooks = getPluginHooks(logger, environment, plugins);
+  const pluginEnvironment = createPluginEnvironment(platform, env, options);
+
+  const pluginHooks = getPluginHooks(logger, pluginEnvironment, plugins);
 
   const hookRunner = createHookRunner(logger, [...options.hooks, ...pluginHooks]);
 
@@ -876,7 +878,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
     addHook: addHook,
   };
 
-  registerPlugins(logger, environment, client, plugins);
+  registerPlugins(logger, pluginEnvironment, client, plugins);
 
   return {
     client: client, // The client object containing all public methods.
