@@ -242,7 +242,7 @@ describe('LDClient Hooks Integration', () => {
 
     await withClient(initialContext, {}, [testHook], async client => {
       client.track('test', { test: 'data' }, 42);
-  
+
       expect(testHook.afterTrack).toHaveBeenCalledWith({
         key: 'test',
         context: { kind: 'user', key: 'user-key-initial' },
