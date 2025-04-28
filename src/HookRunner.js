@@ -3,6 +3,7 @@ const BEFORE_EVALUATION_STAGE_NAME = 'beforeEvaluation';
 const AFTER_EVALUATION_STAGE_NAME = 'afterEvaluation';
 const BEFORE_IDENTIFY_STAGE_NAME = 'beforeIdentify';
 const AFTER_IDENTIFY_STAGE_NAME = 'afterIdentify';
+const AFTER_TRACK_STAGE_NAME = 'afterTrack';
 
 /**
  * Safely executes a hook stage function, logging any errors.
@@ -126,6 +127,28 @@ function executeAfterIdentify(logger, hooks, hookContext, updatedData, result) {
 }
 
 /**
+ * Executes the 'afterTrack' stage for all registered hooks in reverse order.
+ * @param {{ error: (message: string) => void }} logger The logger instance.
+ * @param {Array<{ afterTrack?: (hookContext: { context: object, data: object, metricValue: number }) => void }>} hooks The array of hook instances.
+ * @param {{ context: object, data: object, metricValue: number }} hookContext The context for the track operation.
+ * @returns {void}
+ */
+function executeAfterTrack(logger, hooks, hookContext) {
+  // This iterates in reverse, versus reversing a shallow copy of the hooks,
+  // for efficiency.
+  for (let hookIndex = hooks.length - 1; hookIndex >= 0; hookIndex -= 1) {
+    const hook = hooks[hookIndex];
+    tryExecuteStage(
+      logger,
+      AFTER_TRACK_STAGE_NAME,
+      getHookName(logger, hook),
+      () => hook?.afterTrack?.(hookContext),
+      undefined
+    );
+  }
+}
+
+/**
  * Factory function to create a HookRunner instance.
  * Manages the execution of hooks for flag evaluations and identify operations.
  * @param {{ error: (message: string) => void }} logger The logger instance.
@@ -203,10 +226,24 @@ function createHookRunner(logger, initialHooks) {
     hooksInternal.push(hook);
   }
 
+  /**
+   * Executes the 'afterTrack' stage for all registered hooks in reverse order.
+   * @param {{ context: object, data: object, metricValue: number }} hookContext The context for the track operation.
+   * @returns {void}
+   */
+  function afterTrack(hookContext) {
+    if (hooksInternal.length === 0) {
+      return;
+    }
+    const hooks = [...hooksInternal];
+    executeAfterTrack(logger, hooks, hookContext);
+  }
+
   return {
     withEvaluation,
     identify,
     addHook,
+    afterTrack,
   };
 }
 

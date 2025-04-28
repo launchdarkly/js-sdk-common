@@ -428,6 +428,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
       e.metricValue = metricValue;
     }
     enqueueEvent(e);
+    hookRunner.afterTrack({ context, data, metricValue });
   }
 
   function connectStream() {
