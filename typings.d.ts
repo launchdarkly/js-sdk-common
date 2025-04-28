@@ -219,6 +219,147 @@ declare module 'launchdarkly-js-sdk-common' {
   }
 
   /**
+   * Meta-data about a plugin implementation.
+   *
+   * May be used in logs and analytics to identify the plugin.
+   */
+  export interface LDPluginMetadata {
+    /**
+     * The name of the plugin.
+     */
+    readonly name: string;
+  }
+
+  /**
+  * Metadata about the SDK that is running the plugin.
+  */
+  export interface LDPluginSdkMetadata {
+    /**
+     * The name of the SDK.
+     */
+    name: string;
+
+    /**
+     * The version of the SDK.
+     */
+    version: string;
+
+    /**
+     * If this is a wrapper SDK, then this is the name of the wrapper.
+     */
+    wrapperName?: string;
+
+    /**
+     * If this is a wrapper SDK, then this is the version of the wrapper.
+     */
+    wrapperVersion?: string;
+  }
+
+  /**
+  * Metadata about the application where the LaunchDarkly SDK is running.
+  */
+  export interface LDPluginApplicationMetadata {
+    /**
+     * A unique identifier representing the application where the LaunchDarkly SDK is running.
+     *
+     * This can be specified as any string value as long as it only uses the following characters: ASCII letters,
+     * ASCII digits, period, hyphen, underscore. A string containing any other characters will be ignored.
+     *
+     * Example: `authentication-service`
+     */
+    id?: string;
+
+    /**
+     * A unique identifier representing the version of the application where the LaunchDarkly SDK is running.
+     *
+     * This can be specified as any string value as long as it only uses the following characters: ASCII letters,
+     * ASCII digits, period, hyphen, underscore. A string containing any other characters will be ignored.
+     *
+     * Example: `1.0.0` (standard version string) or `abcdef` (sha prefix)
+     */
+    version?: string;
+
+    /**
+     * A human-friendly application name representing the application where the LaunchDarkly SDK is running.
+     *
+     * This can be specified as any string value as long as it only uses the following characters: ASCII letters,
+     * ASCII digits, period, hyphen, underscore. A string containing any other characters will be ignored.
+     */
+    name?: string;
+
+    /**
+     * A human-friendly name representing the version of the application where the LaunchDarkly SDK is running.
+     *
+     * This can be specified as any string value as long as it only uses the following characters: ASCII letters,
+     * ASCII digits, period, hyphen, underscore. A string containing any other characters will be ignored.
+     */
+    versionName?: string;
+  }
+
+  /**
+  * Metadata about the environment where the plugin is running.
+  */
+  export interface LDPluginEnvironmentMetadata {
+    /**
+     * Metadata about the SDK that is running the plugin.
+     */
+    sdk: LDPluginSdkMetadata;
+
+    /**
+     * Metadata about the application where the LaunchDarkly SDK is running.
+     *
+     * Only present if any application information is available.
+     */
+    application?: LDPluginApplicationMetadata;
+
+    /**
+     * Present if the SDK is a client-side SDK running in a web environment.
+     */
+    clientSideId?: string;
+
+    /**
+     * Present if the SDK is a client-side SDK running in a mobile environment.
+     */
+    mobileKey?: string;
+
+    /**
+     * Present if the SDK is a server-side SDK.
+     */
+    sdkKey?: string;
+  }
+
+/**
+ * Interface for plugins to the LaunchDarkly SDK.
+ */
+export interface LDPlugin {
+  /**
+   * Get metadata about the plugin.
+   */
+  getMetadata(): LDPluginMetadata;
+
+  /**
+   * Registers the plugin with the SDK. Called once during SDK initialization.
+   *
+   * The SDK initialization will typically not have been completed at this point, so the plugin should take appropriate
+   * actions to ensure the SDK is ready before sending track events or evaluating flags.
+   *
+   * @param client The SDK client instance.
+   * @param environmentMetadata Information about the environment where the plugin is running.
+   */
+  register(client: LDClientBase, environmentMetadata: LDPluginEnvironmentMetadata): void;
+
+  /**
+   * Gets a list of hooks that the plugin wants to register.
+   *
+   * This method will be called once during SDK initialization before the register method is called.
+   *
+   * If the plugin does not need to register any hooks, this method doesn't need to be implemented.
+   * @param metadata
+   */
+  getHooks?(metadata: LDPluginEnvironmentMetadata): Hook[];
+}
+
+  /**
    * LaunchDarkly initialization options that are supported by all variants of the JS client.
    * The browser SDK and Electron SDK may support additional options.
    *
@@ -474,6 +615,11 @@ declare module 'launchdarkly-js-sdk-common' {
      * ```
      */
     hooks?: Hook[];
+
+    /**
+     * A list of plugins to be used with the SDK.
+     */
+    plugins?: LDPlugin[];
   }
 
   /**

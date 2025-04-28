@@ -38,6 +38,7 @@ const baseOptionDefs = {
   application: { validator: applicationConfigValidator },
   inspectors: { default: [] },
   hooks: { default: [] },
+  plugins: { default: [] },
 };
 
 /**

@@ -18,7 +18,7 @@ const { checkContext, getContextKeys } = require('./context');
 const { InspectorTypes, InspectorManager } = require('./InspectorManager');
 const timedPromise = require('./timedPromise');
 const createHookRunner = require('./HookRunner');
-
+const { getPluginHooks, registerPlugins } = require('./plugins');
 const changeEvent = 'change';
 const internalChangeEvent = 'internal-change';
 const highTimeoutThreshold = 5;
@@ -41,7 +41,11 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
   const sendEvents = options.sendEvents;
   let environment = env;
   let hash = options.hash;
-  const hookRunner = createHookRunner(logger, options.hooks);
+  const plugins = [...options.plugins];
+
+  const pluginHooks = getPluginHooks(logger, environment, plugins);
+
+  const hookRunner = createHookRunner(logger, [...options.hooks, ...pluginHooks]);
 
   const persistentStorage = PersistentStorage(platform.localStorage, logger);
 
@@ -870,6 +874,8 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
     close: close,
     addHook: addHook,
   };
+
+  registerPlugins(logger, environment, client, plugins);
 
   return {
     client: client, // The client object containing all public methods.
