@@ -61,48 +61,43 @@ it('registers plugins and executes hooks during initialization', async () => {
   const mockHook = createTestHook('test-hook');
   const mockPlugin = createTestPlugin('test-plugin', [mockHook]);
 
-  await withClient(
-    { key: 'user-key', kind: 'user' },
-    {},
-    [mockPlugin],
-    async (client) => {
-      // Verify the plugin was registered
-      expect(mockPlugin.register).toHaveBeenCalled();
+  await withClient({ key: 'user-key', kind: 'user' }, {}, [mockPlugin], async client => {
+    // Verify the plugin was registered
+    expect(mockPlugin.register).toHaveBeenCalled();
 
-      // Test identify hook
-      await client.identify({ key: 'user-key', kind: 'user' });
-      expect(mockHook.beforeIdentify).toHaveBeenCalledWith(
-        { context: { key: 'user-key', kind: 'user' }, timeout: undefined },
-        {}
-      );
-      expect(mockHook.afterIdentify).toHaveBeenCalledWith(
-        { context: { key: 'user-key', kind: 'user' }, timeout: undefined },
-        {},
-        { status: 'completed' }
-      );
+    // Test identify hook
+    await client.identify({ key: 'user-key', kind: 'user' });
+    expect(mockHook.beforeIdentify).toHaveBeenCalledWith(
+      { context: { key: 'user-key', kind: 'user' }, timeout: undefined },
+      {}
+    );
+    expect(mockHook.afterIdentify).toHaveBeenCalledWith(
+      { context: { key: 'user-key', kind: 'user' }, timeout: undefined },
+      {},
+      { status: 'completed' }
+    );
 
-      // Test variation hook
-      client.variation('flag-key', false);
-      expect(mockHook.beforeEvaluation).toHaveBeenCalledWith(
-        {
-          context: { key: 'user-key', kind: 'user' },
-          defaultValue: false,
-          flagKey: 'flag-key',
-        },
-        {}
-      );
-      expect(mockHook.afterEvaluation).toHaveBeenCalled();
-
-      // Test track hook
-      client.track('event-key', { data: true }, 42);
-      expect(mockHook.afterTrack).toHaveBeenCalledWith({
+    // Test variation hook
+    client.variation('flag-key', false);
+    expect(mockHook.beforeEvaluation).toHaveBeenCalledWith(
+      {
         context: { key: 'user-key', kind: 'user' },
-        key: 'event-key',
-        data: { data: true },
-        metricValue: 42,
-      });
-    }
-  );
+        defaultValue: false,
+        flagKey: 'flag-key',
+      },
+      {}
+    );
+    expect(mockHook.afterEvaluation).toHaveBeenCalled();
+
+    // Test track hook
+    client.track('event-key', { data: true }, 42);
+    expect(mockHook.afterTrack).toHaveBeenCalledWith({
+      context: { key: 'user-key', kind: 'user' },
+      key: 'event-key',
+      data: { data: true },
+      metricValue: 42,
+    });
+  });
 });
 
 it('registers multiple plugins and executes all hooks', async () => {
@@ -111,26 +106,21 @@ it('registers multiple plugins and executes all hooks', async () => {
   const mockPlugin1 = createTestPlugin('test-plugin-1', [mockHook1]);
   const mockPlugin2 = createTestPlugin('test-plugin-2', [mockHook2]);
 
-  await withClient(
-    { key: 'user-key', kind: 'user' },
-    {},
-    [mockPlugin1, mockPlugin2],
-    async (client) => {
-      // Verify plugins were registered
-      expect(mockPlugin1.register).toHaveBeenCalled();
-      expect(mockPlugin2.register).toHaveBeenCalled();
+  await withClient({ key: 'user-key', kind: 'user' }, {}, [mockPlugin1, mockPlugin2], async client => {
+    // Verify plugins were registered
+    expect(mockPlugin1.register).toHaveBeenCalled();
+    expect(mockPlugin2.register).toHaveBeenCalled();
 
-      // Test that both hooks work
-      await client.identify({ key: 'user-key', kind: 'user' });
-      client.variation('flag-key', false);
-      client.track('event-key', { data: true }, 42);
+    // Test that both hooks work
+    await client.identify({ key: 'user-key', kind: 'user' });
+    client.variation('flag-key', false);
+    client.track('event-key', { data: true }, 42);
 
-      expect(mockHook1.beforeEvaluation).toHaveBeenCalled();
-      expect(mockHook1.afterEvaluation).toHaveBeenCalled();
-      expect(mockHook2.beforeEvaluation).toHaveBeenCalled();
-      expect(mockHook2.afterEvaluation).toHaveBeenCalled();
-      expect(mockHook1.afterTrack).toHaveBeenCalled();
-      expect(mockHook2.afterTrack).toHaveBeenCalled();
-    }
-  );
+    expect(mockHook1.beforeEvaluation).toHaveBeenCalled();
+    expect(mockHook1.afterEvaluation).toHaveBeenCalled();
+    expect(mockHook2.beforeEvaluation).toHaveBeenCalled();
+    expect(mockHook2.afterEvaluation).toHaveBeenCalled();
+    expect(mockHook1.afterTrack).toHaveBeenCalled();
+    expect(mockHook2.afterTrack).toHaveBeenCalled();
+  });
 });
