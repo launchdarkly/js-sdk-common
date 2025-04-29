@@ -128,6 +128,29 @@ declare module 'launchdarkly-js-sdk-common' {
   }
 
   /**
+   * Contextual information provided to track stages.
+   */
+  export interface TrackSeriesContext {
+    /**
+     * The key for the event being tracked.
+     */
+    readonly key: string;
+    /**
+     * The context associated with the track operation.
+     */
+    readonly context: LDContext;
+    /**
+     * The data associated with the track operation.
+     */
+    readonly data?: unknown;
+    /**
+     * The metric value associated with the track operation.
+     */
+    readonly metricValue?: number;
+  }
+
+
+  /**
    * Interface for extending SDK functionality via hooks.
    */
   export interface Hook {
@@ -216,6 +239,15 @@ declare module 'launchdarkly-js-sdk-common' {
       data: IdentifySeriesData,
       result: IdentifySeriesResult,
     ): IdentifySeriesData;
+
+    /**
+     * This method is called during the execution of the track process after the event
+     * has been enqueued.
+     *
+     * @param hookContext Contains information about the track operation being performed. This is not
+     *  mutable.
+     */
+    afterTrack?(hookContext: TrackSeriesContext): void;
   }
 
   /**
