@@ -2,6 +2,14 @@
 
 All notable changes to the `launchdarkly-js-sdk-common` package will be documented in this file. Changes that affect the dependent SDKs such as `launchdarkly-js-client-sdk` should also be logged in those projects, in the next release that uses the updated version of this package. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [5.6.0](https://github.com/launchdarkly/js-sdk-common/compare/5.5.1...5.6.0) (2025-04-29)
+
+
+### Features
+
+* Add support for plugins. ([#124](https://github.com/launchdarkly/js-sdk-common/issues/124)) ([e0544c1](https://github.com/launchdarkly/js-sdk-common/commit/e0544c13d94b1088aebc4f6852743e408f5f77af))
+* Add support for the afterTrack stage for hooks. ([#123](https://github.com/launchdarkly/js-sdk-common/issues/123)) ([f7bebeb](https://github.com/launchdarkly/js-sdk-common/commit/f7bebebc15fc0ac718ebe167291215992b8ee6f5))
+
 ## [5.5.1](https://github.com/launchdarkly/js-sdk-common/compare/5.5.0...5.5.1) (2025-04-25)
 
 
