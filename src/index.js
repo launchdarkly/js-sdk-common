@@ -532,6 +532,37 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
     }
   }
 
+  /**
+   * Check if flags are part of an experiment.
+   *
+   * @param flags Flags to check if they are in an experiment.
+   * @returns True if any of the flags are in an experiment.
+   */
+  function hasExperimentation(...flags) {
+    return flags.some(flag => !!flag?.reason?.inExperiment);
+  }
+
+  /**
+   * Determine if a change notification should be emitted for the flag.
+   *
+   * A notification will be sent if the flag value changes, or if either of the evaluation reasons
+   * indicates the fla was part of an experiment.
+   *
+   * When transitioning between contexts, or during a flag update, it is possible that the flag
+   * value remains the same, but you may be entering or exiting an experiment. Additionally the
+   * value and the reason may be identical, but we still want to emit an event. This is because
+   * we want the developer to call variation on that flag, which they may only be doing in
+   * response to a change. Calling variation will result in an analytic event, which is how
+   * experiment exposures are tracked.
+   *
+   * @param oldFlag The old flag value.
+   * @param newFlag The new flag value.
+   * @returns True if a change notification should be emitted.
+   */
+  function shouldNotify(oldFlag, newFlag) {
+    return !utils.deepEquals(newFlag.value, oldFlag.value) || hasExperimentation(oldFlag, newFlag);
+  }
+
   // Returns a Promise which will be resolved when we have completely updated the internal flags state,
   // dispatched all change events, and updated local storage if appropriate. This Promise is guaranteed
   // never to have an unhandled rejection.
@@ -542,9 +573,9 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
       return Promise.resolve();
     }
 
-    for (const key in flags) {
+    for (const key of Object.keys(flags)) {
       if (utils.objectHasOwnProperty(flags, key) && flags[key]) {
-        if (newFlags[key] && !utils.deepEquals(newFlags[key].value, flags[key].value)) {
+        if (newFlags[key] && shouldNotify(flags[key], newFlags[key])) {
           changes[key] = { previous: flags[key].value, current: getFlagDetail(newFlags[key]) };
         } else if (!newFlags[key] || newFlags[key].deleted) {
           changes[key] = { previous: flags[key].value };
@@ -552,6 +583,8 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
       }
     }
     for (const key in newFlags) {
+      // Above we handle flags that already existed. Here we handle flags that are in the new flags, but
+      // were not in the previous flags.
       if (utils.objectHasOwnProperty(newFlags, key) && newFlags[key] && (!flags[key] || flags[key].deleted)) {
         changes[key] = { current: getFlagDetail(newFlags[key]) };
       }
