@@ -1,5 +1,6 @@
-import { hashContext } from './context';
-import EventSummarizer from './EventSummarizer';
+const { hashContext } = require('./context');
+const EventSummarizer = require('./EventSummarizer');
+
 /**
  *
  * @param {{filter: (context: any) => any}} contextFilter
