@@ -27,6 +27,40 @@ var user: ld.LDContext = {
   },
   privateAttributeNames: [ 'name', 'email' ]
 };
+const hook: ld.Hook = {
+  getMetadata: () => ({
+    name: 'hook',
+  }),
+
+  beforeEvaluation(hookContext: ld.EvaluationSeriesContext, data: ld.EvaluationSeriesData): ld.EvaluationSeriesData {
+    return data;
+  },
+  afterEvaluation(hookContext: ld.EvaluationSeriesContext, data: ld.EvaluationSeriesData, detail: ld.LDEvaluationDetail): ld.EvaluationSeriesData {
+    return data;
+  },
+  beforeIdentify(hookContext: ld.IdentifySeriesContext, data: ld.IdentifySeriesData): ld.IdentifySeriesData {
+    return data;
+  },
+  afterIdentify(hookContext: ld.IdentifySeriesContext, data: ld.IdentifySeriesData, result: ld.IdentifySeriesResult): ld.IdentifySeriesData {
+    return data;
+  },
+
+  afterTrack(hookContext: ld.TrackSeriesContext): void {
+  }
+};
+
+const plugin: ld.LDPlugin = {
+  getMetadata: () => ({
+    name: 'plugin',
+  }),
+  register(client: ld.LDClientBase, environmentMetadata: ld.LDPluginEnvironmentMetadata): void {
+  },
+
+  getHooks(metadata: ld.LDPluginEnvironmentMetadata): ld.Hook[] {
+    return [];
+  },
+};
+
 var logger: ld.LDLogger = ld.commonBasicLogger({ level: 'info' });
 var allBaseOptions: ld.LDOptionsBase = {
   bootstrap: { },
@@ -48,7 +82,9 @@ var allBaseOptions: ld.LDOptionsBase = {
   application: {
     version: 'version',
     id: 'id'
-  }
+  },
+  hooks: [ hook ],
+  plugins: [ plugin ]
 };
 
 var client: ld.LDClientBase = {} as ld.LDClientBase;  // wouldn't do this in real life, it's just so the following statements will compile

@@ -225,4 +225,30 @@ describe('LDClient Hooks Integration', () => {
       });
     });
   });
+
+  it('should execute afterTrack hooks when tracking events', async () => {
+    const testHook = {
+      beforeEvaluation: jest.fn(),
+      afterEvaluation: jest.fn(),
+      beforeIdentify: jest.fn(),
+      afterIdentify: jest.fn(),
+      afterTrack: jest.fn(),
+      getMetadata() {
+        return {
+          name: 'test hook',
+        };
+      },
+    };
+
+    await withClient(initialContext, {}, [testHook], async client => {
+      client.track('test', { test: 'data' }, 42);
+
+      expect(testHook.afterTrack).toHaveBeenCalledWith({
+        key: 'test',
+        context: { kind: 'user', key: 'user-key-initial' },
+        data: { test: 'data' },
+        metricValue: 42,
+      });
+    });
+  });
 });
