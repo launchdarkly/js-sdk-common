@@ -201,14 +201,12 @@ describe('getContextKeys', () => {
 });
 
 function mockHasher() {
-  let state = "";
+  let state = '';
   return {
-    update: (input) => {
+    update: input => {
       state += input;
     },
-    digest: () => {
-      return state;
-    },
+    digest: () => state,
   };
 }
 

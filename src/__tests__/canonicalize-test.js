@@ -8,7 +8,7 @@ const testInputDir = path.join(__dirname, 'testdata', 'input');
 const testOutputDir = path.join(__dirname, 'testdata', 'output');
 const testFiles = fs.readdirSync(testInputDir);
 
-it.each(testFiles)('should correctly canonicalize %s', (filename) => {
+it.each(testFiles)('should correctly canonicalize %s', filename => {
   // Load the input and expected output files
   const inputPath = path.join(testInputDir, filename);
   const outputPath = path.join(testOutputDir, filename);

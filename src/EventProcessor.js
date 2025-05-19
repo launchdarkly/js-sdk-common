@@ -124,7 +124,7 @@ function EventProcessor(
     const eventsToSend = queue;
     const summaries = await summarizer.getSummaries();
 
-    summaries.forEach((summary) => {
+    summaries.forEach(summary => {
       if (Object.keys(summary.features).length) {
         eventsToSend.push(summary);
       }
