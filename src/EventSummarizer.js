@@ -93,6 +93,13 @@ function EventSummarizer() {
         };
   };
 
+  es.getSummaries = () => {
+    const summary = es.getSummary();
+    const summaries = summary ? [summary] : [];
+    es.clearSummary();
+    return summaries;
+  };
+
   es.clearSummary = () => {
     startDate = 0;
     endDate = 0;

@@ -525,5 +525,135 @@ describe.each([
         expect(diagnosticAccumulator.getProps().droppedEvents).toEqual(2);
       });
     });
+
+    it('uses EventSummarizer when platform has no hasherFactory', async () => {
+      const event = {
+        kind: 'feature',
+        creationDate: 1000,
+        context: eventContext,
+        key: 'flagkey',
+        version: 11,
+        variation: 1,
+        value: 'value',
+        default: 'default',
+        trackEvents: true,
+      };
+
+      const platformWithoutHasher = { ...platform };
+      delete platformWithoutHasher.hasherFactory;
+
+      const sender = MockEventSender();
+      const ep = EventProcessor(platformWithoutHasher, defaultConfig, envId, null, null, sender);
+      try {
+        ep.enqueue(event);
+        await ep.flush();
+
+        expect(sender.calls.length()).toEqual(1);
+        const output = (await sender.calls.take()).events;
+        expect(output.length).toEqual(2);
+        checkFeatureEvent(output[0], event, false, eventContext);
+        checkSummaryEvent(output[1]);
+
+        // Verify the summary event doesn't have a context field when there's no hasherFactory
+        const summaryEvent = output[1];
+        expect(summaryEvent.context).toBeUndefined();
+        expect(summaryEvent.features).toEqual({
+          flagkey: {
+            contextKinds: ['user'],
+            default: 'default',
+            counters: [{ version: 11, variation: 1, value: 'value', count: 1 }],
+          },
+        });
+      } finally {
+        ep.stop();
+      }
+    });
+
+    it('uses MultiEventSummarizer when platform has hasherFactory', async () => {
+      const event = {
+        kind: 'feature',
+        creationDate: 1000,
+        context: eventContext,
+        key: 'flagkey',
+        version: 11,
+        variation: 1,
+        value: 'value',
+        default: 'default',
+        trackEvents: true,
+      };
+
+      // Stub platform hash a hasher factory.
+
+      const sender = MockEventSender();
+      const ep = EventProcessor(platform, defaultConfig, envId, null, null, sender);
+      try {
+        ep.enqueue(event);
+        await ep.flush();
+
+        expect(sender.calls.length()).toEqual(1);
+        const output = (await sender.calls.take()).events;
+        expect(output.length).toEqual(2);
+        checkFeatureEvent(output[0], event, false, eventContext);
+        checkSummaryEvent(output[1]);
+
+        // Verify that when MultiEventSummarizer is used, context is included in the summary
+        const summaryEvent = output[1];
+        expect(summaryEvent.context).toEqual(eventContext);
+        expect(summaryEvent.features).toEqual({
+          flagkey: {
+            contextKinds: ['user'],
+            default: 'default',
+            counters: [{ version: 11, variation: 1, value: 'value', count: 1 }],
+          },
+        });
+      } finally {
+        ep.stop();
+      }
+    });
+
+    it('filters context in summary events when using MultiEventSummarizer', async () => {
+      const event = {
+        kind: 'feature',
+        creationDate: 1000,
+        context: eventContext,
+        key: 'flagkey',
+        version: 11,
+        variation: 1,
+        value: 'value',
+        default: 'default',
+        trackEvents: true,
+      };
+
+      // Configure with allAttributesPrivate set to true
+      const config = { ...defaultConfig, allAttributesPrivate: true };
+
+      const sender = MockEventSender();
+      const ep = EventProcessor(platform, config, envId, null, null, sender);
+      try {
+        ep.enqueue(event);
+        await ep.flush();
+
+        expect(sender.calls.length()).toEqual(1);
+        const output = (await sender.calls.take()).events;
+        expect(output.length).toEqual(2);
+
+        // Verify the feature event has filtered context
+        checkFeatureEvent(output[0], event, false, filteredContext);
+
+        // Verify the summary event has filtered context
+        const summaryEvent = output[1];
+        checkSummaryEvent(summaryEvent);
+        expect(summaryEvent.context).toEqual(filteredContext);
+        expect(summaryEvent.features).toEqual({
+          flagkey: {
+            contextKinds: ['user'],
+            default: 'default',
+            counters: [{ version: 11, variation: 1, value: 'value', count: 1 }],
+          },
+        });
+      } finally {
+        ep.stop();
+      }
+    });
   });
 });
