@@ -127,27 +127,17 @@ function getContextKeys(context, logger = commonBasicLogger()) {
   return keys;
 }
 
-function getContextForKind(context, inKind) {
-  const kind = inKind || 'user';
-  if (context.kind === 'multi') {
-    return context[kind];
-  } else if (context.kind === kind || (context.kind === undefined && kind === 'user')) {
-    return context;
-  }
-  return undefined;
-}
-
 /**
  * Hash the given context using the provided hasher.
- * This implementation can produce different hashes for equivalent contexts. 
- * 
+ * This implementation can produce different hashes for equivalent contexts.
+ *
  * For example:
  * A legacy user and a single-kind context of user kind that are equivalent, will hash differently.
  * A multi-context with one kind, and the single context with that kind are equivalent, but will hash differently.
  * Two equivalent contexts, with private attributes that are defined in different orders, will hash differently.
- * 
- * @param {Object} context 
- * @param {{update: (value: string) => void, digest: (format: string) => Promise<string>}} hasher 
+ *
+ * @param {Object} context
+ * @param {{update: (value: string) => void, digest: (format: string) => Promise<string>}} hasher
  * @returns {Promise<string | undefined>} The hash of the context, or undefined if the context is invalid.
  */
 function hashContext(context, hasher) {
@@ -157,7 +147,7 @@ function hashContext(context, hasher) {
 
   // This implementation additionally doesn't produce the same hash for an equivalent multi-context with one kind, and
   // the single context with that kind.
-  if(!checkContext(context)) {
+  if (!checkContext(context)) {
     return undefined;
   }
 
@@ -167,8 +157,9 @@ function hashContext(context, hasher) {
     hasher.update(canonicalized);
 
     return hasher.digest('hex');
-
-  } catch(e) {}
+  } catch {
+    return undefined;
+  }
 }
 
 module.exports = {

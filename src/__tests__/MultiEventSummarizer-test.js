@@ -2,14 +2,12 @@ const MultiEventSummarizer = require('../MultiEventSummarizer');
 const ContextFilter = require('../ContextFilter');
 
 function mockHasher() {
-  let state = "";
+  let state = '';
   return {
-    update: (input) => {
+    update: input => {
       state += input;
     },
-    digest: () => {
-      return state;
-    },
+    digest: () => state,
   };
 }
 
@@ -35,7 +33,7 @@ describe('with mocked crypto and hasher', () => {
     summarizer = MultiEventSummarizer(contextFilter, mockHasher);
   });
 
-  test('creates new summarizer for new context hash', async () => {
+  it('creates new summarizer for new context hash', async () => {
     const context = { kind: 'user', key: 'user1' };
     const event = { kind: 'feature', context };
 
@@ -45,7 +43,7 @@ describe('with mocked crypto and hasher', () => {
     expect(summaries).toHaveLength(1);
   });
 
-  test('uses existing summarizer for same context hash', async () => {
+  it('uses existing summarizer for same context hash', async () => {
     const context = { kind: 'user', key: 'user1' };
     const event1 = { kind: 'feature', context, value: 'value1' };
     const event2 = { kind: 'feature', context, value: 'value2' };
@@ -57,7 +55,7 @@ describe('with mocked crypto and hasher', () => {
     expect(summaries).toHaveLength(1);
   });
 
-  test('ignores non-feature events', async () => {
+  it('ignores non-feature events', async () => {
     const context = { kind: 'user', key: 'user1' };
     const event = { kind: 'identify', context };
 
@@ -67,7 +65,7 @@ describe('with mocked crypto and hasher', () => {
     expect(summaries).toHaveLength(0);
   });
 
-  test('handles multiple different contexts', async () => {
+  it('handles multiple different contexts', async () => {
     const context1 = { kind: 'user', key: 'user1' };
     const context2 = { kind: 'user', key: 'user2' };
     const event1 = { kind: 'feature', context: context1 };
@@ -80,7 +78,7 @@ describe('with mocked crypto and hasher', () => {
     expect(summaries).toHaveLength(2);
   });
 
-  test('automatically clears summaries when summarized', async () => {
+  it('automatically clears summaries when summarized', async () => {
     const context = { kind: 'user', key: 'user1' };
     const event = { kind: 'feature', context };
 
@@ -92,7 +90,7 @@ describe('with mocked crypto and hasher', () => {
     expect(summariesB).toHaveLength(0);
   });
 
-  test('increments counters for feature events across multiple contexts', async () => {
+  it('increments counters for feature events across multiple contexts', async () => {
     const context1 = { kind: 'user', key: 'user1' };
     const context2 = { kind: 'user', key: 'user2' };
 
