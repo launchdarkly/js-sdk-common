@@ -5,6 +5,7 @@ const errors = require('./errors');
 const messages = require('./messages');
 const utils = require('./utils');
 const { getContextKeys } = require('./context');
+const EventSummarizer = require('./EventSummarizer');
 
 function EventProcessor(
   platform,
@@ -18,7 +19,12 @@ function EventProcessor(
   const eventSender = sender || EventSender(platform, environmentId, options);
   const mainEventsUrl = utils.appendUrlPath(options.eventsUrl, '/events/bulk/' + environmentId);
   const contextFilter = ContextFilter(options);
-  const summarizer = MultiEventSummarizer(contextFilter, () => platform.hasherFactory('sha256'));
+  // If the platform has a hasherFactory, use the MultiEventSummarizer, otherwise use the EventSummarizer.
+  // Generally packages should be pinning a specific version of the common SDK, but this will handle them potentially
+  // being mis-matched.
+  const summarizer = platform.hasherFactory
+    ? MultiEventSummarizer(contextFilter, () => platform.hasherFactory('sha256'))
+    : new EventSummarizer();
   const samplingInterval = options.samplingInterval;
   const eventCapacity = options.eventCapacity;
   const flushInterval = options.flushInterval;
@@ -129,12 +135,7 @@ function EventProcessor(
         eventsToSend.push(summary);
       }
     });
-    // const summary = summarizer.getSummary();
-    // summarizer.clearSummary();
-    // if (summary) {
-    //   summary.kind = 'summary';
-    //   eventsToSend.push(summary);
-    // }
+
     if (diagnosticsAccumulator) {
       // For diagnostic events, we record how many events were in the queue at the last flush (since "how
       // many events happened to be in the queue at the moment we decided to send a diagnostic event" would

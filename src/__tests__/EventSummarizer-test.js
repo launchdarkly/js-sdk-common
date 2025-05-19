@@ -33,6 +33,38 @@ describe('EventSummarizer', () => {
     expect(data.endDate).toEqual(2000);
   });
 
+  it('returns summaries for feature events', () => {
+    // getSummaries returns the single summary from getSummary(), but wrapped in an array.
+    const es = EventSummarizer();
+    const event1 = { kind: 'feature', creationDate: 2000, key: 'key', user: user };
+    const event2 = { kind: 'feature', creationDate: 1000, key: 'key', user: user };
+    const event3 = { kind: 'feature', creationDate: 1500, key: 'key', user: user };
+    es.summarizeEvent(event1);
+    es.summarizeEvent(event2);
+    es.summarizeEvent(event3);
+    const summaries = es.getSummaries();
+
+    expect(summaries[0].startDate).toEqual(1000);
+    expect(summaries[0].endDate).toEqual(2000);
+  });
+
+  it('clears summaries when getSummaries is called', () => {
+    const es = EventSummarizer();
+    const event1 = { kind: 'feature', creationDate: 2000, key: 'key', user: user };
+    const event2 = { kind: 'feature', creationDate: 1000, key: 'key', user: user };
+    es.summarizeEvent(event1);
+    es.summarizeEvent(event2);
+    const summaries = es.getSummaries();
+    expect(summaries[0].startDate).toEqual(1000);
+    expect(summaries[0].endDate).toEqual(2000);
+    expect(es.getSummaries()).toEqual([]);
+  });
+
+  it('returns empty array if no summaries are available', () => {
+    const es = EventSummarizer();
+    expect(es.getSummaries()).toEqual([]);
+  });
+
   function makeEvent(key, version, variation, value, defaultVal) {
     return {
       kind: 'feature',
