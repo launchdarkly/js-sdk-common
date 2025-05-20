@@ -2,9 +2,8 @@ const canonicalize = require('./canonicalize');
 const EventSummarizer = require('./EventSummarizer');
 
 /**
- *
+ * Construct a MultiEventSummarizer. This summarizer produces a summary event for each unique context.
  * @param {{filter: (context: any) => any}} contextFilter
- * @param {() => {update: (value: string) => void, digest: (format: string) => Promise<string>}} hasherFactory
  */
 function MultiEventSummarizer(contextFilter) {
   let summarizers = {};
