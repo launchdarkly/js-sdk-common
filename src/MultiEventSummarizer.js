@@ -1,4 +1,4 @@
-const { hashContext } = require('./context');
+const canonicalize = require('./canonicalize');
 const EventSummarizer = require('./EventSummarizer');
 
 /**
@@ -6,10 +6,9 @@ const EventSummarizer = require('./EventSummarizer');
  * @param {{filter: (context: any) => any}} contextFilter
  * @param {() => {update: (value: string) => void, digest: (format: string) => Promise<string>}} hasherFactory
  */
-function MultiEventSummarizer(contextFilter, hasherFactory) {
+function MultiEventSummarizer(contextFilter) {
   let summarizers = {};
   let contexts = {};
-  const pendingPromises = [];
 
   /**
    * Summarize the given event.
@@ -19,51 +18,36 @@ function MultiEventSummarizer(contextFilter, hasherFactory) {
    * }} event
    */
   function summarizeEvent(event) {
-    // This will execute asynchronously, which means that a flush could happen before the event
-    // is summarized. When that happens, then the event will just be in the next batch of summaries.
-    const promise = (async () => {
-      if (event.kind === 'feature') {
-        const hash = await hashContext(event.context, hasherFactory());
-        if (!hash) {
-          return;
-        }
-
-        let summarizer = summarizers[hash];
-        if (!summarizer) {
-          summarizers[hash] = EventSummarizer();
-          summarizer = summarizers[hash];
-          contexts[hash] = event.context;
-        }
-
-        summarizer.summarizeEvent(event);
+    if (event.kind === 'feature') {
+      const key = canonicalize(event.context);
+      if (!key) {
+        return;
       }
-    })();
-    pendingPromises.push(promise);
-    promise.finally(() => {
-      const index = pendingPromises.indexOf(promise);
-      if (index !== -1) {
-        pendingPromises.splice(index, 1);
+
+      let summarizer = summarizers[key];
+      if (!summarizer) {
+        summarizers[key] = EventSummarizer();
+        summarizer = summarizers[key];
+        contexts[key] = event.context;
       }
-    });
+
+      summarizer.summarizeEvent(event);
+    }
   }
 
   /**
    * Get the summaries of the events that have been summarized.
    * @returns {any[]}
    */
-  async function getSummaries() {
-    // Wait for any pending summarizations to complete
-    // Additional tasks queued while waiting will not be waited for.
-    await Promise.all([...pendingPromises]);
-
+  function getSummaries() {
     const summarizersToFlush = summarizers;
     const contextsForSummaries = contexts;
 
     summarizers = {};
     contexts = {};
-    return Object.entries(summarizersToFlush).map(([hash, summarizer]) => {
+    return Object.entries(summarizersToFlush).map(([key, summarizer]) => {
       const summary = summarizer.getSummary();
-      summary.context = contextFilter.filter(contextsForSummaries[hash]);
+      summary.context = contextFilter.filter(contextsForSummaries[key]);
       return summary;
     });
   }

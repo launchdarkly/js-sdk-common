@@ -1,5 +1,4 @@
 const { commonBasicLogger } = require('./loggers');
-const canonicalize = require('./canonicalize');
 
 /**
  * Validate a context kind.
@@ -127,45 +126,9 @@ function getContextKeys(context, logger = commonBasicLogger()) {
   return keys;
 }
 
-/**
- * Hash the given context using the provided hasher.
- * This implementation can produce different hashes for equivalent contexts.
- *
- * For example:
- * A legacy user and a single-kind context of user kind that are equivalent, will hash differently.
- * A multi-context with one kind, and the single context with that kind are equivalent, but will hash differently.
- * Two equivalent contexts, with private attributes that are defined in different orders, will hash differently.
- *
- * @param {Object} context
- * @param {{update: (value: string) => void, digest: (format: string) => Promise<string>}} hasher
- * @returns {Promise<string | undefined>} The hash of the context, or undefined if the context is invalid.
- */
-function hashContext(context, hasher) {
-  // In js-core we have legacy and non-legacy contexts hash the same. This implementation does not support that.
-  // Because this implementation directly uses the user-provided context and doesn't manipulate it.
-  // The js-core implementation is more conceptually correct, but it isn't a practical requirement.
-
-  // This implementation additionally doesn't produce the same hash for an equivalent multi-context with one kind, and
-  // the single context with that kind.
-  if (!checkContext(context)) {
-    return undefined;
-  }
-
-  try {
-    const canonicalized = canonicalize(context);
-
-    hasher.update(canonicalized);
-
-    return hasher.digest('hex');
-  } catch {
-    return undefined;
-  }
-}
-
 module.exports = {
   checkContext,
   getContextKeys,
   getContextKinds,
   getCanonicalKey,
-  hashContext,
 };

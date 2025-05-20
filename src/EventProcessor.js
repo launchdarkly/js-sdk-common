@@ -5,7 +5,6 @@ const errors = require('./errors');
 const messages = require('./messages');
 const utils = require('./utils');
 const { getContextKeys } = require('./context');
-const EventSummarizer = require('./EventSummarizer');
 
 function EventProcessor(
   platform,
@@ -19,12 +18,7 @@ function EventProcessor(
   const eventSender = sender || EventSender(platform, environmentId, options);
   const mainEventsUrl = utils.appendUrlPath(options.eventsUrl, '/events/bulk/' + environmentId);
   const contextFilter = ContextFilter(options);
-  // If the platform has a hasherFactory, use the MultiEventSummarizer, otherwise use the EventSummarizer.
-  // Generally packages should be pinning a specific version of the common SDK, but this will handle them potentially
-  // being mis-matched.
-  const summarizer = platform.hasherFactory
-    ? MultiEventSummarizer(contextFilter, () => platform.hasherFactory('sha256'))
-    : new EventSummarizer();
+  const summarizer = MultiEventSummarizer(contextFilter);
   const samplingInterval = options.samplingInterval;
   const eventCapacity = options.eventCapacity;
   const flushInterval = options.flushInterval;
@@ -128,7 +122,7 @@ function EventProcessor(
       return Promise.resolve();
     }
     const eventsToSend = queue;
-    const summaries = await summarizer.getSummaries();
+    const summaries = summarizer.getSummaries();
 
     summaries.forEach(summary => {
       if (Object.keys(summary.features).length) {

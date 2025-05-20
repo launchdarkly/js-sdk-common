@@ -45,15 +45,6 @@ export function defaults() {
     diagnosticPlatformData: { name: 'stub-platform' },
     getCurrentUrl: () => currentUrl,
     isDoNotTrack: () => doNotTrack,
-    hasherFactory: (/*algorithm*/) => {
-      let content = '';
-      return {
-        update: value => {
-          content += value;
-        },
-        digest: (/*format*/) => content,
-      };
-    },
     eventSourceFactory: (url, options) => {
       const es = new EventSource(url);
       es.options = options;
