@@ -1,16 +1,6 @@
 const MultiEventSummarizer = require('../MultiEventSummarizer');
 const ContextFilter = require('../ContextFilter');
 
-function mockHasher() {
-  let state = '';
-  return {
-    update: input => {
-      state += input;
-    },
-    digest: () => state,
-  };
-}
-
 function makeEvent(key, version, variation, value, defaultVal, context) {
   return {
     kind: 'feature',
@@ -24,13 +14,13 @@ function makeEvent(key, version, variation, value, defaultVal, context) {
   };
 }
 
-describe('with mocked crypto and hasher', () => {
+describe('given a multi-event summarizer and context filter', () => {
   let summarizer;
   let contextFilter;
 
   beforeEach(() => {
     contextFilter = ContextFilter(false, []);
-    summarizer = MultiEventSummarizer(contextFilter, mockHasher);
+    summarizer = MultiEventSummarizer(contextFilter);
   });
 
   it('creates new summarizer for new context hash', async () => {
