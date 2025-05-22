@@ -2,6 +2,13 @@
 
 All notable changes to the `launchdarkly-js-sdk-common` package will be documented in this file. Changes that affect the dependent SDKs such as `launchdarkly-js-client-sdk` should also be logged in those projects, in the next release that uses the updated version of this package. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [5.7.0](https://github.com/launchdarkly/js-sdk-common/compare/5.6.0...5.7.0) (2025-05-22)
+
+
+### Features
+
+* Add support for per-context summary events. ([#126](https://github.com/launchdarkly/js-sdk-common/issues/126)) ([05f7d4e](https://github.com/launchdarkly/js-sdk-common/commit/05f7d4ec0ac7b072e12a3260f55861c7db039e03))
+
 ## [5.6.0](https://github.com/launchdarkly/js-sdk-common/compare/5.5.1...5.6.0) (2025-04-29)
 
 
