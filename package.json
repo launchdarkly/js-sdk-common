@@ -1,6 +1,6 @@
 {
   "name": "launchdarkly-js-sdk-common",
-  "version": "5.6.0",
+  "version": "5.7.0",
   "description": "LaunchDarkly SDK for JavaScript - common code",
   "author": "LaunchDarkly <team@launchdarkly.com>",
   "license": "Apache-2.0",
