@@ -147,7 +147,7 @@ describe('getContextKeys', () => {
     expect(keys).toEqual({ user: 'test-user-key' });
   });
 
-  it.only('ignores empty string and null keys from multi context', () => {
+  it('ignores empty string and null keys from multi context', () => {
     const context = {
       kind: 'multi',
       user: {

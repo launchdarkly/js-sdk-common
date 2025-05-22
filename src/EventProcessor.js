@@ -1,5 +1,5 @@
 const EventSender = require('./EventSender');
-const EventSummarizer = require('./EventSummarizer');
+const MultiEventSummarizer = require('./MultiEventSummarizer');
 const ContextFilter = require('./ContextFilter');
 const errors = require('./errors');
 const messages = require('./messages');
@@ -17,8 +17,8 @@ function EventProcessor(
   const processor = {};
   const eventSender = sender || EventSender(platform, environmentId, options);
   const mainEventsUrl = utils.appendUrlPath(options.eventsUrl, '/events/bulk/' + environmentId);
-  const summarizer = EventSummarizer();
   const contextFilter = ContextFilter(options);
+  const summarizer = MultiEventSummarizer(contextFilter);
   const samplingInterval = options.samplingInterval;
   const eventCapacity = options.eventCapacity;
   const flushInterval = options.flushInterval;
@@ -117,17 +117,19 @@ function EventProcessor(
     }
   };
 
-  processor.flush = function() {
+  processor.flush = async function() {
     if (disabled) {
       return Promise.resolve();
     }
     const eventsToSend = queue;
-    const summary = summarizer.getSummary();
-    summarizer.clearSummary();
-    if (summary) {
-      summary.kind = 'summary';
-      eventsToSend.push(summary);
-    }
+    const summaries = summarizer.getSummaries();
+
+    summaries.forEach(summary => {
+      if (Object.keys(summary.features).length) {
+        eventsToSend.push(summary);
+      }
+    });
+
     if (diagnosticsAccumulator) {
       // For diagnostic events, we record how many events were in the queue at the last flush (since "how
       // many events happened to be in the queue at the moment we decided to send a diagnostic event" would

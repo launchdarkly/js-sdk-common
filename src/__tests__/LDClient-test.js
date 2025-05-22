@@ -672,7 +672,9 @@ describe('LDClient', () => {
           await client.waitForInitialization(5);
         });
 
-        expect(eventsServer.requests.length()).toEqual(1);
+        // Flushing is an async operation, so we cannot ensure that the requests are made by
+        // the time we reach this point. If we await the nextRequest(), then it will catch
+        // whatever was flushed.
         const req = await eventsServer.nextRequest();
         const data = JSON.parse(req.body);
         expect(data.length).toEqual(1);

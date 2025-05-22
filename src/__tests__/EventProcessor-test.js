@@ -485,6 +485,73 @@ describe.each([
     });
   });
 
+  it('generates separate summary events for different contexts', async () => {
+    await withProcessorAndSender(defaultConfig, async (ep, mockEventSender) => {
+      const context1 = { key: 'user1', kind: 'user' };
+      const context2 = { key: 'user2', kind: 'user' };
+
+      // Create feature events for two different contexts
+      const event1 = {
+        kind: 'feature',
+        creationDate: 1000,
+        context: context1,
+        key: 'flag1',
+        version: 11,
+        variation: 1,
+        value: 'value1',
+        default: 'default1',
+        trackEvents: false,
+      };
+
+      const event2 = {
+        kind: 'feature',
+        creationDate: 1000,
+        context: context2,
+        key: 'flag2',
+        version: 22,
+        variation: 2,
+        value: 'value2',
+        default: 'default2',
+        trackEvents: false,
+      };
+
+      ep.enqueue(event1);
+      ep.enqueue(event2);
+      await ep.flush();
+
+      expect(mockEventSender.calls.length()).toEqual(1);
+      const output = (await mockEventSender.calls.take()).events;
+
+      // Should have two summary events, one for each context
+      expect(output.length).toEqual(2);
+
+      // Find the summary event for each context
+      const summary1 = output.find(e => e.context.key === 'user1');
+      const summary2 = output.find(e => e.context.key === 'user2');
+
+      // Verify each summary event has the correct context and flag data
+      expect(summary1).toBeDefined();
+      expect(summary1.context).toEqual(context1);
+      expect(summary1.features).toEqual({
+        flag1: {
+          contextKinds: ['user'],
+          default: 'default1',
+          counters: [{ version: 11, variation: 1, value: 'value1', count: 1 }],
+        },
+      });
+
+      expect(summary2).toBeDefined();
+      expect(summary2.context).toEqual(context2);
+      expect(summary2.features).toEqual({
+        flag2: {
+          contextKinds: ['user'],
+          default: 'default2',
+          counters: [{ version: 22, variation: 2, value: 'value2', count: 1 }],
+        },
+      });
+    });
+  });
+
   describe('interaction with diagnostic events', () => {
     it('sets eventsInLastBatch on flush', async () => {
       const e0 = { kind: 'custom', creationDate: 1000, context: eventContext, key: 'key0' };
@@ -524,6 +591,51 @@ describe.each([
 
         expect(diagnosticAccumulator.getProps().droppedEvents).toEqual(2);
       });
+    });
+
+    it('filters context in summary events', async () => {
+      const event = {
+        kind: 'feature',
+        creationDate: 1000,
+        context: eventContext,
+        key: 'flagkey',
+        version: 11,
+        variation: 1,
+        value: 'value',
+        default: 'default',
+        trackEvents: true,
+      };
+
+      // Configure with allAttributesPrivate set to true
+      const config = { ...defaultConfig, allAttributesPrivate: true };
+
+      const sender = MockEventSender();
+      const ep = EventProcessor(platform, config, envId, null, null, sender);
+      try {
+        ep.enqueue(event);
+        await ep.flush();
+
+        expect(sender.calls.length()).toEqual(1);
+        const output = (await sender.calls.take()).events;
+        expect(output.length).toEqual(2);
+
+        // Verify the feature event has filtered context
+        checkFeatureEvent(output[0], event, false, filteredContext);
+
+        // Verify the summary event has filtered context
+        const summaryEvent = output[1];
+        checkSummaryEvent(summaryEvent);
+        expect(summaryEvent.context).toEqual(filteredContext);
+        expect(summaryEvent.features).toEqual({
+          flagkey: {
+            contextKinds: ['user'],
+            default: 'default',
+            counters: [{ version: 11, variation: 1, value: 'value', count: 1 }],
+          },
+        });
+      } finally {
+        ep.stop();
+      }
     });
   });
 });

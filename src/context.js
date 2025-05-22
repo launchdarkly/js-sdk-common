@@ -1,10 +1,10 @@
+const { commonBasicLogger } = require('./loggers');
+
 /**
  * Validate a context kind.
  * @param {string} kind
  * @returns true if the kind is valid.
  */
-const { commonBasicLogger } = require('./loggers');
-
 function validKind(kind) {
   return typeof kind === 'string' && kind !== 'kind' && kind.match(/^(\w|\.|-)+$/);
 }
@@ -44,7 +44,7 @@ function checkContext(context, allowLegacyKey) {
 /**
  * For a given context get a list of context kinds.
  * @param {Object} context
- * @returns A list of kinds in the context.
+ * @returns {string[]} A list of kinds in the context.
  */
 function getContextKinds(context) {
   if (context) {

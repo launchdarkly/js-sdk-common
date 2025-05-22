@@ -89,6 +89,7 @@ function EventSummarizer() {
           startDate,
           endDate,
           features: flagsOut,
+          kind: 'summary',
         };
   };
 
