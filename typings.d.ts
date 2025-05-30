@@ -1072,8 +1072,8 @@ export interface LDPlugin {
      * finished, calls to {@link variation} will still return flag values for the previous context. You can
      * use a callback or a Promise to determine when the new flag values are available.
      * 
-     * It is possible that the identify call fails. In that case, when using a callback, the callback will receive 
-     * an error value. While the SDK will continue to function, developer will need to be aware that 
+     * It is possible that the identify call will fail. In that case, when using a callback, the callback will receive 
+     * an error value. While the SDK will continue to function, the developer will need to be aware that 
      * calls to {@link variation} will still return flag values for the previous context. 
      * 
      * When using a promise, it is important that you handle the rejection case; 
