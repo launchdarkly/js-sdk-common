@@ -1071,6 +1071,13 @@ export interface LDPlugin {
      * Changing the current context also causes all feature flag values to be reloaded. Until that has
      * finished, calls to {@link variation} will still return flag values for the previous context. You can
      * use a callback or a Promise to determine when the new flag values are available.
+     * 
+     * It is possible that the identify call will fail. In that case, when using a callback, the callback will receive 
+     * an error value. While the SDK will continue to function, the developer will need to be aware that 
+     * calls to {@link variation} will still return flag values for the previous context. 
+     * 
+     * When using a promise, it is important that you handle the rejection case; 
+     * otherwise it will become an unhandled Promise rejection, which is a serious error on some platforms. 
      *
      * @param context
      *   The context properties. Must contain at least the `key` property.
