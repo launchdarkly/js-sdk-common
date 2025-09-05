@@ -2,6 +2,13 @@
 
 All notable changes to the `launchdarkly-js-sdk-common` package will be documented in this file. Changes that affect the dependent SDKs such as `launchdarkly-js-client-sdk` should also be logged in those projects, in the next release that uses the updated version of this package. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [5.8.0](https://github.com/launchdarkly/js-sdk-common/compare/5.7.1...5.8.0) (2025-09-05)
+
+
+### Features
+
+* Add experimental debug override functionality. ([#132](https://github.com/launchdarkly/js-sdk-common/issues/132)) ([8b2f757](https://github.com/launchdarkly/js-sdk-common/commit/8b2f757e9e070226a10f32dcf943501a8f8f1e4a))
+
 ## [5.7.1](https://github.com/launchdarkly/js-sdk-common/compare/5.7.0...5.7.1) (2025-05-30)
 
 
