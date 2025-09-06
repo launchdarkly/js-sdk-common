@@ -17,6 +17,7 @@ const createTestHook = (name = 'Test Hook') => ({
   beforeIdentify: jest.fn(),
   afterIdentify: jest.fn(),
   afterTrack: jest.fn(),
+  afterEventEnqueue: jest.fn(),
 });
 
 describe('Given a logger, runner, and hook', () => {
@@ -379,12 +380,114 @@ describe('Given a logger, runner, and hook', () => {
     expect(logger.error).not.toHaveBeenCalled();
   });
 
+  it('should execute afterEventEnqueue hooks', () => {
+    const context = { kind: 'user', key: 'user-123' };
+    const event = {
+      kind: 'feature',
+      key: 'test-flag',
+      context,
+      value: true,
+      variation: 1,
+      default: false,
+      creationDate: new Date().getTime(),
+      version: 42,
+      trackEvents: true,
+    };
+
+    hookRunner.afterEventEnqueue(event);
+
+    expect(testHook.afterEventEnqueue).toHaveBeenCalledWith(event);
+  });
+
+  it('should handle errors in afterEventEnqueue hooks', () => {
+    const errorHook = {
+      getMetadata: jest.fn().mockReturnValue({ name: 'Error Hook' }),
+      afterEventEnqueue: jest.fn().mockImplementation(() => {
+        throw new Error('Hook error');
+      }),
+    };
+
+    const errorHookRunner = createHookRunner(logger, [errorHook]);
+
+    errorHookRunner.afterEventEnqueue({
+      kind: 'custom',
+      key: 'test-event',
+      context: { kind: 'user', key: 'user-123' },
+      creationDate: new Date().getTime(),
+    });
+
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'An error was encountered in "afterEventEnqueue" of the "Error Hook" hook: Error: Hook error'
+      )
+    );
+  });
+
+  it('should skip afterEventEnqueue execution if there are no hooks', () => {
+    const emptyHookRunner = createHookRunner(logger, []);
+
+    emptyHookRunner.afterEventEnqueue({
+      kind: 'identify',
+      context: { kind: 'user', key: 'user-123' },
+      creationDate: new Date().getTime(),
+    });
+
+    expect(logger.error).not.toHaveBeenCalled();
+  });
+
+  it('should execute afterEventEnqueue hooks for different event types', () => {
+    const context = { kind: 'user', key: 'user-123' };
+    const creationDate = new Date().getTime();
+
+    // Test feature event
+    const featureEvent = {
+      kind: 'feature',
+      key: 'test-flag',
+      context,
+      value: true,
+      variation: 1,
+      default: false,
+      creationDate,
+      version: 42,
+    };
+
+    hookRunner.afterEventEnqueue(featureEvent);
+    expect(testHook.afterEventEnqueue).toHaveBeenCalledWith(featureEvent);
+
+    // Test custom event
+    const customEvent = {
+      kind: 'custom',
+      key: 'test-event',
+      context,
+      data: { custom: 'data' },
+      metricValue: 123,
+      creationDate,
+      url: 'https://example.com',
+    };
+
+    hookRunner.afterEventEnqueue(customEvent);
+    expect(testHook.afterEventEnqueue).toHaveBeenCalledWith(customEvent);
+
+    // Test identify event
+    const identifyEvent = {
+      kind: 'identify',
+      context,
+      creationDate,
+    };
+
+    hookRunner.afterEventEnqueue(identifyEvent);
+    expect(testHook.afterEventEnqueue).toHaveBeenCalledWith(identifyEvent);
+
+    expect(testHook.afterEventEnqueue).toHaveBeenCalledTimes(3);
+  });
+
   it('executes hook stages in the specified order', () => {
     const beforeEvalOrder = [];
     const afterEvalOrder = [];
     const beforeIdentifyOrder = [];
     const afterIdentifyOrder = [];
     const afterTrackOrder = [];
+    const afterEventEnqueueOrder = [];
 
     const createMockHook = id => ({
       getMetadata: jest.fn().mockReturnValue({ name: `Hook ${id}` }),
@@ -406,6 +509,9 @@ describe('Given a logger, runner, and hook', () => {
       }),
       afterTrack: jest.fn().mockImplementation(() => {
         afterTrackOrder.push(id);
+      }),
+      afterEventEnqueue: jest.fn().mockImplementation(() => {
+        afterEventEnqueueOrder.push(id);
       }),
     });
 
@@ -435,6 +541,14 @@ describe('Given a logger, runner, and hook', () => {
       metricValue: 42,
     });
 
+    // Test event enqueue order
+    runner.afterEventEnqueue({
+      kind: 'custom',
+      key: 'test-event',
+      context: { kind: 'user', key: 'bob' },
+      creationDate: new Date().getTime(),
+    });
+
     // Verify evaluation hooks order
     expect(beforeEvalOrder).toEqual(['a', 'b', 'c']);
     expect(afterEvalOrder).toEqual(['c', 'b', 'a']);
@@ -445,5 +559,8 @@ describe('Given a logger, runner, and hook', () => {
 
     // Verify track hooks order
     expect(afterTrackOrder).toEqual(['c', 'b', 'a']);
+
+    // Verify event enqueue hooks order
+    expect(afterEventEnqueueOrder).toEqual(['c', 'b', 'a']);
   });
 });

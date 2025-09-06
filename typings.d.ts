@@ -150,6 +150,75 @@ declare module 'launchdarkly-js-sdk-common' {
   }
 
   /**
+   * Contextual information provided to event enqueue stages.
+   *
+   * This represents the full event object that was enqueued and can be
+   * one of several event types (identify, feature, custom, debug).
+   */
+  export interface EventEnqueueContext {
+    /**
+     * The kind of event being enqueued.
+     */
+    readonly kind: 'identify' | 'feature' | 'custom' | 'debug';
+    /**
+     * The context associated with the event.
+     */
+    readonly context: LDContext;
+    /**
+     * The timestamp when the event was created.
+     */
+    readonly creationDate: number;
+    /**
+     * For feature and custom events, the key identifying the flag or custom event.
+     */
+    readonly key?: string;
+    /**
+     * For feature events, the flag value.
+     */
+    readonly value?: LDFlagValue;
+    /**
+     * For feature events, the variation index.
+     */
+    readonly variation?: number | null;
+    /**
+     * For feature events, the flag version.
+     */
+    readonly version?: number;
+    /**
+     * For feature events, the default value.
+     */
+    readonly default?: LDFlagValue;
+    /**
+     * For feature events, the evaluation reason.
+     */
+    readonly reason?: LDEvaluationReason;
+    /**
+     * For feature events, whether the flag is configured to track events.
+     */
+    readonly trackEvents?: boolean;
+    /**
+     * For feature events, the debug events expiration date.
+     */
+    readonly debugEventsUntilDate?: number;
+    /**
+     * For custom events, the event data.
+     */
+    readonly data?: unknown;
+    /**
+     * For custom events, the metric value.
+     */
+    readonly metricValue?: number;
+    /**
+     * For custom events, the URL where the event occurred.
+     */
+    readonly url?: string;
+    /**
+     * For custom events with anonymous contexts, the context kind.
+     */
+    readonly contextKind?: string;
+  }
+
+  /**
    * Interface for extending SDK functionality via hooks.
    */
   export interface Hook {
@@ -173,10 +242,7 @@ declare module 'launchdarkly-js-sdk-common' {
      * return {...data, "my-new-field": /*my data/*}
      * ```
      */
-    beforeEvaluation?(
-      hookContext: EvaluationSeriesContext,
-      data: EvaluationSeriesData,
-    ): EvaluationSeriesData;
+    beforeEvaluation?(hookContext: EvaluationSeriesContext, data: EvaluationSeriesData): EvaluationSeriesData;
 
     /**
      * This method is called during the execution of the variation method
@@ -198,7 +264,7 @@ declare module 'launchdarkly-js-sdk-common' {
     afterEvaluation?(
       hookContext: EvaluationSeriesContext,
       data: EvaluationSeriesData,
-      detail: LDEvaluationDetail,
+      detail: LDEvaluationDetail
     ): EvaluationSeriesData;
 
     /**
@@ -236,7 +302,7 @@ declare module 'launchdarkly-js-sdk-common' {
     afterIdentify?(
       hookContext: IdentifySeriesContext,
       data: IdentifySeriesData,
-      result: IdentifySeriesResult,
+      result: IdentifySeriesResult
     ): IdentifySeriesData;
 
     /**
@@ -247,6 +313,14 @@ declare module 'launchdarkly-js-sdk-common' {
      *  mutable.
      */
     afterTrack?(hookContext: TrackSeriesContext): void;
+
+    /**
+     * This method is called after an event has been enqueued for processing.
+     *
+     * @param hookContext Contains the full event object that was enqueued. This is not
+     *  mutable.
+     */
+    afterEventEnqueue?(hookContext: EventEnqueueContext): void;
   }
 
   /**
@@ -262,8 +336,8 @@ declare module 'launchdarkly-js-sdk-common' {
   }
 
   /**
-  * Metadata about the SDK that is running the plugin.
-  */
+   * Metadata about the SDK that is running the plugin.
+   */
   export interface LDPluginSdkMetadata {
     /**
      * The name of the SDK.
@@ -287,8 +361,8 @@ declare module 'launchdarkly-js-sdk-common' {
   }
 
   /**
-  * Metadata about the application where the LaunchDarkly SDK is running.
-  */
+   * Metadata about the application where the LaunchDarkly SDK is running.
+   */
   export interface LDPluginApplicationMetadata {
     /**
      * A unique identifier representing the application where the LaunchDarkly SDK is running.
@@ -312,8 +386,8 @@ declare module 'launchdarkly-js-sdk-common' {
   }
 
   /**
-  * Metadata about the environment where the plugin is running.
-  */
+   * Metadata about the environment where the plugin is running.
+   */
   export interface LDPluginEnvironmentMetadata {
     /**
      * Metadata about the SDK that is running the plugin.
@@ -333,89 +407,89 @@ declare module 'launchdarkly-js-sdk-common' {
     readonly clientSideId: string;
   }
 
-/**
- * Interface for plugins to the LaunchDarkly SDK.
- */
-export interface LDPlugin {
   /**
-   * Get metadata about the plugin.
+   * Interface for plugins to the LaunchDarkly SDK.
    */
-  getMetadata(): LDPluginMetadata;
+  export interface LDPlugin {
+    /**
+     * Get metadata about the plugin.
+     */
+    getMetadata(): LDPluginMetadata;
+
+    /**
+     * Registers the plugin with the SDK. Called once during SDK initialization.
+     *
+     * The SDK initialization will typically not have been completed at this point, so the plugin should take appropriate
+     * actions to ensure the SDK is ready before sending track events or evaluating flags.
+     *
+     * @param client The SDK client instance.
+     * @param environmentMetadata Information about the environment where the plugin is running.
+     */
+    register(client: LDClientBase, environmentMetadata: LDPluginEnvironmentMetadata): void;
+
+    /**
+     * Gets a list of hooks that the plugin wants to register.
+     *
+     * This method will be called once during SDK initialization before the register method is called.
+     *
+     * If the plugin does not need to register any hooks, this method doesn't need to be implemented.
+     * @param metadata
+     */
+    getHooks?(metadata: LDPluginEnvironmentMetadata): Hook[];
+
+    /**
+     * An optional function called if the plugin wants to register debug capabilities.
+     * This method allows plugins to receive a debug override interface for
+     * temporarily overriding flag values during development and testing.
+     *
+     * @experimental This interface is experimental and intended for use by LaunchDarkly tools at this time.
+     * The API may change in future versions.
+     *
+     * @param debugOverride The debug override interface instance
+     */
+    registerDebug?(debugOverride: LDDebugOverride): void;
+  }
 
   /**
-   * Registers the plugin with the SDK. Called once during SDK initialization.
-   *
-   * The SDK initialization will typically not have been completed at this point, so the plugin should take appropriate
-   * actions to ensure the SDK is ready before sending track events or evaluating flags.
-   *
-   * @param client The SDK client instance.
-   * @param environmentMetadata Information about the environment where the plugin is running.
-   */
-  register(client: LDClientBase, environmentMetadata: LDPluginEnvironmentMetadata): void;
-
-  /**
-   * Gets a list of hooks that the plugin wants to register.
-   *
-   * This method will be called once during SDK initialization before the register method is called.
-   *
-   * If the plugin does not need to register any hooks, this method doesn't need to be implemented.
-   * @param metadata
-   */
-  getHooks?(metadata: LDPluginEnvironmentMetadata): Hook[];
-
-  /**
-   * An optional function called if the plugin wants to register debug capabilities.
-   * This method allows plugins to receive a debug override interface for
-   * temporarily overriding flag values during development and testing.
+   * Debug interface for plugins that need to override flag values during development.
+   * This interface provides methods to temporarily override flag values that take
+   * precedence over the actual flag values from LaunchDarkly. These overrides are
+   * useful for testing, development, and debugging scenarios.
    *
    * @experimental This interface is experimental and intended for use by LaunchDarkly tools at this time.
    * The API may change in future versions.
-   *
-   * @param debugOverride The debug override interface instance
    */
-  registerDebug?(debugOverride: LDDebugOverride): void;
-}
+  export interface LDDebugOverride {
+    /**
+     * Set an override value for a flag that takes precedence over the real flag value.
+     *
+     * @param flagKey The flag key.
+     * @param value The override value.
+     */
+    setOverride(flagKey: string, value: LDFlagValue): void;
 
-/**
- * Debug interface for plugins that need to override flag values during development.
- * This interface provides methods to temporarily override flag values that take
- * precedence over the actual flag values from LaunchDarkly. These overrides are
- * useful for testing, development, and debugging scenarios.
- *
- * @experimental This interface is experimental and intended for use by LaunchDarkly tools at this time.
- * The API may change in future versions.
- */
-export interface LDDebugOverride {
-  /**
-   * Set an override value for a flag that takes precedence over the real flag value.
-   *
-   * @param flagKey The flag key.
-   * @param value The override value.
-   */
-  setOverride(flagKey: string, value: LDFlagValue): void;
+    /**
+     * Remove an override value for a flag, reverting to the real flag value.
+     *
+     * @param flagKey The flag key.
+     */
+    removeOverride(flagKey: string): void;
 
-  /**
-   * Remove an override value for a flag, reverting to the real flag value.
-   *
-   * @param flagKey The flag key.
-   */
-  removeOverride(flagKey: string): void;
+    /**
+     * Clear all override values, reverting all flags to their real values.
+     */
+    clearAllOverrides(): void;
 
-  /**
-   * Clear all override values, reverting all flags to their real values.
-   */
-  clearAllOverrides(): void;
-
-  /**
-   * Get all currently active flag overrides.
-   *
-   * @returns
-   *   An object containing all active overrides as key-value pairs,
-   *   where keys are flag keys and values are the overridden flag values.
-   *   Returns an empty object if no overrides are active.
-   */
-  getAllOverrides(): LDFlagSet;
-}
+    /**
+     * Get all currently active flag overrides.
+     *
+     * @returns
+     *   An object containing all active overrides as key-value pairs,
+     *   where keys are flag keys and values are the overridden flag values.
+     *   Returns an empty object if no overrides are active.
+     */
+    getAllOverrides(): LDFlagSet;
+  }
 
   /**
    * LaunchDarkly initialization options that are supported by all variants of the JS client.
@@ -1123,13 +1197,13 @@ export interface LDDebugOverride {
      * Changing the current context also causes all feature flag values to be reloaded. Until that has
      * finished, calls to {@link variation} will still return flag values for the previous context. You can
      * use a callback or a Promise to determine when the new flag values are available.
-     * 
-     * It is possible that the identify call will fail. In that case, when using a callback, the callback will receive 
-     * an error value. While the SDK will continue to function, the developer will need to be aware that 
-     * calls to {@link variation} will still return flag values for the previous context. 
-     * 
-     * When using a promise, it is important that you handle the rejection case; 
-     * otherwise it will become an unhandled Promise rejection, which is a serious error on some platforms. 
+     *
+     * It is possible that the identify call will fail. In that case, when using a callback, the callback will receive
+     * an error value. While the SDK will continue to function, the developer will need to be aware that
+     * calls to {@link variation} will still return flag values for the previous context.
+     *
+     * When using a promise, it is important that you handle the rejection case;
+     * otherwise it will become an unhandled Promise rejection, which is a serious error on some platforms.
      *
      * @param context
      *   The context properties. Must contain at least the `key` property.
@@ -1446,7 +1520,7 @@ export interface LDDebugOverride {
      * Synchronous inspectors execute inline with evaluation and care should be taken to ensure
      * they have minimal performance overhead.
      */
-    synchronous?: boolean,
+    synchronous?: boolean;
 
     /**
      * This method is called when a flag is accessed via a variation method, or it can be called based on actions in
@@ -1478,7 +1552,7 @@ export interface LDDebugOverride {
     /**
      * If `true`, then the inspector will be ran synchronously with flag updates.
      */
-    synchronous?: boolean,
+    synchronous?: boolean;
 
     /**
      * This method is called when the flags in the store are replaced with new flags. It will contain all flags
@@ -1508,7 +1582,7 @@ export interface LDDebugOverride {
     /**
      * If `true`, then the inspector will be ran synchronously with flag updates.
      */
-    synchronous?: boolean,
+    synchronous?: boolean;
 
     /**
      * This method is called when a flag is updated. It will not be called
@@ -1536,7 +1610,7 @@ export interface LDDebugOverride {
     /**
      * If `true`, then the inspector will be ran synchronously with identification.
      */
-    synchronous?: boolean,
+    synchronous?: boolean;
 
     /**
      * This method will be called when an identify operation completes.

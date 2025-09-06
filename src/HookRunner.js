@@ -4,6 +4,7 @@ const AFTER_EVALUATION_STAGE_NAME = 'afterEvaluation';
 const BEFORE_IDENTIFY_STAGE_NAME = 'beforeIdentify';
 const AFTER_IDENTIFY_STAGE_NAME = 'afterIdentify';
 const AFTER_TRACK_STAGE_NAME = 'afterTrack';
+const AFTER_ENQUEUE_STAGE_NAME = 'afterEventEnqueue';
 
 /**
  * Safely executes a hook stage function, logging any errors.
@@ -149,6 +150,28 @@ function executeAfterTrack(logger, hooks, hookContext) {
 }
 
 /**
+ * Executes the 'afterEventEnqueue' stage for all registered hooks in reverse order.
+ * @param {{ error: (message: string) => void }} logger The logger instance.
+ * @param {Array<{ afterEventEnqueue?: (hookContext: object) => void }>} hooks The array of hook instances.
+ * @param {object} hookContext The full event object that was enqueued.
+ * @returns {void}
+ */
+function executeAfterEnqueue(logger, hooks, hookContext) {
+  // This iterates in reverse, versus reversing a shallow copy of the hooks,
+  // for efficiency.
+  for (let hookIndex = hooks.length - 1; hookIndex >= 0; hookIndex -= 1) {
+    const hook = hooks[hookIndex];
+    tryExecuteStage(
+      logger,
+      AFTER_ENQUEUE_STAGE_NAME,
+      getHookName(logger, hook),
+      () => hook?.afterEventEnqueue?.(hookContext),
+      undefined
+    );
+  }
+}
+
+/**
  * Factory function to create a HookRunner instance.
  * Manages the execution of hooks for flag evaluations and identify operations.
  * @param {{ error: (message: string) => void }} logger The logger instance.
@@ -239,11 +262,25 @@ function createHookRunner(logger, initialHooks) {
     executeAfterTrack(logger, hooks, hookContext);
   }
 
+  /**
+   * Executes the 'afterEventEnqueue' stage for all registered hooks in reverse order.
+   * @param {object} hookContext The full event object that was enqueued.
+   * @returns {void}
+   */
+  function afterEventEnqueue(hookContext) {
+    if (hooksInternal.length === 0) {
+      return;
+    }
+    const hooks = [...hooksInternal];
+    executeAfterEnqueue(logger, hooks, hookContext);
+  }
+
   return {
     withEvaluation,
     identify,
     addHook,
     afterTrack,
+    afterEventEnqueue,
   };
 }
 

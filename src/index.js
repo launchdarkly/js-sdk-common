@@ -171,6 +171,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
     if (shouldEnqueueEvent()) {
       logger.debug(messages.debugEnqueueingEvent(event.kind));
       events.enqueue(event);
+      hookRunner.afterEventEnqueue(event);
     }
   }
 

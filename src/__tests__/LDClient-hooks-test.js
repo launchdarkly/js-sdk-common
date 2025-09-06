@@ -251,4 +251,61 @@ describe('LDClient Hooks Integration', () => {
       });
     });
   });
+
+  it('should execute afterEventEnqueue hooks when events are enqueued', async () => {
+    const testHook = {
+      beforeEvaluation: jest.fn(),
+      afterEvaluation: jest.fn(),
+      beforeIdentify: jest.fn(),
+      afterIdentify: jest.fn(),
+      afterTrack: jest.fn(),
+      afterEventEnqueue: jest.fn(),
+      getMetadata() {
+        return {
+          name: 'test hook',
+        };
+      },
+    };
+
+    await withClient(initialContext, { sendEvents: true }, [testHook], async client => {
+      // Track a custom event which should trigger afterEventEnqueue
+      client.track('test-event', { test: 'data' }, 42);
+
+      // Evaluate a flag which should trigger afterEventEnqueue for the feature event
+      client.variation('test-flag', false);
+
+      // Check that afterEventEnqueue was called for both events
+      expect(testHook.afterEventEnqueue).toHaveBeenCalledTimes(3); // identify + custom + feature events
+
+      // Verify the custom event
+      expect(testHook.afterEventEnqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          kind: 'custom',
+          key: 'test-event',
+          context: expect.objectContaining({ kind: 'user', key: 'user-key-initial' }),
+          data: { test: 'data' },
+          metricValue: 42,
+        })
+      );
+
+      // Verify the feature event
+      expect(testHook.afterEventEnqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          kind: 'feature',
+          key: 'test-flag',
+          context: expect.objectContaining({ kind: 'user', key: 'user-key-initial' }),
+          value: false,
+          default: false,
+        })
+      );
+
+      // Verify the identify event (from initialization)
+      expect(testHook.afterEventEnqueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          kind: 'identify',
+          context: expect.objectContaining({ kind: 'user', key: 'user-key-initial' }),
+        })
+      );
+    });
+  });
 });

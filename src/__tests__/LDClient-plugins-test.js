@@ -18,6 +18,7 @@ const createTestHook = (name = 'Test Hook') => ({
   beforeIdentify: jest.fn().mockImplementation((_ctx, data) => data),
   afterIdentify: jest.fn().mockImplementation((_ctx, data) => data),
   afterTrack: jest.fn().mockImplementation((_ctx, data) => data),
+  afterEventEnqueue: jest.fn(),
 });
 
 // Define a basic Plugin structure for tests
