@@ -156,7 +156,7 @@ function executeAfterTrack(logger, hooks, hookContext) {
  * @param {object} hookContext The full event object that was enqueued.
  * @returns {void}
  */
-function executeAfterEnqueue(logger, hooks, hookContext) {
+function executeAfterEventEnqueue(logger, hooks, hookContext) {
   // This iterates in reverse, versus reversing a shallow copy of the hooks,
   // for efficiency.
   for (let hookIndex = hooks.length - 1; hookIndex >= 0; hookIndex -= 1) {
@@ -272,7 +272,7 @@ function createHookRunner(logger, initialHooks) {
       return;
     }
     const hooks = [...hooksInternal];
-    executeAfterEnqueue(logger, hooks, hookContext);
+    executeAfterEventEnqueue(logger, hooks, hookContext);
   }
 
   return {
