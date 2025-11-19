@@ -1093,7 +1093,8 @@ export interface LDDebugOverride {
      * It is important that you handle the rejection case; otherwise it will become an unhandled Promise
      * rejection, which is a serious error on some platforms. The Promise is not created unless you
      * request it, so if you never call `waitForInitialization()` then you do not have to worry about
-     * unhandled rejections.
+     * unhandled rejections. Alternatively, if you do not want to deal with the rejection case, then you
+     * can use {@link waitUntilReady}.
      *
      * Note that you can also use event listeners ({@link on}) for the same purpose: the event `"initialized"`
      * indicates success, and `"failed"` indicates failure.
