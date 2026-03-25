@@ -18,6 +18,9 @@ on:
 jobs:
   release-please:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     if: github.event_name == 'push'
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
@@ -33,7 +36,6 @@ jobs:
     permissions:
       id-token: write
       contents: write
-      pull-requests: write
     if: ${{ needs.release-please.outputs.release_created == 'true' }}
     steps:
       - uses: actions/checkout@v4
