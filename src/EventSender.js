@@ -1,6 +1,6 @@
 const errors = require('./errors');
 const utils = require('./utils');
-const { v1: uuidv1 } = require('uuid');
+const { randomUuidV4 } = require('./uuid');
 const { getLDHeaders, transformHeaders } = require('./headers');
 
 function EventSender(platform, environmentId, options) {
@@ -25,7 +25,7 @@ function EventSender(platform, environmentId, options) {
     }
 
     const jsonBody = JSON.stringify(events);
-    const payloadId = isDiagnostic ? null : uuidv1();
+    const payloadId = isDiagnostic ? null : randomUuidV4();
 
     function doPostRequest(canRetry) {
       const headers = isDiagnostic
