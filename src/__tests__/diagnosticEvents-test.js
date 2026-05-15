@@ -16,6 +16,12 @@ describe('DiagnosticId', () => {
     expect(id1.diagnosticId).not.toEqual(id2.diagnosticId);
   });
 
+  it('generates valid UUID v4 format', () => {
+    const id = DiagnosticId('key');
+    const uuidV4Regex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    expect(id.diagnosticId).toMatch(uuidV4Regex);
+  });
+
   it('uses only last 6 characters of key', () => {
     const id = DiagnosticId('0123456789abcdef');
     expect(id.sdkKeySuffix).toEqual('abcdef');
