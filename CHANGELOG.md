@@ -2,6 +2,13 @@
 
 All notable changes to the `launchdarkly-js-sdk-common` package will be documented in this file. Changes that affect the dependent SDKs such as `launchdarkly-js-client-sdk` should also be logged in those projects, in the next release that uses the updated version of this package. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [5.8.1](https://github.com/launchdarkly/js-sdk-common/compare/5.8.0...5.8.1) (2026-05-21)
+
+
+### Bug Fixes
+
+* remove uuid dependency, replace with inline implementation ([#146](https://github.com/launchdarkly/js-sdk-common/issues/146)) ([98c87d0](https://github.com/launchdarkly/js-sdk-common/commit/98c87d02a6c58b336bbb40b7a80f9bb3489bbed9))
+
 ## [5.8.0](https://github.com/launchdarkly/js-sdk-common/compare/5.7.1...5.8.0) (2025-09-05)
 
 
