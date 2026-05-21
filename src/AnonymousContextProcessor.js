@@ -1,4 +1,4 @@
-const { v1: uuidv1 } = require('uuid');
+const { randomUuidV4 } = require('./uuid');
 const { getContextKinds } = require('./context');
 
 const errors = require('./errors');
@@ -57,7 +57,7 @@ function AnonymousContextProcessor(persistentStorage) {
           context.key = cachedId;
           return context;
         } else {
-          const id = uuidv1();
+          const id = randomUuidV4();
           context.key = id;
           return setCachedContextKey(id, kind).then(() => context);
         }

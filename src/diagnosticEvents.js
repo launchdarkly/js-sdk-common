@@ -1,7 +1,4 @@
-const { v1: uuidv1 } = require('uuid');
-// Note that in the diagnostic events spec, these IDs are to be generated with UUID v4. However,
-// in JS we were already using v1 for unique context keys, so to avoid bringing in two packages we
-// will use v1 here as well.
+const { randomUuidV4 } = require('./uuid');
 
 const { baseOptionDefs } = require('./configuration');
 const messages = require('./messages');
@@ -9,7 +6,7 @@ const { appendUrlPath } = require('./utils');
 
 function DiagnosticId(sdkKey) {
   const ret = {
-    diagnosticId: uuidv1(),
+    diagnosticId: randomUuidV4(),
   };
   if (sdkKey) {
     ret.sdkKeySuffix = sdkKey.length > 6 ? sdkKey.substring(sdkKey.length - 6) : sdkKey;
