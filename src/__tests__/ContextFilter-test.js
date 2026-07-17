@@ -171,6 +171,43 @@ describe('when handling legacy user contexts', () => {
     );
   });
 
+  it('redacts attribute names with a preceding slash when allAttributesPrivate is true', () => {
+    const uf = ContextFilter({ allAttributesPrivate: true });
+    expect(
+      uf.filter({
+        key: 'abc',
+        custom: { '/ssn': '123-45-6789', bizzle: 'def' },
+      })
+    ).toEqual({
+      kind: 'user',
+      key: 'abc',
+      _meta: {
+        redactedAttributes: ['/bizzle', '/~1ssn'],
+      },
+    });
+  });
+
+  it('redacts attribute names with a preceding slash when redactAnonymous is true for an anonymous context', () => {
+    const uf = ContextFilter({});
+    expect(
+      uf.filter(
+        {
+          key: 'abc',
+          anonymous: true,
+          custom: { '/ssn': '123-45-6789', bizzle: 'def' },
+        },
+        true
+      )
+    ).toEqual({
+      kind: 'user',
+      key: 'abc',
+      anonymous: true,
+      _meta: {
+        redactedAttributes: ['/bizzle', '/~1ssn'],
+      },
+    });
+  });
+
   it.each([null, undefined])('handles null and undefined the same for built-in attributes', value => {
     const cf = ContextFilter({});
     const user = {
@@ -300,6 +337,24 @@ describe('when handling single kind contexts', () => {
       kind: 'user',
       key: 'user',
       anonymous: false,
+    });
+  });
+
+  it('redacts single-kind attribute names with a preceding slash when allAttributesPrivate is true', () => {
+    const uf = ContextFilter({ allAttributesPrivate: true });
+    expect(
+      uf.filter({
+        kind: 'organization',
+        key: 'abc',
+        '/ssn': '123-45-6789',
+        name: 'Alice',
+      })
+    ).toEqual({
+      kind: 'organization',
+      key: 'abc',
+      _meta: {
+        redactedAttributes: ['/name', '/~1ssn'],
+      },
     });
   });
 });
@@ -456,5 +511,20 @@ describe('when handling mult-kind contexts', () => {
   it('it should apply global private attributes to all contexts.', () => {
     const uf = ContextFilter({ privateAttributes: ['name'] });
     expect(uf.filter(orgAndUserContext)).toEqual(orgAndUserGlobalNamePrivate);
+  });
+
+  it('it should redact attribute names with a preceding slash in every sub-context when all attributes are private.', () => {
+    const uf = ContextFilter({ allAttributesPrivate: true });
+    expect(
+      uf.filter({
+        kind: 'multi',
+        user: { key: 'u', '/private_token': 'SECRET-TOKEN', name: 'A' },
+        org: { key: 'o', '/api_key': 'SECRET-API', name: 'O' },
+      })
+    ).toEqual({
+      kind: 'multi',
+      user: { key: 'u', _meta: { redactedAttributes: ['/name', '/~1private_token'] } },
+      org: { key: 'o', _meta: { redactedAttributes: ['/name', '/~1api_key'] } },
+    });
   });
 });

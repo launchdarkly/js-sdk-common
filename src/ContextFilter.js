@@ -18,7 +18,7 @@ function ContextFilter(config) {
    */
   const getAttributesToFilter = (context, redactAnonymous) =>
     (allAttributesPrivate || (redactAnonymous && context.anonymous)
-      ? Object.keys(context)
+      ? Object.keys(context).map(key => (key.startsWith('/') ? AttributeReference.literalToReference(key) : key))
       : [...privateAttributes, ...((context._meta && context._meta.privateAttributes) || [])]
     ).filter(attr => !protectedAttributes.some(protectedAttr => AttributeReference.compare(attr, protectedAttr)));
 
