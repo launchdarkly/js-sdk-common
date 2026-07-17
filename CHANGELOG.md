@@ -2,6 +2,13 @@
 
 All notable changes to the `launchdarkly-js-sdk-common` package will be documented in this file. Changes that affect the dependent SDKs such as `launchdarkly-js-client-sdk` should also be logged in those projects, in the next release that uses the updated version of this package. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [5.8.2](https://github.com/launchdarkly/js-sdk-common/compare/5.8.1...5.8.2) (2026-07-17)
+
+
+### Bug Fixes
+
+* attribute key that is prefixed with `/` are not redacted when `allAttributesPrivate` is set to `true` ([#150](https://github.com/launchdarkly/js-sdk-common/issues/150)) ([8cd6b15](https://github.com/launchdarkly/js-sdk-common/commit/8cd6b15a7484ab05edd5d5bbde0547e3494048c7))
+
 ## [5.8.1](https://github.com/launchdarkly/js-sdk-common/compare/5.8.0...5.8.1) (2026-05-21)
 
 
