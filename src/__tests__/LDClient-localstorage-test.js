@@ -151,6 +151,106 @@ describe('LDClient local storage', () => {
       });
     });
 
+    it('should use the new hash as the localStorage key when identify changes the secure mode hash', async () => {
+      const hash1 = 'hash-for-user1';
+      const hash2 = 'hash-for-user2';
+      const lsKeyHash1 = 'ld:' + envName + ':' + hash1;
+      const lsKeyHash2 = 'ld:' + envName + ':' + hash2;
+      const user2 = { key: 'user2' };
+      const flags1 = { 'enable-foo': { value: true } };
+      const flags2 = { 'enable-foo': { value: false } };
+
+      await withServer(async server => {
+        server.byDefault(respondJson(flags1));
+        await withClient(user, { baseUrl: server.url, hash: hash1 }, async client => {
+          await client.waitForInitialization(5);
+
+          await sleepAsync(0); // allow any pending async tasks to complete
+
+          expect(JSON.parse(platform.testing.getLocalStorageImmediately(lsKeyHash1))).toEqual({
+            $schema: 1,
+            ...flags1,
+          });
+
+          server.byDefault(respondJson(flags2));
+          await client.identify(user2, hash2);
+
+          await sleepAsync(0); // allow any pending async tasks to complete
+
+          // The second context's flags must be cached under the second context's hash.
+          const cachedForHash2 = platform.testing.getLocalStorageImmediately(lsKeyHash2);
+          expect(cachedForHash2).toEqual(expect.anything());
+          expect(JSON.parse(cachedForHash2)).toEqual({ $schema: 1, ...flags2 });
+
+          // The first context's cache slot must have been cleared and must not have been reused.
+          expect(platform.testing.getLocalStorageImmediately(lsKeyHash1)).not.toEqual(expect.anything());
+        });
+      });
+    });
+
+    it('does not apply a stale background-refresh response after identify changes context/hash', async () => {
+      const hash1 = 'hash-for-user1';
+      const hash2 = 'hash-for-user2';
+      const lsKeyHash1 = 'ld:' + envName + ':' + hash1;
+      const lsKeyHash2 = 'ld:' + envName + ':' + hash2;
+      const user2 = { key: 'user2' };
+      const cachedFlags1 = '{"$schema": 1, "enable-foo": {"value": "cached-from-user1"}}';
+      const staleFlags1FromServer = { 'enable-foo': { value: 'stale-response-for-user1' } };
+      const flags2 = { 'enable-foo': { value: 'value-for-user2' } };
+
+      platform.testing.setLocalStorageImmediately(lsKeyHash1, cachedFlags1);
+
+      await withServer(async server => {
+        let requestCount = 0;
+        let heldReq, heldResp;
+        server.byDefault((req, resp) => {
+          requestCount++;
+          if (requestCount === 1) {
+            // This is the background refresh issued while bootstrapping from the cached flags
+            // for user1/hash1. Hold it open - we'll resolve it later, after identify() has
+            // already completed for user2/hash2.
+            heldReq = req;
+            heldResp = resp;
+          } else {
+            respondJson(flags2)(req, resp);
+          }
+        });
+
+        await withClient(user, { baseUrl: server.url, hash: hash1 }, async client => {
+          await client.waitForInitialization(5);
+
+          // We're bootstrapped from the cached flags for user1, and the background refresh
+          // request for user1/hash1 is now in flight and held open.
+          expect(client.variation('enable-foo')).toEqual('cached-from-user1');
+
+          // identify() to a new context/hash. This issues and fully completes its own flag
+          // fetch for user2/hash2 while the old background refresh is still pending.
+          await client.identify(user2, hash2);
+
+          await sleepAsync(0); // allow any pending async tasks to complete
+
+          expect(client.variation('enable-foo')).toEqual('value-for-user2');
+          expect(JSON.parse(platform.testing.getLocalStorageImmediately(lsKeyHash2))).toEqual({
+            $schema: 1,
+            ...flags2,
+          });
+
+          // Now release the stale background-refresh response for user1/hash1.
+          respondJson(staleFlags1FromServer)(heldReq, heldResp);
+
+          await sleepAsync(0); // allow any pending async tasks to complete
+
+          // The stale response must not have overwritten the in-memory flags for the
+          // current (user2/hash2) context, nor the current context's localStorage cache slot.
+          expect(client.variation('enable-foo')).toEqual('value-for-user2');
+          expect(JSON.parse(platform.testing.getLocalStorageImmediately(lsKeyHash2))).toEqual({
+            $schema: 1,
+            ...flags2,
+          });
+        });
+      });
+    });
+
     it('should clear localStorage when user context is changed', async () => {
       const lsKey2 = 'ld:UNKNOWN_ENVIRONMENT_ID:' + utils.btoa('{"key":"user2"}');
       const flags = { 'enable-foo': { value: true } };

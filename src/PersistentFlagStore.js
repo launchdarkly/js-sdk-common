@@ -1,12 +1,15 @@
 const utils = require('./utils');
 
-function PersistentFlagStore(storage, environment, hash, ident) {
+function PersistentFlagStore(storage, environment, getHash, ident) {
   const store = {};
 
   function getFlagsKey() {
     let key = '';
     const context = ident.getContext();
     if (context) {
+      // Read the hash on every call: in secure mode the hash changes when identify() is called, and
+      // this store instance lives for the lifetime of the client.
+      const hash = getHash();
       key = hash || utils.btoa(JSON.stringify(context));
     }
     return 'ld:' + environment + ':' + key;
