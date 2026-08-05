@@ -107,7 +107,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
   const ident = Identity(null, onIdentifyChange);
   const anonymousContextProcessor = new AnonymousContextProcessor(persistentStorage);
   const persistentFlagStore = persistentStorage.isEnabled()
-    ? PersistentFlagStore(persistentStorage, environment, hash, ident, logger)
+    ? PersistentFlagStore(persistentStorage, environment, () => hash, ident, logger)
     : null;
 
   function createLogger() {
@@ -727,9 +727,15 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
     return persistentFlagStore.loadFlags().then(storedFlags => {
       if (storedFlags === null || storedFlags === undefined) {
         flagStore.setFlags({});
+        const contextAtStart = ident.getContext();
+        const hashAtStart = hash;
         return requestor
-          .fetchFlagSettings(ident.getContext(), hash)
-          .then(requestedFlags => replaceAllFlags(requestedFlags || {}))
+          .fetchFlagSettings(contextAtStart, hashAtStart)
+          .then(requestedFlags => {
+            if (hashAtStart === hash && utils.deepEquals(contextAtStart, ident.getContext())) {
+              return replaceAllFlags(requestedFlags || {});
+            }
+          })
           .then(signalSuccessfulInit)
           .catch(err => {
             const initErr = new errors.LDFlagFetchError(messages.errorFetchingFlags(err));
@@ -742,9 +748,15 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
         flagStore.setFlags(storedFlags);
         utils.onNextTick(signalSuccessfulInit);
 
+        const contextAtStart = ident.getContext();
+        const hashAtStart = hash;
         return requestor
-          .fetchFlagSettings(ident.getContext(), hash)
-          .then(requestedFlags => replaceAllFlags(requestedFlags))
+          .fetchFlagSettings(contextAtStart, hashAtStart)
+          .then(requestedFlags => {
+            if (hashAtStart === hash && utils.deepEquals(contextAtStart, ident.getContext())) {
+              return replaceAllFlags(requestedFlags);
+            }
+          })
           .catch(err => emitter.maybeReportError(err));
       }
     });
