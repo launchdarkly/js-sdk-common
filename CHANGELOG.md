@@ -2,6 +2,13 @@
 
 All notable changes to the `launchdarkly-js-sdk-common` package will be documented in this file. Changes that affect the dependent SDKs such as `launchdarkly-js-client-sdk` should also be logged in those projects, in the next release that uses the updated version of this package. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [5.8.3](https://github.com/launchdarkly/js-sdk-common/compare/5.8.2...5.8.3) (2026-08-05)
+
+
+### Bug Fixes
+
+* secure-mode localstorage cache key does not get updated on new context ([#152](https://github.com/launchdarkly/js-sdk-common/issues/152)) ([d859511](https://github.com/launchdarkly/js-sdk-common/commit/d8595118b41c004d8f860a62f000a8f5ed4c4902))
+
 ## [5.8.2](https://github.com/launchdarkly/js-sdk-common/compare/5.8.1...5.8.2) (2026-07-17)
 
 
