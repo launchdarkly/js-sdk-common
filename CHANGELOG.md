@@ -2,6 +2,13 @@
 
 All notable changes to the `launchdarkly-js-sdk-common` package will be documented in this file. Changes that affect the dependent SDKs such as `launchdarkly-js-client-sdk` should also be logged in those projects, in the next release that uses the updated version of this package. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [5.8.4](https://github.com/launchdarkly/js-sdk-common/compare/5.8.3...5.8.4) (2026-11-20)
+
+
+### Bug Fixes
+
+* Open the stream when the initial flag request fails ([#155](https://github.com/launchdarkly/js-sdk-common/issues/155)) ([02fbe13](https://github.com/launchdarkly/js-sdk-common/commit/02fbe13848f6be69dfb7e3051c04cccbd984f74e))
+
 ## [5.8.3](https://github.com/launchdarkly/js-sdk-common/compare/5.8.2...5.8.3) (2026-08-05)
 
 
