@@ -739,7 +739,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
           .then(signalSuccessfulInit)
           .catch(err => {
             const initErr = new errors.LDFlagFetchError(messages.errorFetchingFlags(err));
-            signalFailedInit(initErr);
+            signalFailedInitialFlagRequest(initErr);
           });
       } else {
         // We're reading the flags from local storage. Signal that we're ready,
@@ -774,7 +774,7 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
       })
       .catch(err => {
         flagStore.setFlags({});
-        signalFailedInit(err);
+        signalFailedInitialFlagRequest(err);
       });
   }
 
@@ -803,6 +803,17 @@ function initialize(env, context, specifiedOptions, platform, extraOptionDefs) {
 
   function signalFailedInit(err) {
     initializationStateTracker.signalFailure(err);
+  }
+
+  // The initial flag request failed. Start the stream, if streaming is on, as after a successful
+  // initialization. The stream can then send the flags when the service is available again.
+  // Do not start the stream if the client is closed.
+  function signalFailedInitialFlagRequest(err) {
+    if (!closed) {
+      inited = true;
+      updateStreamingState();
+    }
+    signalFailedInit(err);
   }
 
   function start() {

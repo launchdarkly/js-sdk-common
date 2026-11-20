@@ -4,7 +4,7 @@ import * as utils from '../utils';
 import { AsyncQueue, eventSink, sleepAsync, withCloseable } from 'launchdarkly-js-test-helpers';
 
 import EventSource from './EventSource-mock';
-import { respondJson } from './mockHttp';
+import { respond, respondJson } from './mockHttp';
 import * as stubPlatform from './stubPlatform';
 import { makeBootstrap } from './testUtils';
 
@@ -207,6 +207,72 @@ describe('LDClient streaming', () => {
           expect(changes1).toEqual([{ flagKey: { current: 'a', previous: undefined } }]);
           expect(changes2).toEqual(['a', 'b']);
         });
+      });
+    });
+
+    describe('after the initial flag request fails', () => {
+      async function withClientAndFailingServer(extraConfig, asyncCallback) {
+        const server = platform.testing.http.newServer();
+        server.byDefault(respond(503));
+        const config = { ...extraConfig, baseUrl: server.url };
+        const client = platform.testing.makeClient(envName, user, config);
+        return await withCloseable(client, async () => await asyncCallback(client, server));
+      }
+
+      it('connects to the stream and gets flags from it if options.streaming is true', async () => {
+        await withClientAndFailingServer({ streaming: true }, async client => {
+          await expect(client.waitForInitialization(5)).rejects.toThrow();
+
+          // The stream sends the flags that the initial request did not get.
+          const stream = await expectStreamConnecting(fullStreamUrlWithUser);
+          stream.eventSource.mockEmit('put', {
+            data: '{"flagKey":{"value":true,"version":1}}',
+          });
+
+          // The client uses the flags from the stream.
+          expect(client.variation('flagKey', false)).toEqual(true);
+        });
+      });
+
+      it('connects to the stream if options.streaming is true and local storage has no flags', async () => {
+        await withClientAndFailingServer({ streaming: true, bootstrap: 'localstorage' }, async client => {
+          await expect(client.waitForInitialization(5)).rejects.toThrow();
+
+          await expectStreamConnecting(fullStreamUrlWithUser);
+        });
+      });
+
+      it('connects to the stream if a change listener is added', async () => {
+        await withClientAndFailingServer({}, async client => {
+          await expect(client.waitForInitialization(5)).rejects.toThrow();
+          client.on('change', () => {});
+
+          await expectStreamConnecting(fullStreamUrlWithUser);
+        });
+      });
+
+      it('does not connect to the stream by default', async () => {
+        await withClientAndFailingServer({}, async client => {
+          await expect(client.waitForInitialization(5)).rejects.toThrow();
+
+          expectNoStreamIsOpen();
+        });
+      });
+
+      it('does not connect to the stream if the client was closed before the request failed', async () => {
+        const server = platform.testing.http.newServer();
+        const requests = new AsyncQueue();
+        server.byDefault((req, resp) => requests.add({ req, resp }));
+        const client = platform.testing.makeClient(envName, user, { streaming: true, baseUrl: server.url });
+        const initRequest = await requests.take();
+
+        // Close the client, then fail the initial request.
+        await client.close();
+        respond(503)(initRequest.req, initRequest.resp);
+
+        // The client reports the failure after it makes its streaming decision.
+        await expect(client.waitForInitialization(5)).rejects.toThrow();
+        expectNoStreamIsOpen();
       });
     });
 
